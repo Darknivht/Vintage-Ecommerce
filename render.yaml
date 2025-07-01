@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: fastcart-ecommerce
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn ecom_prj.wsgi"
+    pythonVersion: 3.11.5
