@@ -6523,3 +6523,15 @@ input[type="number"] {
   scrollbar-width: none;
 }
 
+.category-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  max-width: 100vw;
+}
+
+.category-scroll::-webkit-scrollbar {
+  display: none; /* optional: hide scrollbar */
+}
+
+
