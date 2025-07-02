@@ -42,20 +42,20 @@
             </div>
         </div>
 
-<div class="category-slider-wrapper py-3">
-  <div class="d-flex flex-nowrap overflow-auto gap-3 px-3">
+<div class="category-slider-wrapper py-3 text-center">
+  <div class="d-inline-flex flex-nowrap overflow-auto gap-3 px-3 justify-content-center">
     {% for c in categories %}
     <div class="text-center flex-shrink-0" style="width: 100px;">
         <div class="border rounded-circle mx-auto mb-2" style="width: 100px; height: 100px; overflow: hidden;">
             <a href="{% url 'store:category' c.id %}" class="d-block w-100 h-100">
                 {% if c.image %}
-                    <img src="{{c.image.url}}" class="img-fluid w-100 h-100 object-fit-cover" alt="" />
+                    <img src="{{ c.image.url }}" class="img-fluid w-100 h-100" style="object-fit: contain;" alt="" />
                 {% else %}
-                    <img src="{% static 'assets/img/headphones.png' %}" class="img-fluid w-100 h-100 object-fit-cover" alt="" />
+                    <img src="{% static 'assets/img/headphones.png' %}" class="img-fluid w-100 h-100" style="object-fit: contain;" alt="" />
                 {% endif %}
             </a>
         </div>
-        <h6 class="m-0 ft-medium fs-sm"><a href="{% url 'store:category' c.id %}">{{c.title}}</a></h6>
+        <h6 class="m-0 ft-medium fs-sm"><a href="{% url 'store:category' c.id %}">{{ c.title }}</a></h6>
     </div>
     {% endfor %}
   </div>
