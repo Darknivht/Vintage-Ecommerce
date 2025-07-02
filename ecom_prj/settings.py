@@ -202,9 +202,9 @@ RECAPTCHA_PRIVATE_KEY = env("DJANGO_RECAPTCHA_PRIVATE_KEY")
 
 # Custom Admin Settings
 JAZZMIN_SETTINGS = {
-    "site_title": "FastCart Ecommerce",
-    "site_header": "FastCart Ecommerce",
-    "site_brand": "FastCart Ecommerce ",
+    "site_title": "Vintage | Ecommerce",
+    "site_header": "Vintage Ecommerce",
+    "site_brand": "Vintage Ecommerce ",
     # "site_icon": "images/favicon.ico",
     # "site_logo": "images/logos/logo.jpg",
     "welcome_sign": "Welcome To Vintage",
