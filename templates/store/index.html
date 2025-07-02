@@ -45,19 +45,27 @@
 <div class="category-slider-wrapper py-3">
   <div class="category-scroll d-flex flex-nowrap gap-3 px-3">
     {% for c in categories %}
-    <div class="text-center flex-shrink-0" style="width: 100px;">
-      <div class="border rounded-circle mx-auto mb-2" style="width: 100px; height: 100px; overflow: hidden;">
-        <a href="{% url 'store:category' c.id %}">
-          {% if c.image %}
-          <img src="{{ c.image.url }}" alt=""
-               style="width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: 50%;" />
-          {% else %}
-          <img src="{% static 'assets/img/headphones.png' %}" alt=""
-               style="width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: 50%;" />
-          {% endif %}
-        </a>
-      </div>
-      <h6 class="m-0 ft-medium fs-sm"><a href="{% url 'store:category' c.id %}">{{ c.title }}</a></h6>
+    <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 col-4">
+        <div class="cats_side_wrap text-center mx-auto mb-3">
+            <div class="sl_cat_01">
+                <div class="d-inline-flex align-items-center justify-content-center p-4 circle mb-2 border">
+                    <a href="{% url 'store:category' c.id %}" class="d-block">
+
+                        {% if c.image %}
+                        <img src="{{ c.image.url }}" class="img-fluid" width="80" alt="" />
+                        {% else %}
+                        <img src="{% static 'assets/img/headphones.png' %}" class="img-fluid" width="40" alt="" />
+                        {% endif %}
+
+                    </a>
+                </div>
+            </div>
+            <div class="sl_cat_02">
+                <h6 class="m-0 ft-medium fs-sm">
+                    <a href="{% url 'store:category' c.id %}">{{ c.title }}</a>
+                </h6>
+            </div>
+        </div>
     </div>
     {% endfor %}
   </div>

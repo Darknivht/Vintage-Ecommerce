@@ -6510,15 +6510,3 @@ input[type="number"] {
     }
 }
 
-.category-scroll {
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  max-width: 100vw;
-  white-space: nowrap;
-}
-
-.category-scroll::-webkit-scrollbar {
-  display: none;
-}
