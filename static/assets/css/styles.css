@@ -6509,3 +6509,9 @@ input[type="number"] {
         font-size: 1.1rem;
     }
 }
+
+.category-slider-wrapper .overflow-auto {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
