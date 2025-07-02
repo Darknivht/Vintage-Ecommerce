@@ -58,7 +58,9 @@ INSTALLED_APPS = [
     'django_ckeditor_5',
     'anymail',
     'captcha',
-    'django_extensions'
+    'django_extensions',
+    'cloudinary',
+    'cloudinary_storage',
 
 ]
 
@@ -141,6 +143,14 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv("CLOUDINARY_CLOUD_NAME"),
+    'API_KEY': os.getenv("CLOUDINARY_API_KEY"),
+    'API_SECRET': os.getenv("CLOUDINARY_API_SECRET"),
+}
 
 
 STATIC_URL = 'static/'
