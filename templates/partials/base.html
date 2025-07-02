@@ -40,9 +40,9 @@
                                     <li><a href="{% url 'store:cart' %}"><i class="fas fa-shopping-basket"></i><span class="dn-counter total_cart_items">{{total_cart_items}}</span></a></li>
                                     <li>
                                         {% if request.user.is_authenticated %}
-                                            <a href="{% url 'userauths:sign-out' %}" class="btn btn-sm btn-danger mt-1">Sign Out</a>
+                                            <a href="{% url 'userauths:sign-out' %}" class="btn bg-primary py-2 px-4 rounded text-white">Sign Out</a>
                                         {% else %}
-                                            <a href="{% url 'userauths:sign-in' %}" class="btn btn-sm btn-primary mt-1">Sign In</a>
+                                            <a href="{% url 'userauths:sign-in' %}" class="btn bg-primary py-2 px-4 rounded text-white">Sign In</a>
                                         {% endif %}
                                     </li>
                                 </ul>
@@ -140,8 +140,8 @@
                             <div class="col-xl-4 col-lg-4 col-md-3 col-sm-12">
                                 <div class="footer_widget">
                                     <img src="{% static 'assets/img/logo-light.png' %}" class="img-footer small mb-2" alt="" />
-                                    <div class="address mt-3">123 Main Street ST <br />United States 324235</div>
-                                    <div class="address mt-3">+123 (456) 7890<br />info@ecommerce.com</div>
+                                    <div class="address mt-3">1 Guava Road, Unguwan Dosa, Kaduna <br />Nigeria 800213</div>
+                                    <div class="address mt-3">+234 8036282367<br />vintageecommerce@gmail.com</div>
                                     <div class="address mt-3">
                                         <ul class="list-inline">
                                             <li class="list-inline-item"><a href="#"><i class="fab fa-facebook"></i></a></li>
