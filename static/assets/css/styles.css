@@ -6515,3 +6515,11 @@ input[type="number"] {
   -webkit-overflow-scrolling: touch;
 }
 
+.category-slider-wrapper .overflow-auto::-webkit-scrollbar {
+  display: none;
+}
+.category-slider-wrapper .overflow-auto {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
