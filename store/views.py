@@ -36,7 +36,7 @@ def clear_cart_items(request):
 
 def index(request):
     products = store_models.Product.objects.filter(status="Published")
-    categories = store_models.Category.objects.all()
+    categories = store_models.Category.objects.filter(parent=None)
     
     context = {
         "products": products,
@@ -46,7 +46,7 @@ def index(request):
 
 def shop(request):
     products_list = store_models.Product.objects.filter(status="Published")
-    categories = store_models.Category.objects.all()
+    categories = store_models.Category.objects.filter(parent=None)
     colors = store_models.VariantItem.objects.filter(variant__name='Color').values('title', 'content').distinct()
     sizes = store_models.VariantItem.objects.filter(variant__name='Size').values('title', 'content').distinct()
     item_display = [

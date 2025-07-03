@@ -57,15 +57,17 @@ class Category(models.Model):
     title = models.CharField(max_length=100)
     image = models.ImageField(upload_to="images", default="category.jpg", null=True, blank=True)
     slug = models.SlugField(unique=True)
+    parent = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="subcategories")
 
     class Meta:
         verbose_name_plural = "Categories"
 
     def __str__(self):
         return self.title
-    
+
     def products(self):
         return Product.objects.filter(category=self)
+
     
 class Product(models.Model):
     name = models.CharField(max_length=100)
