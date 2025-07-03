@@ -21,6 +21,14 @@ from vendor import models as vendor_models
 from userauths import models as userauths_models
 from plugin.tax_calculation import tax_calculation
 from plugin.exchange_rate import convert_ngn_to_inr, convert_ngn_to_kobo, convert_ngn_to_usd, get_ngn_to_usd_rate
+from store.models import Category
+
+def get_subcategories(request):
+    parent_id = request.GET.get('parent_id')
+    if parent_id:
+        subcategories = Category.objects.filter(parent_id=parent_id).values('id', 'title')
+        return JsonResponse(list(subcategories), safe=False)
+    return JsonResponse([], safe=False)
 
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -90,7 +98,15 @@ def shop(request):
 
 def category(request, id):
     category = store_models.Category.objects.get(id=id)
-    products_list = store_models.Product.objects.filter(status="Published", category=category)
+
+    # Include products under this category and all its subcategories
+    subcategories = category.subcategories.all()
+    categories_to_include = [category] + list(subcategories)
+
+    products_list = store_models.Product.objects.filter(
+        status="Published",
+        category__in=categories_to_include
+    )
 
     query = request.GET.get("q")
     if query:
@@ -104,6 +120,7 @@ def category(request, id):
         "category": category,
     }
     return render(request, "store/category.html", context)
+
 
 def vendors(request):
     vendors = userauths_models.Profile.objects.filter(user_type="Vendor")

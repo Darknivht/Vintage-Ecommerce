@@ -62,6 +62,11 @@ class Category(models.Model):
     class Meta:
         verbose_name_plural = "Categories"
 
+    def all_products(self):
+        subcategories = self.subcategories.all()
+        return Product.objects.filter(category__in=[self] + list(subcategories))
+
+
     def __str__(self):
         return self.title
 

@@ -194,6 +194,30 @@
             </footer>
         </div>
 
+        <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const parentCheckboxes = document.querySelectorAll('.parent-category');
+
+            parentCheckboxes.forEach(function (checkbox) {
+                checkbox.addEventListener('change', function () {
+                    const parentId = this.value;
+                    const subDropdown = document.querySelector(`.subcategory-dropdown[data-parent-id="${parentId}"]`);
+
+                    if (this.checked) {
+                        subDropdown?.classList.remove('d-none');
+                    } else {
+                        subDropdown?.classList.add('d-none');
+
+                        // Uncheck all subcategory checkboxes when parent is deselected
+                        const subChecks = subDropdown.querySelectorAll('input[type="checkbox"]');
+                        subChecks.forEach(sc => sc.checked = false);
+                    }
+                });
+            });
+        });
+        </script>
+
+
         <script src="{% static 'assets/js/jquery.min.js' %}"></script>
         <script src="{% static 'assets/js/popper.min.js' %}"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>

@@ -286,23 +286,28 @@ def change_password(request):
 
 @login_required
 def create_product(request):
-    categories = store_models.Category.objects.all()
+    categories = store_models.Category.objects.filter(parent__isnull=True)  # only top-level categories
 
     if request.method == "POST":
         image = request.FILES.get("image")
         name = request.POST.get("name")
         category_id = request.POST.get("category_id")
+        subcategory_id = request.POST.get("subcategory_id")  # New
+
         description = request.POST.get("description")
         price = request.POST.get("price")
         regular_price = request.POST.get("regular_price")
         shipping = request.POST.get("shipping")
         stock = request.POST.get("stock")
 
+        # Safely select subcategory if chosen, otherwise use main category
+        final_category_id = subcategory_id if subcategory_id else category_id
+
         product = store_models.Product.objects.create(
             vendor=request.user,
             image=image,
             name=name,
-            category_id=category_id,
+            category_id=final_category_id,
             description=description,
             price=price,
             regular_price=regular_price,
@@ -311,10 +316,12 @@ def create_product(request):
         )
 
         return redirect("vendor:update_product", product.id)
+
     context = {
         'categories': categories
     }
     return render(request, "vendor/create_product.html", context)
+
 @login_required
 def update_product(request, id):
     # Retrieve the product by its ID and ensure it belongs to the current vendor

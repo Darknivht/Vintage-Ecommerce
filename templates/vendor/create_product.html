@@ -29,21 +29,31 @@
 
                                             <div class="mb-3">
                                                 <label for="productTitle" class="form-label">Title</label>
-                                                <input name="name" id="productTitle" class="form-control rounded" type="text" placeholder="" />
+                                                <input name="name" id="productTitle" class="form-control rounded" type="text" placeholder="Product title..." />
                                                 <small>Write a 60 character product title.</small>
                                             </div>
+
                                             <div class="mb-3">
-                                                <label class="form-label">Product category</label>
-                                                <select name="category_id" class="form-select">
-                                                    <option value="">-------------</option>
-                                                    
-                                                    {% for c in categories  %}
-                                                        <option value="{{c.id}}">{{c.title}}</option>
+                                                <label class="form-label">Product Category</label>
+                                                <select name="category_id" class="form-select" id="parentCategorySelect">
+                                                    <option value="">-- Select Main Category --</option>
+                                                    {% for c in categories %}
+                                                        {% if not c.parent %}
+                                                            <option value="{{c.id}}">{{c.title}}</option>
+                                                        {% endif %}
                                                     {% endfor %}
-                                                        
                                                 </select>
-                                                <small> Help people find your products by choosing categories that represent your product. </small>
+                                                <small>Help people find your products by choosing categories that represent your product.</small>
                                             </div>
+
+                                            <div class="mb-3" id="subcategoryWrapper" style="display:none;">
+                                                <label class="form-label">Subcategory (Optional)</label>
+                                                <select name="subcategory_id" class="form-select" id="subcategorySelect">
+                                                    <option value="">-- Select Subcategory --</option>
+                                                    <!-- Filled dynamically -->
+                                                </select>
+                                            </div>
+
 
                                             <div class="mb-3">
                                                 <label class="form-label">Product Description</label>
@@ -97,4 +107,39 @@
         }
     }
 </script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const parentSelect = document.getElementById("parentCategorySelect");
+        const subcategoryWrapper = document.getElementById("subcategoryWrapper");
+        const subcategorySelect = document.getElementById("subcategorySelect");
+
+        parentSelect.addEventListener("change", function () {
+            const parentId = this.value;
+
+            if (parentId) {
+                fetch(`/get-subcategories/?parent_id=${parentId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        subcategorySelect.innerHTML = `<option value="">-- Select Subcategory --</option>`;
+                        if (data.length > 0) {
+                            data.forEach(sub => {
+                                subcategorySelect.innerHTML += `<option value="${sub.id}">${sub.title}</option>`;
+                            });
+                            subcategoryWrapper.style.display = "block";
+                        } else {
+                            subcategoryWrapper.style.display = "none";
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error fetching subcategories:", error);
+                        subcategoryWrapper.style.display = "none";
+                    });
+            } else {
+                subcategoryWrapper.style.display = "none";
+                subcategorySelect.innerHTML = `<option value="">-- Select Subcategory --</option>`;
+            }
+        });
+    });
+</script>
+
 {% endblock content %}
