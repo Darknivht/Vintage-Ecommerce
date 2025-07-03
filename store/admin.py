@@ -11,9 +11,12 @@ class VariantItemInline(admin.TabularInline):
     model = store_models.VariantItem
 
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['title', 'image']
+    list_display = ['title', 'parent', 'image']
     list_editable = ['image']
     prepopulated_fields = {'slug': ('title',)}
+    list_filter = ['parent']
+    search_fields = ['title']
+
 
 class ProductAdmin(admin.ModelAdmin):
     list_display = ['name', 'category', 'price', 'regular_price', 'stock', 'status', 'featured', 'vendor', 'date']

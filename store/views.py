@@ -629,7 +629,8 @@ def filter_products(request):
    
     # Apply category filtering
     if categories:
-        products = products.filter(category__id__in=categories)
+        products = products.filter(models.Q(category__id__in=categories) | models.Q(category__parent__id__in=categories))
+
 
     # Apply rating filtering
     if rating:
