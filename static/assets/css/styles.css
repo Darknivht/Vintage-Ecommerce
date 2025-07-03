@@ -6510,3 +6510,13 @@ input[type="number"] {
     }
 }
 
+.category-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+}
+
+.category-scroll-wrapper::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+}
+
