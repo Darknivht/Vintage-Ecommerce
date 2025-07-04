@@ -16,13 +16,11 @@ PAYOUT_METHOD = (
     ("USA Bank Account", "USA Bank Account"),
 )
 
-
-TYPE = (
+NOTIFICATION_EVENT = (
     ("New Order", "New Order"),
     ("Item Shipped", "Item Shipped"),
     ("Item Delivered", "Item Delivered"),
 )
-
 
 
 class Vendor(models.Model):
@@ -39,11 +37,29 @@ class Vendor(models.Model):
         return str(self.store_name)
 
     def save(self, *args, **kwargs):
-        if self.slug == "" or self.slug == None:
+        if not self.slug:
             self.slug = slugify(self.store_name)
-        super(Vendor, self).save(*args, **kwargs) 
+        super(Vendor, self).save(*args, **kwargs)
 
 
+class BankAccount(models.Model):
+    vendor = models.OneToOneField(Vendor, on_delete=models.SET_NULL, null=True)
+    account_type = models.CharField(max_length=50, choices=PAYOUT_METHOD, null=True, blank=True)
+
+    bank_name = models.CharField(max_length=255)
+    account_number = models.CharField(max_length=50)
+    account_name = models.CharField(max_length=100)
+    bank_code = models.CharField(max_length=50, null=True, blank=True)
+
+    flutterwave_subaccount_id = models.CharField(max_length=100, null=True, blank=True)
+    stripe_id = models.CharField(max_length=100, null=True, blank=True)
+    paypal_address = models.CharField(max_length=100, null=True, blank=True)
+
+    class Meta:
+        verbose_name_plural = "Bank Accounts"
+
+    def __str__(self):
+        return f"{self.bank_name} - {self.account_number}"
 
 
 class Payout(models.Model):
@@ -52,41 +68,23 @@ class Payout(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     payout_id = ShortUUIDField(unique=True, length=6, max_length=10, alphabet="1234567890")
     date = models.DateField(auto_now_add=True)
-    
+
     def __str__(self):
-        return str(self.vendor)
-    
+        return f"Payout to {self.vendor} - ₦{self.amount}"
+
     class Meta:
         ordering = ['-date']
-
-class BankAccount(models.Model):
-    vendor = models.OneToOneField(Vendor, on_delete=models.SET_NULL, null=True)
-    account_type = models.CharField(max_length=50, choices=PAYOUT_METHOD, null=True, blank=True, default="PayPal")
-    
-    bank_name = models.CharField(max_length=500)
-    account_number = models.CharField(max_length=100)
-    account_name = models.CharField(max_length=100)
-    bank_code = models.CharField(max_length=100, null=True, blank=True)
-
-    stripe_id = models.CharField(max_length=100, null=True, blank=True)
-    paypal_address = models.CharField(max_length=100, null=True, blank=True)
-    
-    class Meta:
-        verbose_name_plural = "Bank Account"
-
-    def __str__(self):
-        return self.bank_name
 
 
 class Notifications(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name="vendor_notifications")
-    type = models.CharField(max_length=100, choices=TYPE, default=None)
+    type = models.CharField(max_length=100, choices=NOTIFICATION_EVENT, default="New Order")
     order = models.ForeignKey("store.OrderItem", on_delete=models.CASCADE, null=True, blank=True)
     seen = models.BooleanField(default=False)
     date = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
-        verbose_name_plural = "Notification"
-    
+        verbose_name_plural = "Notifications"
+
     def __str__(self):
-        return self.type
+        return f"{self.user} - {self.type}"

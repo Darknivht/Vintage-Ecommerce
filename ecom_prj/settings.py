@@ -31,7 +31,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'JyXJjzbZbSvltmqVL0_jwjLAxJAJJh4GtBzxj7PIeDyZFBCg99HsauSkbQgz6_ppzBk'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'https://*.ngrok-free.app', 'https://vintage-ecommerce.onrender.com/']
@@ -167,6 +167,8 @@ AUTH_USER_MODEL = 'userauths.User'
 STRIPE_PUBLIC_KEY = env("STRIPE_PUBLIC_KEY")
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
 
+
+
 # Paypal API Keys 
 PAYPAL_CLIENT_ID = env('PAYPAL_CLIENT_ID')
 PAYPAL_SECRET_ID = env('PAYPAL_SECRET_ID')
@@ -174,6 +176,8 @@ PAYPAL_SECRET_ID = env('PAYPAL_SECRET_ID')
 # Flutterwave Keys
 FLUTTERWAVE_PUBLIC_KEY=env("FLUTTERWAVE_PUBLIC_KEY")
 FLUTTERWAVE_PRIVATE_KEY=env("FLUTTERWAVE_PRIVATE_KEY")
+FLUTTERWAVE_VENDOR_SPLIT = 0.1
+VENDOR_SPLIT_PERCENTAGE = 0.1
 
 # Paystack Keys
 PAYSTACK_PUBLIC_KEY=env("PAYSTACK_PUBLIC_KEY")

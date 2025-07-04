@@ -1,0 +1,65 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <h3 class="mb-4">Add or Update Bank Account</h3>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label>Account Name</label>
+                <input type="text" name="account_name" class="form-control" required
+                    value="{{ account.account_name|default:'' }}">
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Account Number</label>
+                <input type="text" name="account_number" class="form-control" required
+                    value="{{ account.account_number|default:'' }}">
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Bank Name</label>
+                <input type="text" name="bank_name" class="form-control" required
+                    value="{{ account.bank_name|default:'' }}">
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Bank Code (Flutterwave)</label>
+                <input type="text" name="bank_code" class="form-control" required
+                    value="{{ account.bank_code|default:'' }}">
+                <small class="text-muted">e.g., Access Bank = 044, GTB = 058, etc.</small>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Payout Method</label>
+                <select name="account_type" class="form-control" required>
+                    {% for value, label in payout_methods %}
+                        <option value="{{ value }}" {% if account.account_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+
+            <div class="col-md-6 mb-3">
+                <label>Your Share (%)</label>
+                <input type="text" class="form-control" readonly value="90%">
+                <small class="text-muted">This is the percentage you receive from each order.</small>
+            </div>
+
+            <div class="col-12 mt-4">
+                <button type="submit" class="btn bg-primary">Save Bank Account</button>
+                <a href="{% url 'vendor:dashboard' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

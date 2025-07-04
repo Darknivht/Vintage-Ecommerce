@@ -6,6 +6,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import check_password
 from django.db.models.functions import TruncMonth
 from django.db.models import Count
+from django.conf import settings
+import requests
+from vendor.models import PAYOUT_METHOD 
 
 import json
 
@@ -446,3 +449,72 @@ def delete_product(request, product_id):
 
     messages.success(request, "Product deleted")
     return redirect("vendor:products")
+
+
+
+
+@login_required
+def add_bank_account(request):
+    vendor = request.user.vendor
+    account = vendor_models.BankAccount.objects.filter(vendor=vendor).first()
+
+    # Split value set by admin (in settings.py)
+    split_percentage = getattr(settings, "VENDOR_SPLIT_PERCENTAGE", 90)  # Default 90%
+    split_value = float(split_percentage)  # Flutterwave accepts whole number percentages
+
+    if request.method == "POST":
+        account_name = request.POST.get("account_name")
+        account_number = request.POST.get("account_number")
+        bank_code = request.POST.get("bank_code")
+        bank_name = request.POST.get("bank_name")
+        account_type = request.POST.get("account_type")
+
+        # Save or update bank account locally
+        account, created = vendor_models.BankAccount.objects.update_or_create(
+            vendor=vendor,
+            defaults={
+                "account_name": account_name,
+                "account_number": account_number,
+                "bank_code": bank_code,
+                "bank_name": bank_name,
+                "account_type": account_type,
+            }
+        )
+
+        # Flutterwave subaccount setup
+        FLUTTERWAVE_PRIVATE_KEY = settings.FLUTTERWAVE_PRIVATE_KEY
+        headers = {
+            "Authorization": f"Bearer {FLUTTERWAVE_PRIVATE_KEY}",
+            "Content-Type": "application/json",
+        }
+
+        data = {
+            "account_bank": bank_code,
+            "account_number": account_number,
+            "business_name": vendor.store_name,
+            "business_email": request.user.email,
+            "business_contact": vendor.store_name,
+            "business_contact_mobile": request.user.profile.mobile,
+            "split_type": "percentage",
+            "split_value": split_value
+        }
+
+        response = requests.post("https://api.flutterwave.com/v3/subaccounts", headers=headers, json=data)
+        res_data = response.json()
+
+        if response.status_code == 200 and res_data.get("status") == "success":
+            subaccount_id = res_data["data"]["subaccount_id"]
+            account.flutterwave_subaccount_id = subaccount_id
+            account.save()
+            messages.success(request, "Bank account saved and Flutterwave subaccount created successfully.")
+        else:
+            error_message = res_data.get("message", "Failed to create subaccount.")
+            messages.error(request, f"Flutterwave Error: {error_message}")
+
+        return redirect("vendor:profile")
+
+    return render(request, "vendor/add_bank_account.html", {
+        "account": account,
+        "split_percentage": split_percentage,
+        "payout_methods": PAYOUT_METHOD,
+    })

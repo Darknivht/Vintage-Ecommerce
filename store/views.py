@@ -368,7 +368,7 @@ def coupon_apply(request, order_id):
 
 def checkout(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
-    
+
     amount_in_inr = convert_ngn_to_inr(order.total)
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
@@ -381,17 +381,34 @@ def checkout(request, order_id):
         })
     except:
         razorpay_order = None
+
+    # ✅ Move this above the context
+    flutterwave_subaccounts = []
+    for item in order.order_items():
+        vendor = item.vendor
+
+        try:
+            bank_account = vendor.vendor.bankaccount  # Accessing Vendor model through User
+            if bank_account.flutterwave_subaccount_id:
+                flutterwave_subaccounts.append({
+                    "id": bank_account.flutterwave_subaccount_id,
+                    "transaction_split_ratio": float(bank_account.split_value)  # Decimal percentage
+                })
+        except:
+            continue
+
     context = {
         "order": order,
-        "amount_in_inr":amount_in_inr,
-        "amount_in_kobo":amount_in_kobo,
-        "amount_in_usd":round(amount_in_usd, 2),
+        "amount_in_inr": amount_in_inr,
+        "amount_in_kobo": amount_in_kobo,
+        "amount_in_usd": round(amount_in_usd, 2),
         "razorpay_order_id": razorpay_order['id'] if razorpay_order else None,
         "stripe_public_key": settings.STRIPE_PUBLIC_KEY,
         "paypal_client_id": settings.PAYPAL_CLIENT_ID,
-        "razorpay_key_id":settings.RAZORPAY_KEY_ID,
-        "paystack_public_key":settings.PAYSTACK_PUBLIC_KEY,
-        "flutterwave_public_key":settings.FLUTTERWAVE_PUBLIC_KEY,
+        "razorpay_key_id": settings.RAZORPAY_KEY_ID,
+        "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
+        "flutterwave_public_key": settings.FLUTTERWAVE_PUBLIC_KEY,
+        "flutterwave_subaccounts": flutterwave_subaccounts,  # ✅ now it exists
     }
 
     return render(request, "store/checkout.html", context)

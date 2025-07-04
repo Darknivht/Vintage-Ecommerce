@@ -27,6 +27,11 @@
                     <a href="{% url 'vendor:profile' %}" class="{% if '/vendor/profile/' in request.path %} active {% endif %}"><i class="fas fa-user me-2"></i>Profile</a>
                 </li>
                 <li>
+                    <a href="{% url 'vendor:add_bank_account' %}" class="{% if '/vendor/bank-account/' in request.path %}active{% endif %}">
+                        <i class="fas fa-university me-2"></i> Bank Account
+                    </a>
+                </li>
+                <li>
                     <a href="{% url 'userauths:sign-out' %}"><i class="fas fa-power-off me-2"></i>Logout</a>
                 </li>
             </ul>

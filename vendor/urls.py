@@ -1,10 +1,12 @@
 from django.urls import path
 from vendor import views
+from vendor import views as vendor_views
 
 app_name = "vendor"
 
 urlpatterns = [
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("bank-account/", vendor_views.add_bank_account, name="add_bank_account"),
     path("products/", views.products, name="products"),
     path("orders/", views.orders, name="orders"),
     path("order_detail/<order_id>/", views.order_detail, name="order_detail"),

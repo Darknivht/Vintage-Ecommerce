@@ -157,19 +157,9 @@
                     </button>
                    
 
-                    <form method="POST" action="https://checkout.flutterwave.com/v3/hosted/pay">
-                        <input type="hidden" name="public_key" value="{{ flutterwave_public_key }}" />
-                        <input type="hidden" name="customer[email]" value="{{ order.address.email }}" />
-                        <input type="hidden" name="customer[name]" value="{{ order.address.full_name }}" />
-                        <input type="hidden" name="tx_ref" value="{{order.order_id}}" />
-                        <input type="hidden" name="amount" value="{{ amount_in_usd }}" />
-                        <input type="hidden" name="currency" value="NGN" />
-                        <input type="hidden" name="redirect_url" value="https://vintage-ecommerce.onrender.com/flutterwave_payment_callback/{{ order.order_id }}/?payment_method=Flutterwave" />
-                        <input type="hidden" name="meta[source]" value="docs-html-test" />
-                        <button type="submit" id="start-payment-button" class="btn rounded text-primary fw-bold w-100 mb-3 payment-btn-flutterwave" style="background-color: #e8d3c4;">
-                            <img style="width: 250px; height: 40px; object-fit: contain;" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Flutterwave_Logo.png/1200px-Flutterwave_Logo.png" alt="">
-                        </button>
-                    </form>
+                    <button type="button" onclick="payWithFlutterwave()" class="btn rounded text-primary fw-bold w-100 mb-3 payment-btn-flutterwave" style="background-color: #e8d3c4;">
+                        <img style="width: 250px; height: 40px; object-fit: contain;" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Flutterwave_Logo.png/1200px-Flutterwave_Logo.png" alt="">
+                    </button>
                     <button type="button" id="mangopay-payment" class="btn rounded text-primary fw-bold w-100 mb-3 payment-btn-mangopay" style="background-color: #2D0F37;">
                         <img style="width: 250px; height: 50px; object-fit: contain;" src="https://media.licdn.com/dms/image/D5612AQGff40vpNeVSg/article-cover_image-shrink_600_2000/0/1721191178041?e=2147483647&v=beta&t=z-tiHP9B56nxiBTzO_ZBjFfgIg1_E7s1Bz18uN0bu7k" alt="">
                     </button>
@@ -304,6 +294,41 @@
         });
         handler.openIframe();
     }
+
+
 </script>
+
+<script>
+function payWithFlutterwave() {
+    FlutterwaveCheckout({
+        public_key: "{{ flutterwave_public_key }}",
+        tx_ref: "{{ order.order_id }}",
+        amount: {{ amount_in_usd }},
+        currency: "NGN",
+        payment_options: "card,ussd,banktransfer",
+        customer: {
+            email: "{{ order.address.email }}",
+            name: "{{ order.address.full_name }}"
+        },
+        callback: function (data) {
+            window.location.href = `https://127.0.0.1:8000/flutterwave_payment_callback/{{ order.order_id }}/?payment_method=Flutterwave&tx_ref=${data.tx_ref}`;
+        },
+        customizations: {
+            title: "Vintage Order Payment",
+            description: "Payment for items in cart",
+            logo: "https://your-logo-url.com/logo.png"
+        },
+        subaccounts: [
+            {% for account in flutterwave_subaccounts %}
+                {
+                    id: "{{ account.id }}",
+                    transaction_split_ratio: {{ account.transaction_split_ratio|floatformat:"2" }}
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+    });
+}
+</script>
+
 
 {% endblock content %}
