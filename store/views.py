@@ -7,6 +7,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives, send_mail
+import json
 
 from decimal import Decimal
 import requests
@@ -384,15 +385,13 @@ def checkout(request, order_id):
 
     # ✅ Move this above the context
     flutterwave_subaccounts = []
-    for item in order.order_items():
-        vendor = item.vendor
 
+    for item in order.order_items():
         try:
-            bank_account = vendor.vendor.bankaccount  # Accessing Vendor model through User
+            bank_account = item.vendor.vendor.bankaccount
             if bank_account.flutterwave_subaccount_id:
                 flutterwave_subaccounts.append({
-                    "id": bank_account.flutterwave_subaccount_id,
-                    "transaction_split_ratio": float(bank_account.split_value)  # Decimal percentage
+                    "id": bank_account.flutterwave_subaccount_id
                 })
         except:
             continue
@@ -408,7 +407,7 @@ def checkout(request, order_id):
         "razorpay_key_id": settings.RAZORPAY_KEY_ID,
         "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
         "flutterwave_public_key": settings.FLUTTERWAVE_PUBLIC_KEY,
-        "flutterwave_subaccounts": flutterwave_subaccounts,  # ✅ now it exists
+        "flutterwave_subaccounts_json": json.dumps(flutterwave_subaccounts),  # ✅ now it exists
     }
 
     return render(request, "store/checkout.html", context)
@@ -615,7 +614,7 @@ def flutterwave_payment_callback(request, order_id):
     headers = {
         'Authorization': f'Bearer {settings.FLUTTERWAVE_PRIVATE_KEY}'
     }
-    response = requests.get(f'https://api.flutterwave.com/v3/charges/verify_by_id/{payment_id}', headers=headers)
+    response = requests.get(f'https://api.flutterwave.com/v3/transactions/{payment_id}/verify', headers=headers)
 
     if response.status_code == 200:
         if order.payment_status == "Processing":
