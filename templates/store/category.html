@@ -10,11 +10,15 @@
 				<div class="mb-4">
 					<h5 class="fw-bold mb-3">Subcategories</h5>
 					<div class="d-flex flex-wrap gap-2">
-						{% for sub in category.subcategories.all %}
+					{% for sub in category.subcategories.all %}
+						{% if sub.id %}
 							<a href="{% url 'store:category' sub.id %}" class="badge rounded-pill bg-secondary text-white py-2 px-3 text-decoration-none">
 								{{ sub.title }}
 							</a>
-						{% endfor %}
+						{% else %}
+							<span class="badge rounded-pill bg-secondary text-white py-2 px-3">{{ sub.title }}</span>
+						{% endif %}
+					{% endfor %}
 					</div>
 				</div>
 			{% endif %}
