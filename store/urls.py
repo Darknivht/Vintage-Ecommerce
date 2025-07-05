@@ -1,5 +1,6 @@
 from django.urls import path
 from store import views
+from .api.flutterwave import get_flutterwave_banks
 
 app_name = "store"
 

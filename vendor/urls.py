@@ -6,6 +6,7 @@ app_name = "vendor"
 
 urlpatterns = [
     path("dashboard/", views.dashboard, name="dashboard"),
+    path('fetch-banks/<str:country_code>/', views.get_flutterwave_banks, name='fetch_flutterwave_banks'),
     path("bank-account/", vendor_views.add_bank_account, name="add_bank_account"),
     path("products/", views.products, name="products"),
     path("orders/", views.orders, name="orders"),

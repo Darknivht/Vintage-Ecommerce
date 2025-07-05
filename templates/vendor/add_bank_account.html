@@ -2,64 +2,161 @@
 {% load static %}
 
 {% block content %}
-<div class="container my-5">
-    <h3 class="mb-4">Add or Update Bank Account</h3>
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-
+<div class="container py-5">
+    <h2 class="mb-4">Add Bank Account</h2>
     <form method="POST">
         {% csrf_token %}
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label>Account Name</label>
-                <input type="text" name="account_name" class="form-control" required
-                    value="{{ account.account_name|default:'' }}">
-            </div>
 
-            <div class="col-md-6 mb-3">
-                <label>Account Number</label>
-                <input type="text" name="account_number" class="form-control" required
-                    value="{{ account.account_number|default:'' }}">
-            </div>
-
-            <div class="col-md-6 mb-3">
-                <label>Bank Name</label>
-                <input type="text" name="bank_name" class="form-control" required
-                    value="{{ account.bank_name|default:'' }}">
-            </div>
-
-            <div class="col-md-6 mb-3">
-                <label>Bank Code (Flutterwave)</label>
-                <input type="text" name="bank_code" class="form-control" required
-                    value="{{ account.bank_code|default:'' }}">
-                <small class="text-muted">e.g., Access Bank = 044, GTB = 058, etc.</small>
-            </div>
-
-            <div class="col-md-6 mb-3">
-                <label>Payout Method</label>
-                <select name="account_type" class="form-control" required>
-                    {% for value, label in payout_methods %}
-                        <option value="{{ value }}" {% if account.account_type == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-
-            <div class="col-md-6 mb-3">
-                <label>Your Share (%)</label>
-                <input type="text" class="form-control" readonly value="90%">
-                <small class="text-muted">This is the percentage you receive from each order.</small>
-            </div>
-
-            <div class="col-12 mt-4">
-                <button type="submit" class="btn bg-primary">Save Bank Account</button>
-                <a href="{% url 'vendor:dashboard' %}" class="btn btn-secondary">Cancel</a>
-            </div>
+        <div class="mb-3">
+            <label for="account_name" class="form-label">Account Name</label>
+            <input type="text" class="form-control" name="account_name" id="account_name" value="{{ account.account_name }}" required>
         </div>
+
+        <div class="mb-3">
+            <label for="account_number" class="form-label">Account Number</label>
+            <input type="text" class="form-control" name="account_number" id="account_number" value="{{ account.account_number }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="country" class="form-label">Country</label>
+            <select class="form-select" name="country" id="country-select" required>
+                <option value="">Select Country</option>
+                {% for code, name in country_choices %}
+                    <option value="{{ code }}" {% if account.country == code %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="bank_name" class="form-label">Bank</label>
+            <select class="form-select" name="bank_name" id="bank-select" required>
+                <option value="{{ account.bank_name }}" selected>{{ account.bank_name|default:'Select Bank' }}</option>
+            </select>
+            <input type="hidden" name="bank_code" id="bank-code" value="{{ account.bank_code }}">
+        </div>
+
+        <div class="mb-3 d-none" id="branch-wrapper">
+            <label for="branch-select" class="form-label">Bank Branch</label>
+            <select class="form-select" id="branch-select">
+                <option value="">Select Branch</option>
+            </select>
+            <input type="hidden" name="branch_code" id="branch-code" value="{{ account.branch_code }}">
+        </div>
+
+        <div class="mb-3">
+            <label for="currency" class="form-label">Currency</label>
+            <input type="text" class="form-control" name="currency" id="currency" value="{{ account.currency|default:'NGN' }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="account_type" class="form-label">Payout Method</label>
+            <select class="form-select" name="account_type" required>
+                {% for key, value in payout_methods %}
+                    <option value="{{ key }}" {% if account.account_type == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Bank Account</button>
     </form>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const countrySelect = document.getElementById("country-select");
+    const bankSelect = document.getElementById("bank-select");
+    const bankCodeInput = document.getElementById("bank-code");
+    const currencyInput = document.getElementById("currency");
+
+    const branchWrapper = document.getElementById("branch-wrapper");
+    const branchSelect = document.getElementById("branch-select");
+    const branchCodeInput = document.getElementById("branch-code");
+
+    const currencyMap = {
+        NG: "NGN",
+        GH: "GHS",
+        CI: "XOF",
+        SN: "XOF",
+        BJ: "XOF",
+        GLOBAL: "USD"
+    };
+
+    countrySelect.addEventListener("change", async function () {
+        const selectedCountry = this.value;
+        bankSelect.innerHTML = `<option value="">Loading banks...</option>`;
+        branchWrapper.classList.add("d-none");
+        branchSelect.innerHTML = `<option value="">Select Branch</option>`;
+        branchCodeInput.value = "";
+
+        currencyInput.value = currencyMap[selectedCountry] || "USD";
+
+        if (!selectedCountry || selectedCountry === "GLOBAL") {
+            bankSelect.innerHTML = `<option value="">No banks available</option>`;
+            return;
+        }
+
+        try {
+            const res = await fetch(`/vendor/fetch-banks/${selectedCountry}/`);
+            const data = await res.json();
+            bankSelect.innerHTML = `<option value="">Select Bank</option>`;
+
+            if (data.status === "success" && Array.isArray(data.banks)) {
+                data.banks.forEach(bank => {
+                    const option = document.createElement("option");
+                    option.value = bank.name;
+                    option.dataset.code = bank.code;
+                    option.dataset.id = bank.id || bank.code;
+                    option.textContent = bank.name;
+                    bankSelect.appendChild(option);
+                });
+            } else {
+                bankSelect.innerHTML = `<option value="">No banks found</option>`;
+            }
+        } catch (err) {
+            console.error("Error fetching banks:", err);
+            bankSelect.innerHTML = `<option value="">Failed to load banks</option>`;
+        }
+    });
+
+    bankSelect.addEventListener("change", async function () {
+        const selectedOption = this.options[this.selectedIndex];
+        bankCodeInput.value = selectedOption.dataset.code || "";
+
+        const selectedCountry = countrySelect.value;
+        const bankId = selectedOption.dataset.id;
+
+        branchWrapper.classList.add("d-none");
+        branchSelect.innerHTML = `<option value="">Select Branch</option>`;
+        branchCodeInput.value = "";
+
+        if (selectedCountry === "GH" && bankId) {
+            try {
+                const res = await fetch(`https://api.flutterwave.com/v2/banks/branches/${bankId}?public_key={{ flutterwave_private_key }}`);
+                const data = await res.json();
+
+                if (data.status === "success" && data.data?.Data?.length > 0) {
+                    branchWrapper.classList.remove("d-none");
+                    data.data.Data.forEach(branch => {
+                        const option = document.createElement("option");
+                        option.value = branch.BranchCode;
+                        option.textContent = branch.BranchName;
+                        branchSelect.appendChild(option);
+                    });
+                }
+            } catch (err) {
+                console.error("Error loading branches:", err);
+            }
+        }
+    });
+
+    branchSelect.addEventListener("change", function () {
+        branchCodeInput.value = this.value || "";
+    });
+
+    // If a country was pre-filled, auto-load banks
+    if (countrySelect.value) {
+        countrySelect.dispatchEvent(new Event("change"));
+    }
+});
+</script>
 {% endblock %}

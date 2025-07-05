@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'cloudinary',
     'cloudinary_storage',
+    'django_countries',
 
 ]
 

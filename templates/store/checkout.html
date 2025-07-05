@@ -301,6 +301,7 @@
   function payWithFlutterwave() {
     const subaccounts = {{ flutterwave_subaccounts_json|safe }};
 
+    console.log("Subaccounts being sent to Flutterwave:", subaccounts);
     FlutterwaveCheckout({
       public_key: "{{ flutterwave_public_key }}",
       tx_ref: "{{ order.order_id }}",

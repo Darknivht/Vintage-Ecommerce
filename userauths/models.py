@@ -1,12 +1,17 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django import forms
+import requests
+
 
 
 USER_TYPE = (
     ("Vendor", "Vendor"),
     ("Customer", "Customer"),
 )
+
+
 
 class User(AbstractUser):
     username = models.CharField(max_length=255, null=True, blank=True)
@@ -53,4 +58,3 @@ class ContactMessage(models.Model):
     
     class Meta:
         ordering = ['-date']
-    
