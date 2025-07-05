@@ -391,7 +391,8 @@ def checkout(request, order_id):
             bank_account = item.vendor.vendor.bankaccount
             if bank_account.flutterwave_subaccount_id:
                 flutterwave_subaccounts.append({
-                    "id": bank_account.flutterwave_subaccount_id
+                    "id": bank_account.flutterwave_subaccount_id,
+                    "transaction_split_ratio": int(bank_account.split_value)
                 })
         except:
             continue
