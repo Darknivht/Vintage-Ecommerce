@@ -75,7 +75,7 @@ class Category(models.Model):
 
     
 class Product(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=100)
     image = models.FileField(upload_to="images", blank=True, null=True, default="product.jpg")
     description = CKEditor5Field('Text', config_name='extends')
     
@@ -87,12 +87,12 @@ class Product(models.Model):
     stock = models.PositiveIntegerField(default=0, null=True, blank=True)
     shipping = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, null=True, blank=True, verbose_name="Shipping Amount")
     
-    status = models.CharField(choices=STATUS, max_length=200, default="Published")
+    status = models.CharField(choices=STATUS, max_length=50, default="Published")
     featured = models.BooleanField(default=False, verbose_name="Marketplace Featured")
     
     vendor = models.ForeignKey(user_models.User, on_delete=models.SET_NULL, null=True, blank=True)
     
-    sku = ShortUUIDField(unique=True, length=5, max_length=100, prefix="SKU", alphabet="1234567890")
+    sku = ShortUUIDField(unique=True, length=5, max_length=50, prefix="SKU", alphabet="1234567890")
     slug = models.SlugField(null=True, blank=True)
     
     date = models.DateTimeField(default=timezone.now)
