@@ -36,7 +36,7 @@
                                             <a href="{% url 'userauths:sign-in' %}"><i class="fas fa-user"></i></a>
                                         {% endif %}
                                     </li>
-                                    <li><a href="#"><i class="fas fa-heart text-white"></i><span class="dn-counter">2</span></a></li>
+                                    <li><a href="#"><i class="fas fa-heart text-white"></i><span class="dn-counter">{{ wishlist_count.count }}</span></a></li>
                                     <li><a href="{% url 'store:cart' %}"><i class="fas fa-shopping-basket"></i><span class="dn-counter total_cart_items">{{total_cart_items}}</span></a></li>
                                     <li>
                                         {% if request.user.is_authenticated %}

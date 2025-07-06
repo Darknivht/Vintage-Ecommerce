@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives, send_mail
 import json
+from django.shortcuts import get_object_or_404
 
 from decimal import Decimal
 import requests
@@ -98,7 +99,8 @@ def shop(request):
     return render(request, "store/shop.html", context)
 
 def category(request, id):
-    category = store_models.Category.objects.get(id=id)
+    category = get_object_or_404(store_models.Category, id=id)
+
 
     # Include products under this category and all its subcategories
     subcategories = category.subcategories.all()
