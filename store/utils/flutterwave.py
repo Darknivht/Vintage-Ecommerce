@@ -3,6 +3,7 @@ from django.conf import settings
 
 FLW_SECRET_KEY = settings.FLUTTERWAVE_PRIVATE_KEY
 
+
 def create_flutterwave_subaccount(
     account_name, account_number, bank_code,
     vendor_email, country, currency, split_value,
@@ -40,3 +41,46 @@ def create_flutterwave_subaccount(
 
     except requests.RequestException as e:
         raise Exception(f"Request failed: {str(e)}")
+
+
+def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_url, subaccount_id, vendor_share_percent):
+    """
+    Initiates a Flutterwave payment with split payment enabled to vendor's subaccount.
+    """
+    url = "https://api.flutterwave.com/v3/payments"
+    headers = {
+        "Authorization": f"Bearer {FLW_SECRET_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "tx_ref": tx_ref,
+        "amount": float(amount),
+        "currency": currency,
+        "redirect_url": redirect_url,
+        "payment_options": "card,banktransfer,ussd",
+        "customer": customer,
+        "customizations": {
+            "title": "Order Payment",
+            "description": "Payment for items in cart",
+        },
+        "subaccounts": [
+            {
+                "id": subaccount_id,
+                "transaction_charge_type": "percentage",
+                "transaction_charge": float(vendor_share_percent),
+            }
+        ]
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        data = response.json()
+
+        if data.get("status") == "success":
+            return data["data"]
+        else:
+            raise Exception(f"Flutterwave Payment Error: {data.get('message')} | Payload: {payload}")
+
+    except requests.RequestException as e:
+        raise Exception(f"Payment request failed: {str(e)}")

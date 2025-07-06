@@ -9,6 +9,7 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives, send_mail
 import json
 from django.shortcuts import get_object_or_404
+from store.utils.flutterwave import initiate_flutterwave_payment
 
 from decimal import Decimal
 import requests
@@ -385,19 +386,46 @@ def checkout(request, order_id):
     except:
         razorpay_order = None
 
-    # ✅ Move this above the context
+    # ✅ Split payment logic
     flutterwave_subaccounts = []
-
     for item in order.order_items():
+        vendor = item.vendor
         try:
-            bank_account = item.vendor.vendor.bankaccount
-            if bank_account.flutterwave_subaccount_id and bank_account.split_value:
-                flutterwave_subaccounts.append({
-                    "id": bank_account.flutterwave_subaccount_id,
-                    "transaction_split_ratio": int(bank_account.split_value)
-                })
-        except:
-            continue
+            bank_account = vendor.vendor.bankaccount
+            flutterwave_subaccounts.append({
+                "id": bank_account.flutterwave_subaccount_id,
+                "transaction_split_ratio": int(bank_account.split_value)
+            })
+        except Exception as e:
+            print(f"Skipping vendor {vendor}: {e}")
+
+    # Optional: build Flutterwave checkout link server-side
+    try:
+        vendor = order.order_items()[0].vendor
+        bank_account = vendor.vendor.bankaccount
+        customer = {
+            "email": order.address.email,
+            "name": order.address.full_name,
+            "phonenumber": order.address.mobile,
+        }
+
+        flutterwave_data = initiate_flutterwave_payment(
+            amount=order.total,
+            currency="NGN",
+            tx_ref=f"ORDER-{order.order_id}",
+            customer=customer,
+            redirect_url=request.build_absolute_uri(
+                reverse("store:flutterwave_payment_callback", args=[order.order_id])
+            ),
+            subaccount_id=bank_account.flutterwave_subaccount_id,
+            vendor_share_percent=bank_account.split_value
+        )
+
+        flutterwave_checkout_link = flutterwave_data.get("link")
+
+    except Exception as e:
+        flutterwave_checkout_link = None
+        print("Flutterwave error:", str(e))
 
     context = {
         "order": order,
@@ -410,10 +438,12 @@ def checkout(request, order_id):
         "razorpay_key_id": settings.RAZORPAY_KEY_ID,
         "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
         "flutterwave_public_key": settings.FLUTTERWAVE_PUBLIC_KEY,
-        "flutterwave_subaccounts_json": json.dumps(flutterwave_subaccounts),  # ✅ now it exists
+        "flutterwave_checkout_link": flutterwave_checkout_link,
+        "flutterwave_subaccounts_json": json.dumps(flutterwave_subaccounts),
     }
 
     return render(request, "store/checkout.html", context)
+
 
 @csrf_exempt
 def stripe_payment(request, order_id):
