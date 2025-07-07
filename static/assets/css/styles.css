@@ -6568,17 +6568,24 @@ footer.skin-dark-footer ul.footer-bottom-social li a:focus {
 }
 
 .product_grid {
-  height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-.shop_thumb img {
-  object-fit: contain;
+  justify-content: space-between;
   height: 100%;
-  width: 100%;
+  max-height: 420px;
 }
 
-.shop_thumb {
-  height: 230px;
+.product-image {
+  width: 100%;
+  height: 180px;
+  object-fit: contain;
+  background-color: #f9f9f9;
+  display: block;
+}
+
+@media (max-width: 576px) {
+  .col-6 {
+    flex: 0 0 auto;
+    width: 50%;
+  }
 }
