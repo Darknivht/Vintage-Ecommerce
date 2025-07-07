@@ -390,36 +390,32 @@ def checkout(request, order_id):
     except:
         razorpay_order = None
 
-    # ✅ Accurate subaccount split logic
-    # ✅ Accurate subaccount split logic
-    subaccount_totals = {}
+    # ✅ Proper percentage-based split using subaccounts
+    subaccount_percentages = {}
     for item in order.order_items():
         vendor = item.vendor
         try:
             bank_account = vendor.vendor.bankaccount
             sub_id = bank_account.flutterwave_subaccount_id
-            vendor_share_percent = bank_account.split_value or 90  # fallback to 90 if not set
+            vendor_share_percent = float(bank_account.split_value or 90)
 
-            vendor_amount = float(item.sub_total) * (vendor_share_percent / 100)
-
-            if sub_id in subaccount_totals:
-                subaccount_totals[sub_id] += vendor_amount
+            if sub_id in subaccount_percentages:
+                # Already exists, make sure it's same split percent (optional)
+                continue
             else:
-                subaccount_totals[sub_id] = vendor_amount
+                subaccount_percentages[sub_id] = vendor_share_percent
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
-
     flutterwave_subaccounts = []
-    for sub_id, total in subaccount_totals.items():
+    for sub_id, percent in subaccount_percentages.items():
         flutterwave_subaccounts.append({
             "id": sub_id,
-            "transaction_charge_type": "flat",
-            "transaction_charge": round(total, 2)
+            "transaction_charge_type": "percentage",
+            "transaction_charge": percent
         })
 
-    # ✅ Generate checkout link with all subaccounts
     try:
         customer = {
             "email": order.address.email,

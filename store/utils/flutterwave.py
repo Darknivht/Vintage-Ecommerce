@@ -49,7 +49,8 @@ def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_ur
     Each subaccount dict must include:
         {
             "id": str,  # subaccount ID
-            "transaction_split_ratio": float  # split ratio based on price
+            "transaction_charge_type": "percentage",
+            "transaction_charge": float  # e.g. 90.0 for 90%
         }
     """
     url = "https://api.flutterwave.com/v3/payments"
