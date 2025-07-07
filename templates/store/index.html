@@ -99,48 +99,58 @@
       </h1>
     </div>
 
-    <div class="row align-items-center rows-products">
-      {% for p in products %}
-      <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-        <div class="product_grid card b-0 rounded-3 shadow m-2 p-2 h-100">
-          <div class="card-body p-0">
-            <div class="shop_thumb position-relative">
-              <a class="card-img-top d-block overflow-hidden" href="{% url 'store:product_detail' p.slug %}">
-                <img class="card-img-top" style="width: 100%; height: 230px; object-fit: cover;" src="{{p.image.url}}" alt="{{ p.name }}" />
-              </a>
+<div class="row align-items-stretch rows-products">
+  {% for p in products %}
+  <div class="col-lg-3 col-md-4 col-6 mb-4">
+    <div class="product_grid card b-0 rounded-3 shadow m-2 p-2 h-100">
+      <div class="card-body p-0 d-flex flex-column">
+        <div class="shop_thumb position-relative text-center" style="height: 230px;">
+          <a class="card-img-top d-block overflow-hidden h-100" href="{% url 'store:product_detail' p.slug %}">
+            <img 
+              class="h-100" 
+              style="max-width: 100%; object-fit: contain;" 
+              src="{{ p.image.url }}" 
+              alt="{{ p.name }}" 
+            />
+          </a>
+        </div>
+        <div class="card-footer b-0 p-0 pt-2 bg-white mt-auto">
+          <div class="text-left">
+            <div class="elso_titl">
+              <span class="small">
+                <a href="{% url 'store:category' p.category.id %}">{{ p.category.title }}</a>
+              </span>
             </div>
-          </div>
-          <div class="card-footer b-0 p-0 pt-2 bg-white">
-            <div class="text-left">
-              <div class="elso_titl">
-                <span class="small"><a href="{% url 'store:category' p.category.id %}">{{p.category.title}}</a></span>
-              </div>
-              <h5 class="fs-md mb-0 lh-1 mb-1">
-                <a href="{% url 'store:product_detail' p.slug %}">{{p.name}}</a>
-              </h5>
-              <div class="star-rating align-items-center d-flex justify-content-start mt-2 mb-2 p-0">
-                {% for i in "12345" %}
-                  {% if i|add:'0' <= p.average_rating %}
-                    <i class="fas fa-star text-warning"></i>
-                  {% endif %}
-                {% endfor %}
-              </div>
-              <div class="elis_rty"><span class="ft-bold text-dark fs-sm">₦{{p.price}}</span></div>
-              <div class="d-flex align-items-center gap-3 mt-2">
-                <button type="button" class="btn btn-sm bg-primary text-white rounded add_to_cart" data-id="{{p.id}}">
-                  Add to cart <i class="fas fa-shopping-cart ms-2"></i>
-                </button>
-                <input type="hidden" class="quantity" value="1" />
-                <a href="#" class="add_to_wishlist" data-product_id="{{p.id}}">
-                  <i class="fas fa-heart fs-4 text-dark"></i>
-                </a>
-              </div>
+            <h5 class="fs-md mb-0 lh-1 mb-1">
+              <a href="{% url 'store:product_detail' p.slug %}">{{ p.name }}</a>
+            </h5>
+            <div class="star-rating align-items-center d-flex justify-content-start mt-2 mb-2 p-0">
+              {% for i in "12345" %}
+                {% if i|add:'0' <= p.average_rating %}
+                  <i class="fas fa-star text-warning"></i>
+                {% endif %}
+              {% endfor %}
+            </div>
+            <div class="elis_rty">
+              <span class="ft-bold text-dark fs-sm">₦{{ p.price }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-3 mt-2">
+              <button type="button" class="btn btn-sm bg-primary text-white rounded add_to_cart" data-id="{{ p.id }}">
+                Add to cart <i class="fas fa-shopping-cart ms-2"></i>
+              </button>
+              <input type="hidden" class="quantity" value="1" />
+              <a href="#" class="add_to_wishlist" data-product_id="{{ p.id }}">
+                <i class="fas fa-heart fs-4 text-dark"></i>
+              </a>
             </div>
           </div>
         </div>
       </div>
-      {% endfor %}
     </div>
+  </div>
+  {% endfor %}
+</div>
+
 
     <div class="text-center mt-5">
       <a href="{% url 'store:shop' %}" class="btn bg-dark text-light rounded btn-sm">Shop Now <i class="fas fa-arrow-right ms-2"></i></a>
