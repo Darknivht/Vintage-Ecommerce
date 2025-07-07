@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from django import forms
 import requests
+from cloudinary.models import CloudinaryField
 
 
 
@@ -32,7 +33,7 @@ class User(AbstractUser):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='accounts/users', default='default/default-user.jpg', null=True, blank=True)
+    image = CloudinaryField(folder='accounts/users', null=True, blank=True)
     full_name = models.CharField(max_length=255, null=True, blank=True)
     mobile = models.CharField(max_length=255, null=True, blank=True)
     user_type = models.CharField(max_length=255, choices=USER_TYPE, null=True, blank=True, default=None)

@@ -3,6 +3,7 @@ from userauths import models as userauths_models
 from django.utils.text import slugify
 from django_ckeditor_5.fields import CKEditor5Field
 from django.utils import timezone
+from cloudinary.models import CloudinaryField
 
 STATUS_CHOICES = [
     ('Draft', 'Draft'),
@@ -22,7 +23,7 @@ class Category(models.Model):
         return self.name
 
 class Blog(models.Model):
-    image = models.ImageField(upload_to='blog_images', blank=True, null=True)
+    image = CloudinaryField(folder='blog_images', blank=True, null=True)
     title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=350, unique=True, blank=True)
     author = models.ForeignKey(userauths_models.User, on_delete=models.CASCADE)

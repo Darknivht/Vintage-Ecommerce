@@ -4,6 +4,7 @@ from userauths.models import User
 from django.utils.text import slugify
 from django.conf import settings
 import requests
+from cloudinary.models import CloudinaryField
 
 # Helper: Get supported countries for dropdown
 def get_supported_flutterwave_countries():
@@ -89,7 +90,7 @@ NOTIFICATION_EVENT = (
 
 class Vendor(models.Model):
     user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, related_name="vendor")
-    image = models.ImageField(upload_to="images", default="shop-image.jpg", blank=True)
+    image = CloudinaryField(folder="images", blank=True)
     store_name = models.CharField(max_length=100, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     country = models.CharField(max_length=100, null=True, blank=True)

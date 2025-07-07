@@ -16,6 +16,9 @@ from environs import Env
 import os
 from django.contrib import messages
 import dj_database_url
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 env = Env()  
 env.read_env()  

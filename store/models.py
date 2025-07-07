@@ -3,6 +3,7 @@ from shortuuid.django_fields import ShortUUIDField
 from django.utils import timezone
 from django.utils.text import slugify
 from django_ckeditor_5.fields import CKEditor5Field
+from cloudinary.models import CloudinaryField
 
 from userauths import models as user_models
 from vendor import models as vendor_models
@@ -55,7 +56,7 @@ RATING = (
 
 class Category(models.Model):
     title = models.CharField(max_length=100, blank=False)
-    image = models.ImageField(upload_to="images", default="category.jpg", null=True, blank=True)
+    image = CloudinaryField(folder="images", null=True, blank=True)
     slug = models.SlugField(unique=True)
     parent = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="subcategories")
 
@@ -76,7 +77,7 @@ class Category(models.Model):
     
 class Product(models.Model):
     name = models.CharField(max_length=100)
-    image = models.FileField(upload_to="images", blank=True, null=True, default="product.jpg")
+    image = CloudinaryField(folder="images", blank=True, null=True)
     description = CKEditor5Field('Text', config_name='extends')
     
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
@@ -145,7 +146,7 @@ class VariantItem(models.Model):
     
 class Gallery(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True)
-    image = models.FileField(upload_to="images", default="gallery.jpg")
+    image = CloudinaryField(folder="images")
     gallery_id = ShortUUIDField(length=6, max_length=10, alphabet="1234567890")
 
     def __str__(self):
