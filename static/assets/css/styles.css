@@ -6566,3 +6566,19 @@ footer.skin-dark-footer ul.footer-bottom-social li a:focus {
     background-color: #FFFFFF;
     color: #333c56;
 }
+
+.product_grid {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.shop_thumb img {
+  object-fit: contain;
+  height: 100%;
+  width: 100%;
+}
+
+.shop_thumb {
+  height: 230px;
+}
