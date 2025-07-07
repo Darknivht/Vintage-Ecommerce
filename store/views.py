@@ -373,6 +373,7 @@ def coupon_apply(request, order_id):
         return redirect("store:checkout", order.order_id)
 
 
+
 @login_required
 def checkout(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
@@ -390,30 +391,31 @@ def checkout(request, order_id):
     except:
         razorpay_order = None
 
-    # ✅ Proper percentage-based split using subaccounts
-    subaccount_percentages = {}
+    # ✅ Accurate per-product vendor split logic
+    vendor_amounts = {}
     for item in order.order_items():
         vendor = item.vendor
         try:
             bank_account = vendor.vendor.bankaccount
             sub_id = bank_account.flutterwave_subaccount_id
             vendor_share_percent = float(bank_account.split_value or 90)
+            vendor_share = float(item.sub_total) * (vendor_share_percent / 100)
 
-            if sub_id in subaccount_percentages:
-                # Already exists, make sure it's same split percent (optional)
-                continue
+            if sub_id in vendor_amounts:
+                vendor_amounts[sub_id] += vendor_share
             else:
-                subaccount_percentages[sub_id] = vendor_share_percent
-
+                vendor_amounts[sub_id] = vendor_share
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
+    # Convert vendor_amounts to percentage of full order
     flutterwave_subaccounts = []
-    for sub_id, percent in subaccount_percentages.items():
+    for sub_id, amount in vendor_amounts.items():
+        percent = (amount / order.total) * 100
         flutterwave_subaccounts.append({
             "id": sub_id,
             "transaction_charge_type": "percentage",
-            "transaction_charge": percent
+            "transaction_charge": round(percent, 2)
         })
 
     try:
@@ -456,7 +458,6 @@ def checkout(request, order_id):
     }
 
     return render(request, "store/checkout.html", context)
-
 
 @csrf_exempt
 def stripe_payment(request, order_id):
