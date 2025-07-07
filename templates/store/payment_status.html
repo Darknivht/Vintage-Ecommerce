@@ -7,9 +7,9 @@
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="/">Home</a></li>
-                        <li class="breadcrumb-item"><a href="/shop.html">Shop</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'store:shop' %}">Shop</a></li>
                         <li class="breadcrumb-item"><a href="{% url 'store:cart' %}">Cart</a></li>
-                        <li class="breadcrumb-item"><a href="/checkout.html">Checkout</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'store:checkout' %}">Checkout</a></li>
                         <li class="breadcrumb-item active" aria-current="page">Payment Status</li>
                     </ol>
                 </nav>

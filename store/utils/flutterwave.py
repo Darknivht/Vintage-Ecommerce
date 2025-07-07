@@ -43,9 +43,14 @@ def create_flutterwave_subaccount(
         raise Exception(f"Request failed: {str(e)}")
 
 
-def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_url, subaccount_id, vendor_share_percent):
+def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_url, subaccounts):
     """
-    Initiates a Flutterwave payment with split payment enabled to vendor's subaccount.
+    Initiates a Flutterwave payment with multiple subaccount splits.
+    Each subaccount dict must include:
+        {
+            "id": str,  # subaccount ID
+            "transaction_split_ratio": float  # split ratio based on price
+        }
     """
     url = "https://api.flutterwave.com/v3/payments"
     headers = {
@@ -61,16 +66,10 @@ def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_ur
         "payment_options": "card,banktransfer,ussd",
         "customer": customer,
         "customizations": {
-            "title": "Order Payment",
-            "description": "Payment for items in cart",
+            "title": "Vintage Store Payment",
+            "description": f"Order split for {len(subaccounts)} vendors",
         },
-        "subaccounts": [
-            {
-                "id": subaccount_id,
-                "transaction_charge_type": "percentage",
-                "transaction_charge": float(vendor_share_percent),
-            }
-        ]
+        "subaccounts": subaccounts
     }
 
     try:

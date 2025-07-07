@@ -298,31 +298,31 @@
 </script>
 
 <script>
-  function payWithFlutterwave() {
-    const subaccounts = {{ flutterwave_subaccounts_json|safe }};
+ function payWithFlutterwave() {
+  const subaccounts = {{ flutterwave_subaccounts_json|safe }};
 
-    console.log("Subaccounts being sent to Flutterwave:", subaccounts);
-    FlutterwaveCheckout({
-      public_key: "{{ flutterwave_public_key }}",
-      tx_ref: "{{ order.order_id }}",
-      amount: {{ amount_in_usd|floatformat:"2" }},
-      currency: "NGN",
-      payment_options: "card, banktransfer, ussd",
-      customer: {
-        email: "{{ order.address.email }}",
-        name: "{{ order.address.full_name }}"
-      },
-      callback: function (data) {
-        window.location.href = "/flutterwave_payment_callback/{{ order.order_id }}/?payment_method=Flutterwave&tx_ref=" + data.tx_ref;
-      },
-      customizations: {
-        title: "Vintage Store",
-        description: "Payment for Order {{ order.order_id }}",
-        logo: "https://your-logo-url.com/logo.png"
-      },
-      subaccounts: subaccounts
-    });
-  }
+  console.log("Subaccounts being sent to Flutterwave:", subaccounts);
+  FlutterwaveCheckout({
+    public_key: "{{ flutterwave_public_key }}",
+    tx_ref: "{{ order.order_id }}",
+    amount: {{ order.total|floatformat:"2" }},  // ✅ Use correct NGN amount
+    currency: "NGN",
+    payment_options: "card, banktransfer, ussd",
+    customer: {
+      email: "{{ order.address.email }}",
+      name: "{{ order.address.full_name }}"
+    },
+    callback: function (data) {
+      window.location.href = "/flutterwave_payment_callback/{{ order.order_id }}/?payment_method=Flutterwave&tx_ref=" + data.tx_ref;
+    },
+    customizations: {
+      title: "Vintage Store",
+      description: "Payment for Order {{ order.order_id }}",
+      logo: "https://your-logo-url.com/logo.png"
+    },
+    subaccounts: subaccounts
+  });
+}
 </script>
 
 

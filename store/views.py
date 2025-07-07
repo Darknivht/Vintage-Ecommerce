@@ -11,6 +11,7 @@ import json
 from django.shortcuts import get_object_or_404
 from store.utils.flutterwave import initiate_flutterwave_payment
 
+
 from decimal import Decimal
 import requests
 import stripe
@@ -370,6 +371,8 @@ def coupon_apply(request, order_id):
         messages.success(request, "Coupon Activated")
         return redirect("store:checkout", order.order_id)
 
+
+@login_required
 def checkout(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
 
@@ -386,23 +389,34 @@ def checkout(request, order_id):
     except:
         razorpay_order = None
 
-    # ✅ Split payment logic
-    flutterwave_subaccounts = []
+    # ✅ Accurate subaccount split logic
+    subaccount_totals = {}
     for item in order.order_items():
         vendor = item.vendor
+        vendor_total = float(item.sub_total)
+
         try:
             bank_account = vendor.vendor.bankaccount
-            flutterwave_subaccounts.append({
-                "id": bank_account.flutterwave_subaccount_id,
-                "transaction_split_ratio": int(bank_account.split_value)
-            })
+            sub_id = bank_account.flutterwave_subaccount_id
+
+            if sub_id in subaccount_totals:
+                subaccount_totals[sub_id] += vendor_total
+            else:
+                subaccount_totals[sub_id] = vendor_total
+
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
-    # Optional: build Flutterwave checkout link server-side
+    flutterwave_subaccounts = []
+    for sub_id, total in subaccount_totals.items():
+        flutterwave_subaccounts.append({
+            "id": sub_id,
+            "transaction_charge_type": "flat",
+            "transaction_charge": round(total, 2)
+        })
+
+    # ✅ Generate checkout link with all subaccounts
     try:
-        vendor = order.order_items()[0].vendor
-        bank_account = vendor.vendor.bankaccount
         customer = {
             "email": order.address.email,
             "name": order.address.full_name,
@@ -417,8 +431,7 @@ def checkout(request, order_id):
             redirect_url=request.build_absolute_uri(
                 reverse("store:flutterwave_payment_callback", args=[order.order_id])
             ),
-            subaccount_id=bank_account.flutterwave_subaccount_id,
-            vendor_share_percent=bank_account.split_value
+            subaccounts=flutterwave_subaccounts
         )
 
         flutterwave_checkout_link = flutterwave_data.get("link")

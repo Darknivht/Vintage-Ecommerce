@@ -166,11 +166,11 @@
                                 <div class="footer_widget">
                                     <h4 class="widget_title">Supports</h4>
                                     <ul class="footer-menu">
-                                        <li><a href="#">Contact Us</a></li>
-                                        <li><a href="#">About Page</a></li>
-                                        <li><a href="#">FAQ's Page</a></li>
-                                        <li><a href="#">Privacy Policy</a></li>
-                                        <li><a href="#">Terms and Conditions</a></li>
+                                        <li><a href="{% url 'store:contact' %}">Contact Us</a></li>
+                                        <li><a href="{% url 'store:about' %}">About Page</a></li>
+                                        <li><a href="{% url 'store:faqs' %}">FAQ's Page</a></li>
+                                        <li><a href="#{% url 'store:privacy_policy' %}">Privacy Policy</a></li>
+                                        <li><a href="{% url 'store:terms_conditions' %}">Terms and Conditions</a></li>
                                     </ul>
                                 </div>
                             </div>
