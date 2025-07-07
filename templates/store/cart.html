@@ -33,34 +33,59 @@
                     <h4 class="fw-bold p-3">Cart items</h4>
                     <div style="overflow-y: scroll; max-height: 650px; overflow-x: hidden" class="p-3">
                         {% for item in items %}
-                            <div class="shadow rounded mb-3 item_div_{{item.id}}">
-                                <div class="row d-flex align-items-center p-3">
-                                    <div class="col-lg-4 d-flex gap-3">
-                                        <img src="{{item.product.image.url}}" alt="" style="width: 100px; height: 100px; object-fit: cover" />
-                                        <div class="p-2">
-                                            <h5>{{item.product.name}}</h5>
-                                            <p class="mb-0 mt-0">Price: ₦{{item.price|intcomma}}</p>
-                                            <p class="mb-0 mt-0">Vendor: {{item.product.vendor.profile.full_name}}</p>
-                                        </div>
-                                    </div> 
-                                    <div class="col-lg-2">
-                                        <h4 class="fs-3">₦{{ item.price|intcomma }}</h4>
-                                    </div>
-                                    <div class="col-lg-2 d-flex">
-                                        <button type="button" class="btn bg-primary text-white btn-sm update_cart_qty" data-update_type="decrease" data-product_id="{{item.product.id}}" data-item_id="{{item.id}}">-</button>
-                                        <input type="number" readonly class="form-control form-sm item-qty-{{item.id}}" value="{{item.qty}}" name="" id="" />
-                                        <button type="button" class="btn bg-primary text-white btn-sm update_cart_qty" data-update_type="increase" data-product_id="{{item.product.id}}" data-item_id="{{item.id}}">+</button>
-                                    </div>
-                                    <div class="col-lg-2">
-                                        <h4 class="fs-3 mb-0">₦<span class="item_sub_total_{{item.id}}">{{item.sub_total|intcomma}}</span></h4>
-                                    </div>
-                                    <div class="col-lg-2">
-                                        <button type="button" class="btn bg-danger text-white btn-sm rounded delete_cart_item" data-item_id="{{item.id}}" data-product_id="{{item.product.id}}" ><i class="fas fa-trash"></i></button>
-                                    </div>
+                        <div class="shadow rounded mb-3 item_div_{{item.id}}">
+                            <div class="row align-items-center p-3 gx-3 gy-2">
+
+                            <!-- 🖼 Product Info -->
+                            <div class="col-lg-4 d-flex gap-3">
+                                <img src="{{item.product.image.url}}" alt="" style="width: 100px; height: 100px; object-fit: cover;" />
+                                <div class="p-2">
+                                <h5 class="mb-1">{{ item.product.name }}</h5>
+                                <p class="mb-0">Price: ₦{{ item.price }}</p>
+                                <p class="mb-0">Vendor: {{ item.product.vendor.profile.full_name }}</p>
                                 </div>
                             </div>
+
+                            <!-- 💵 Unit Price -->
+                            <div class="col-lg-2 text-center">
+                                <small class="text-muted d-block mb-1">Price</small>
+                                <h5 class="fs-6 mb-0">₦{{ item.price }}</h5>
+                            </div>
+
+                            <!-- 🔢 Quantity Control -->
+                            <div class="col-lg-2">
+                                <small class="text-muted d-block mb-1 text-center">Quantity</small>
+                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                <button type="button" class="btn btn-sm bg-primary text-white update_cart_qty"
+                                        data-update_type="decrease" data-product_id="{{item.product.id}}" data-item_id="{{item.id}}">
+                                    -
+                                </button>
+                                <input type="number" readonly class="form-control text-center item-qty-{{item.id}}"
+                                        value="{{item.qty}}" style="width: 60px;" />
+                                <button type="button" class="btn btn-sm bg-primary text-white update_cart_qty"
+                                        data-update_type="increase" data-product_id="{{item.product.id}}" data-item_id="{{item.id}}">
+                                    +
+                                </button>
+                                </div>
+                            </div>
+
+                            <!-- 🧾 Subtotal -->
+                            <div class="col-lg-2 text-center">
+                                <small class="text-muted d-block mb-1">Total</small>
+                                <h5 class="fs-6 mb-0">₦<span class="item_sub_total_{{item.id}}">{{ item.sub_total }}</span></h5>
+                            </div>
+
+                            <!-- 🗑 Delete Button -->
+                            <div class="col-lg-2 d-flex justify-content-end align-items-center">
+                                <button type="button" class="btn bg-danger text-white btn-sm rounded delete_cart_item"
+                                        data-item_id="{{item.id}}" data-product_id="{{item.product.id}}">
+                                <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+
+                            </div>
+                        </div>
                         {% endfor %}
-                    </div>
 
                     <div class="p-3">
                     <h4 class="fw-bold mb-3">Shipping Detail</h4>

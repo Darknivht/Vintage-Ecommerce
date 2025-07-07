@@ -10,6 +10,7 @@ from django.core.mail import EmailMultiAlternatives, send_mail
 import json
 from django.shortcuts import get_object_or_404
 from store.utils.flutterwave import initiate_flutterwave_payment
+from django.contrib.auth.decorators import login_required
 
 
 from decimal import Decimal
