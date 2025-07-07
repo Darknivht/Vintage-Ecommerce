@@ -142,7 +142,6 @@ USE_I18N = True
 USE_TZ = True
 
 
-postgresql://vintage_ecommerce_user:nI8V7TjdlnPLXyDtVp58GLjcfEO75Nri@dpg-d1icui6r433s73ad59fg-a/vintage_ecommerce
 
 
 # Static files (CSS, JavaScript, Images)
