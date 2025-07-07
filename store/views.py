@@ -391,22 +391,25 @@ def checkout(request, order_id):
         razorpay_order = None
 
     # ✅ Accurate subaccount split logic
+    # ✅ Accurate subaccount split logic
     subaccount_totals = {}
     for item in order.order_items():
         vendor = item.vendor
-        vendor_total = float(item.sub_total)
-
         try:
             bank_account = vendor.vendor.bankaccount
             sub_id = bank_account.flutterwave_subaccount_id
+            vendor_share_percent = bank_account.split_value or 90  # fallback to 90 if not set
+
+            vendor_amount = float(item.sub_total) * (vendor_share_percent / 100)
 
             if sub_id in subaccount_totals:
-                subaccount_totals[sub_id] += vendor_total
+                subaccount_totals[sub_id] += vendor_amount
             else:
-                subaccount_totals[sub_id] = vendor_total
+                subaccount_totals[sub_id] = vendor_amount
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
+
 
     flutterwave_subaccounts = []
     for sub_id, total in subaccount_totals.items():
