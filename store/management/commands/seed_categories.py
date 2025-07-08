@@ -7,31 +7,11 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         categories = {
-            "Electronics": [
-                "Smartphones",
-                "Tablet PCs",
-                "Mobile Accessories",
-                "Laptops",
-                "Desktop Computers",
-                "Printers & Scanners",
-                "Computer Accessories",
-                "Monitors",
-                "Camera & Photography",
-                "Projectors",
-                "TV & Audio",
-                "Video Games & Consoles",
-            ],
-            "Home Appliances": [
-                "Refrigerators",
-                "Freezers",
-                "Air Conditioners",
-                "Microwaves",
-                "Washing Machines",
-                "Vacuum Cleaners",
-                "Blenders & Grinders",
-                "Electric Kettles",
-                "Toasters",
-                "Fans & Heaters"
+            "Furniture and Fittings": [
+                "Kitchens",
+                "Gardenings",
+                "Beddings",
+                "Sofas"
             ],
             "Fashion": [
                 "Men's Clothing",
@@ -39,142 +19,95 @@ class Command(BaseCommand):
                 "Watches & Accessories",
                 "Women's Clothing",
                 "Women's Shoes",
+                "Children Wears",
                 "Bags & Handbags",
                 "Jewelry",
-                "Underwear & Lingerie",
+                "Underwear",
                 "Traditional Wear",
                 "Eyewear"
             ],
-            "Gaming": [
-                "PlayStation",
-                "Xbox",
-                "Nintendo",
-                "Gaming Accessories",
-                "Controllers & Gamepads",
-                "Gaming Laptops",
-                "Virtual Reality"
+            "Building Materials": [
+                "Electrical & Solar System",
+                "Plumbings",
+                "Cements",
+                "Roofing Materials",
+                "Doors & Windows"
             ],
-            "Health & Beauty": [
-                "Fragrances",
-                "Makeup",
-                "Skincare",
-                "Hair Care",
-                "Bath & Body",
-                "Men's Grooming",
-                "Health & Wellness",
-                "Vitamins & Supplements"
+            "Trucks & Vehicles": [
+                "Mercedes Benz",
+                "BMW",
+                "Toyota",
+                "Hyundai",
+                "Honda",
+                "Volkswagen",
+                "Ford",
+                "Chevrolet",
+                "Lexus",
+                "New Vehicles",
+                "Used Vehicles",
+                "Motorcycles",
+                "Spare Parts"
             ],
-            "Baby, Kids & Toys": [
-                "Baby Gear",
-                "Diapers & Wipes",
-                "Kids Clothing",
-                "Toys & Games",
-                "Feeding & Nursing",
-                "Maternity Wear"
+            "Agricultural": [
+                "Fertilizer & Chemicals",
+                "Tractors & Farming Equipment", 
+                "Grains & Vegetables",
+                "Poultry, Animals & Animals Feeds",
+                "Veterinary", 
+                "Pets"
             ],
-            "Home & Office": [
-                "Furniture",
-                "Kitchen & Dining",
-                "Beddings",
-                "Curtains & Blinds",
-                "Lighting",
-                "Decor",
-                "Storage & Organization",
-                "Office Equipment"
+            "Aviation": [
+                "Aircrafts",
+                "Ground Handling Equipment ",
+                "Airline Tickets & Bookings "
             ],
-            "Grocery": [
-                "Food Cupboard",
-                "Beverages",
-                "Household Supplies",
+            "Shipping": [
+                "VLCC",
+                "Clearing & Forwarding",
+                "Ports & Inland Dry Ports",
                 "Cleaning Items",
                 "Breakfast",
                 "Grains & Pasta",
                 "Cooking Ingredients"
             ],
-            "Automobiles & Motorcycles": [
-                "Cars",
-                "Motorcycles",
-                "Spare Parts",
-                "Oils & Fluids",
-                "Tyres & Rims",
-                "Tools & Equipment",
-                "GPS & Security"
-            ],
-            "Books, Music & Movies": [
-                "Books",
-                "Musical Instruments",
-                "Educational Materials",
-                "eBooks",
-                "Movies & DVDs"
-            ],
-            "Sports & Fitness": [
-                "Exercise & Fitness",
-                "Indoor Games",
-                "Outdoor Sports",
-                "Sportswear",
-                "Cycling",
-                "Swimming",
-                "Camping & Hiking"
-            ],
-            "Industrial & Scientific": [
-                "Measurement & Test Tools",
-                "Lab Equipment",
-                "Industrial Supplies",
-                "Security & Surveillance",
-                "Safety Products"
-            ],
-            "Building Materials & Tools": [
-                "Cement",
-                "Paint & Coatings",
-                "Doors & Windows",
-                "Roofing Materials",
-                "Solar Panels",
-                "Power Tools",
-                "Plumbing Materials",
-                "Electrical Supplies"
-            ],
-            "Agriculture": [
-                "Seeds & Fertilizers",
-                "Farming Equipment",
-                "Poultry & Livestock",
-                "Animal Feeds",
-                "Veterinary Supplies",
-                "Tractors",
-                "Grains & Produce"
-            ],
-            "Furniture & Fittings": [
-                "Living Room Furniture",
-                "Bedroom Furniture",
-                "Office Furniture",
-                "Kitchen Furniture",
-                "Outdoor Furniture",
-                "Decorative Items"
-            ],
-            "Jobs & Services": [
-                "Job Vacancies",
-                "Freelance Services",
-                "Home Services",
-                "Repair & Maintenance",
-                "Tutoring & Education"
-            ],
-            "Aviation & Travel": [
-                "Flight Bookings",
-                "Aircraft Parts",
-                "Ground Handling Equipment",
-                "Charter Services"
-            ],
-            "Shipping & Logistics": [
-                "Containers",
-                "Shipping Vessels",
-                "Delivery Services",
-                "Freight & Forwarding",
-                "Inland Dry Ports"
-            ],
-            "Pet Supplies": [
-                "Pet Food",
-                "Pet Toys",
-                "Animal Health",
-                "Pet Accessories"
+            "Lands & Houses": [
+                "Abuja",
+                "Abia",
+                "Adamawa",
+                "Akwa Ibom",
+                "Anambra",
+                "Bauchi",
+                "Bayelsa",
+                "Benue",
+                "Borno",
+                "Cross",
+                "Delta",
+                "Ebonyi",
+                "Edo",
+                "Ekiti",
+                "Enugu",
+                "Gombe",
+                "Imo",
+                "Jigawa",
+                "Kaduna",
+                "Kano",
+                "Katsina",
+                "Kebbi",
+                "Kogi",
+                "Kwara",
+                "Lagos",
+                "Nassarawa",
+                "Niger",
+                "Ogun",
+                "Ondo",
+                "Osun",
+                "Oyo",
+                "Plateau"
+                "Rivers",
+                "Sokoto",
+                "Taraba",
+                "Yobe",
+                "Zamfara"
             ],
         }
 
