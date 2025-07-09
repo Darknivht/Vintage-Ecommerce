@@ -385,7 +385,7 @@ def checkout(request, order_id):
 
     # ✅ Accurate per-product vendor split logic (using flat amount)
     vendor_amounts = {}
-    for item in order.order_items.all():
+    for item in order.order_items():
         vendor = item.vendor
         try:
             bank_account = vendor.vendor.bankaccount
