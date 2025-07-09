@@ -375,41 +375,46 @@ def coupon_apply(request, order_id):
 
 
 @login_required
-
-@login_required
 def checkout(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
 
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
 
-    # ✅ Accurate per-product vendor split logic (using flat amount)
-    vendor_amounts = {}
+    # ✅ Step 1: Calculate earnings per vendor (90%) and platform commission (10%)
+    vendor_totals = {}
+    platform_share = 0
+
     for item in order.order_items():
         vendor = item.vendor
         try:
             bank_account = vendor.vendor.bankaccount
             sub_id = bank_account.flutterwave_subaccount_id
             vendor_share_percent = float(bank_account.split_value or 90)
-            vendor_share = float(item.sub_total) * (vendor_share_percent / 100)
+            vendor_amount = float(item.sub_total) * (vendor_share_percent / 100)
 
-            if sub_id in vendor_amounts:
-                vendor_amounts[sub_id] += vendor_share
+            if sub_id in vendor_totals:
+                vendor_totals[sub_id] += vendor_amount
             else:
-                vendor_amounts[sub_id] = vendor_share
+                vendor_totals[sub_id] = vendor_amount
+
+            platform_share += float(item.sub_total) * (1 - vendor_share_percent / 100)
+
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
-    # 🔁 Format subaccounts with FLAT charge so each vendor gets exact amount
+    # ✅ Step 2: Convert totals to ratio-based split
+    split_total = sum(vendor_totals.values()) + platform_share
+
     flutterwave_subaccounts = []
-    for sub_id, amount in vendor_amounts.items():
+    for sub_id, amount in vendor_totals.items():
+        ratio = (amount / split_total) * 100
         flutterwave_subaccounts.append({
             "id": sub_id,
-            "transaction_charge_type": "flat",
-            "transaction_charge": round(amount, 2)
+            "transaction_split_ratio": round(ratio, 2)
         })
 
-    # ✅ Prepare and initiate Flutterwave payment
+    # ✅ Step 3: Initiate Flutterwave Payment
     try:
         customer = {
             "email": order.address.email,
@@ -434,20 +439,19 @@ def checkout(request, order_id):
         flutterwave_checkout_link = None
         print("Flutterwave error:", str(e))
 
-    # ✅ Final context (no razorpay, no stripe if not needed)
+    # ✅ Step 4: Render checkout page
     context = {
         "order": order,
         "amount_in_kobo": amount_in_kobo,
         "amount_in_usd": round(amount_in_usd, 2),
         "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
-        "stripe_public_key": settings.STRIPE_PUBLIC_KEY,
-        "paypal_client_id": settings.PAYPAL_CLIENT_ID,
         "flutterwave_public_key": settings.FLUTTERWAVE_PUBLIC_KEY,
         "flutterwave_checkout_link": flutterwave_checkout_link,
         "flutterwave_subaccounts_json": json.dumps(flutterwave_subaccounts),
     }
 
     return render(request, "store/checkout.html", context)
+
 
 
 @csrf_exempt

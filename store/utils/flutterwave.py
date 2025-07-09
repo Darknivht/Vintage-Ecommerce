@@ -1,5 +1,6 @@
 import requests
 from django.conf import settings
+from store.models import Order
 
 FLW_SECRET_KEY = settings.FLUTTERWAVE_PRIVATE_KEY
 
@@ -84,3 +85,49 @@ def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_ur
 
     except requests.RequestException as e:
         raise Exception(f"Payment request failed: {str(e)}")
+
+
+def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
+    """
+    Calculates vendor payouts using flat amounts.
+    Returns a list of Flutterwave-compatible subaccounts:
+    [
+        {"id": "RS_XXX", "transaction_charge_type": "flat", "transaction_charge": 1350.00},
+        ...
+    ]
+    """
+    subaccount_amounts = {}
+
+    for item in order.order_items():
+        vendor = item.vendor
+
+        if not vendor:
+            continue
+
+        try:
+            bank_account = vendor.vendor.bankaccount
+            subaccount_id = bank_account.flutterwave_subaccount_id
+            if not subaccount_id:
+                continue
+
+            vendor_percent = 100 - platform_share_percent
+            vendor_amount = float(item.sub_total) * (vendor_percent / 100)
+
+            if subaccount_id in subaccount_amounts:
+                subaccount_amounts[subaccount_id] += vendor_amount
+            else:
+                subaccount_amounts[subaccount_id] = vendor_amount
+
+        except Exception as e:
+            print(f"Skipping vendor {vendor} due to: {e}")
+            continue
+
+    return [
+        {
+            "id": sub_id,
+            "transaction_charge_type": "flat",
+            "transaction_charge": round(amount, 2)
+        }
+        for sub_id, amount in subaccount_amounts.items()
+    ]
+
