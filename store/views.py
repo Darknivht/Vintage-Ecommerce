@@ -375,25 +375,17 @@ def coupon_apply(request, order_id):
 
 
 @login_required
+
+@login_required
 def checkout(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
 
-    amount_in_inr = convert_ngn_to_inr(order.total)
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
 
-    try:
-        razorpay_order = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)).order.create({
-            "amount": int(amount_in_inr),
-            "currency": "INR",
-            "payment_capture": "1"
-        })
-    except:
-        razorpay_order = None
-
-    # ✅ Accurate per-product vendor split logic
+    # ✅ Accurate per-product vendor split logic (using flat amount)
     vendor_amounts = {}
-    for item in order.order_items():
+    for item in order.order_items.all():
         vendor = item.vendor
         try:
             bank_account = vendor.vendor.bankaccount
@@ -408,16 +400,16 @@ def checkout(request, order_id):
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
-    # Convert vendor_amounts to percentage of full order
+    # 🔁 Format subaccounts with FLAT charge so each vendor gets exact amount
     flutterwave_subaccounts = []
     for sub_id, amount in vendor_amounts.items():
-        percent = (amount / order.total) * 100
         flutterwave_subaccounts.append({
             "id": sub_id,
-            "transaction_charge_type": "percentage",
-            "transaction_charge": round(percent, 2)
+            "transaction_charge_type": "flat",
+            "transaction_charge": round(amount, 2)
         })
 
+    # ✅ Prepare and initiate Flutterwave payment
     try:
         customer = {
             "email": order.address.email,
@@ -442,22 +434,21 @@ def checkout(request, order_id):
         flutterwave_checkout_link = None
         print("Flutterwave error:", str(e))
 
+    # ✅ Final context (no razorpay, no stripe if not needed)
     context = {
         "order": order,
-        "amount_in_inr": amount_in_inr,
         "amount_in_kobo": amount_in_kobo,
         "amount_in_usd": round(amount_in_usd, 2),
-        "razorpay_order_id": razorpay_order['id'] if razorpay_order else None,
+        "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
         "stripe_public_key": settings.STRIPE_PUBLIC_KEY,
         "paypal_client_id": settings.PAYPAL_CLIENT_ID,
-        "razorpay_key_id": settings.RAZORPAY_KEY_ID,
-        "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
         "flutterwave_public_key": settings.FLUTTERWAVE_PUBLIC_KEY,
         "flutterwave_checkout_link": flutterwave_checkout_link,
         "flutterwave_subaccounts_json": json.dumps(flutterwave_subaccounts),
     }
 
     return render(request, "store/checkout.html", context)
+
 
 @csrf_exempt
 def stripe_payment(request, order_id):
