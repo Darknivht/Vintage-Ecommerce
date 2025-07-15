@@ -376,8 +376,7 @@ def checkout(request, order_id):
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
 
-    vendor_totals = {}
-    platform_share = 0
+    flutterwave_subaccounts = []
 
     for item in order.order_items():
         vendor = item.vendor
@@ -389,30 +388,17 @@ def checkout(request, order_id):
             product_price = float(item.sub_total)
             shipping_fee = float(item.shipping)
 
-            # ✅ Vendor receives: 90% of product + 100% of shipping
-            vendor_amount = (product_price * vendor_share_percent / 100) + shipping_fee
+            # ✅ Platform gets 10% of product price only (flat commission)
+            platform_commission = product_price * (1 - vendor_share_percent / 100)
 
-            if sub_id in vendor_totals:
-                vendor_totals[sub_id] += vendor_amount
-            else:
-                vendor_totals[sub_id] = vendor_amount
-
-            # ✅ Platform only gets commission from product (not shipping)
-            platform_share += product_price * (1 - vendor_share_percent / 100)
+            flutterwave_subaccounts.append({
+                "id": sub_id,
+                "transaction_charge_type": "flat",
+                "transaction_charge": round(platform_commission, 2)
+            })
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
-
-    # ✅ Total for ratio-based split
-    split_total = sum(vendor_totals.values()) + platform_share
-
-    flutterwave_subaccounts = []
-    for sub_id, amount in vendor_totals.items():
-        ratio = (amount / split_total) * 100
-        flutterwave_subaccounts.append({
-            "id": sub_id,
-            "transaction_split_ratio": round(ratio, 2)
-        })
 
     try:
         customer = {
@@ -449,6 +435,7 @@ def checkout(request, order_id):
     }
 
     return render(request, "store/checkout.html", context)
+
 
 
 
