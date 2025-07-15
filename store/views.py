@@ -278,27 +278,22 @@ def create_order(request):
         if not address_id:
             messages.warning(request, "Please select an address to continue")
             return redirect("store:cart")
-        
-        address = customer_models.Address.objects.filter(user=request.user, id=address_id).first()
 
-        if "cart_id" in request.session:
-            cart_id = request.session['cart_id']
-        else:
-            cart_id = None
+        address = customer_models.Address.objects.filter(user=request.user, id=address_id).first()
+        cart_id = request.session.get("cart_id")
 
         items = store_models.Cart.objects.filter(cart_id=cart_id)
-        cart_sub_total = store_models.Cart.objects.filter(cart_id=cart_id).aggregate(sub_total = models.Sum("sub_total"))['sub_total']
-        cart_shipping_total = store_models.Cart.objects.filter(cart_id=cart_id).aggregate(shipping = models.Sum("shipping"))['shipping']
-        
+        cart_sub_total = items.aggregate(sub_total=models.Sum("sub_total"))['sub_total']
+        cart_shipping_total = items.aggregate(shipping=models.Sum("shipping"))['shipping']
+
         order = store_models.Order()
         order.sub_total = cart_sub_total
         order.customer = request.user
         order.address = address
         order.shipping = cart_shipping_total
-        order.tax = tax_calculation(address.country, cart_sub_total)
-        order.total = order.sub_total + order.shipping + Decimal(order.tax)
-        order.service_fee = calculate_service_fee(order.total)
-        order.total += order.service_fee
+        order.tax = 0  # Removed tax
+        order.service_fee = 0  # Removed service fee
+        order.total = order.sub_total + order.shipping
         order.save()
 
         for i in items:
@@ -311,16 +306,16 @@ def create_order(request):
                 price=i.price,
                 sub_total=i.sub_total,
                 shipping=i.shipping,
-                tax=tax_calculation(address.country, i.sub_total),
+                tax=0,
                 total=i.total,
                 initial_total=i.total,
                 vendor=i.product.vendor
             )
-
             order.vendors.add(i.product.vendor)
-        
-    
+
     return redirect("store:checkout", order.order_id)
+
+
 
 def coupon_apply(request, order_id):
     print("Order Id ========", order_id)
@@ -381,7 +376,6 @@ def checkout(request, order_id):
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
 
-    # ✅ Step 1: Calculate earnings per vendor (90%) and platform commission (10%)
     vendor_totals = {}
     platform_share = 0
 
@@ -391,19 +385,18 @@ def checkout(request, order_id):
             bank_account = vendor.vendor.bankaccount
             sub_id = bank_account.flutterwave_subaccount_id
             vendor_share_percent = float(bank_account.split_value or 90)
-            vendor_amount = float(item.sub_total) * (vendor_share_percent / 100)
+            vendor_amount = (float(item.sub_total) + float(item.shipping)) * (vendor_share_percent / 100)
 
             if sub_id in vendor_totals:
                 vendor_totals[sub_id] += vendor_amount
             else:
                 vendor_totals[sub_id] = vendor_amount
 
-            platform_share += float(item.sub_total) * (1 - vendor_share_percent / 100)
+            platform_share += (float(item.sub_total) + float(item.shipping)) * (1 - vendor_share_percent / 100)
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
-    # ✅ Step 2: Convert totals to ratio-based split
     split_total = sum(vendor_totals.values()) + platform_share
 
     flutterwave_subaccounts = []
@@ -414,7 +407,6 @@ def checkout(request, order_id):
             "transaction_split_ratio": round(ratio, 2)
         })
 
-    # ✅ Step 3: Initiate Flutterwave Payment
     try:
         customer = {
             "email": order.address.email,
@@ -439,7 +431,6 @@ def checkout(request, order_id):
         flutterwave_checkout_link = None
         print("Flutterwave error:", str(e))
 
-    # ✅ Step 4: Render checkout page
     context = {
         "order": order,
         "amount_in_kobo": amount_in_kobo,
@@ -451,6 +442,7 @@ def checkout(request, order_id):
     }
 
     return render(request, "store/checkout.html", context)
+
 
 
 
