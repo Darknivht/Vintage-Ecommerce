@@ -376,7 +376,7 @@ def checkout(request, order_id):
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
 
-    flutterwave_subaccounts = []
+    vendor_subaccounts = {}
 
     for item in order.order_items():
         vendor = item.vendor
@@ -388,17 +388,24 @@ def checkout(request, order_id):
             product_price = float(item.sub_total)
             shipping_fee = float(item.shipping)
 
-            # ✅ Platform gets 10% of product price only (flat commission)
+            # ✅ Vendor receives 90% of product + 100% of shipping
+            vendor_payout = (product_price * vendor_share_percent / 100) + shipping_fee
             platform_commission = product_price * (1 - vendor_share_percent / 100)
 
-            flutterwave_subaccounts.append({
-                "id": sub_id,
-                "transaction_charge_type": "flat",
-                "transaction_charge": round(platform_commission, 2)
-            })
+            if sub_id not in vendor_subaccounts:
+                vendor_subaccounts[sub_id] = {
+                    "transaction_charge_type": "flat",
+                    "transaction_charge": round(platform_commission, 2)
+                }
+            else:
+                vendor_subaccounts[sub_id]["transaction_charge"] += round(platform_commission, 2)
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
+
+    flutterwave_subaccounts = [
+        {"id": sub_id, **data} for sub_id, data in vendor_subaccounts.items()
+    ]
 
     try:
         customer = {
@@ -435,8 +442,6 @@ def checkout(request, order_id):
     }
 
     return render(request, "store/checkout.html", context)
-
-
 
 
 
@@ -637,34 +642,38 @@ def paystack_payment_verify(request, order_id):
 def flutterwave_payment_callback(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
 
-    payment_id = request.GET.get('tx_ref')
-    status = request.GET.get('status')
+    payment_ref = request.GET.get('tx_ref')
+    payment_method = request.GET.get("payment_method")
 
     headers = {
         'Authorization': f'Bearer {settings.FLUTTERWAVE_PRIVATE_KEY}'
     }
-    response = requests.get(f'https://api.flutterwave.com/v3/transactions/{payment_id}/verify', headers=headers)
+
+    response = requests.get(f'https://api.flutterwave.com/v3/transactions/{payment_ref}/verify', headers=headers)
 
     if response.status_code == 200:
-        if order.payment_status == "Processing":
-            order.payment_status = "Paid"
-            payment_method = request.GET.get("payment_method")
-            order.payment_method = payment_method
-            order.save()
-            clear_cart_items(request)
+        data = response.json()
+        flutterwave_status = data.get("data", {}).get("status", "").lower()
+
+        if flutterwave_status == "successful":
+            if order.payment_status != "Paid":
+                order.payment_status = "Paid"
+                order.payment_method = payment_method
+                order.save()
+                clear_cart_items(request)
+
             return redirect(f"/payment_status/{order.order_id}/?payment_status=paid")
-        else:
-            return redirect(f"/payment_status/{order.order_id}/?payment_status=failed")
-    else:
-        return redirect(f"/payment_status/{order.order_id}/?payment_status=failed")
+
+    return redirect(f"/payment_status/{order.order_id}/?payment_status=failed")
+
 
 def payment_status(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
-    payment_status = request.GET.get("payment_status")
+    payment_status = request.GET.get("payment_status") or "failed"
 
     context = {
         "order": order,
-        "payment_status": payment_status
+        "payment_status": payment_status.lower(),  # Normalize
     }
     return render(request, "store/payment_status.html", context)
 
