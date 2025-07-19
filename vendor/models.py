@@ -7,23 +7,6 @@ import requests
 from cloudinary.models import CloudinaryField
 from vendor.utils.flutterwave_helper import get_supported_flutterwave_countries
 
-
-# Helper: Get supported countries for dropdown
-def get_supported_flutterwave_countries():
-    return [
-        ("NG", "Nigeria"),
-        ("GH", "Ghana"),
-        ("CI", "Côte d'Ivoire"),
-        ("SN", "Senegal"),
-        ("BJ", "Benin"),
-        ("TG", "Togo"),
-        ("GM", "Gambia"),
-        ("GN", "Guinea"),
-        ("LR", "Liberia"),
-        ("SL", "Sierra Leone"),
-        ("GLOBAL", "Other / Global"),
-    ]
-
 # Helper: Map country to currency
 CURRENCY_MAP = {
     "NG": "NGN",
@@ -170,7 +153,17 @@ class BankAccount(models.Model):
                     "split_type": "flat",  # ✅ Use flat so vendor receives full payout
                     "split_value": 0       # ✅ No deductions from vendor, platform handles fee
                 }
-                subaccount_id = create_flutterwave_subaccount(payload)
+                subaccount_id = create_flutterwave_subaccount(
+                    account_name=self.vendor.store_name,
+                    account_number=self.account_number,
+                    bank_code=self.bank_code,
+                    vendor_email=self.email,
+                    country=self.country,
+                    currency=self.currency,
+                    split_value=0.0,
+                    split_type="flat"
+                )
+
                 if subaccount_id:
                     self.flutterwave_subaccount_id = subaccount_id
 
