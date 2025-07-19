@@ -159,7 +159,6 @@ class Cart(models.Model):
     price = models.DecimalField(decimal_places=2, max_digits=12, default=0.00, null=True, blank=True)
     sub_total = models.DecimalField(decimal_places=2, max_digits=12, default=0.00, null=True, blank=True)
     shipping = models.DecimalField(decimal_places=2, max_digits=12, default=0.00, null=True, blank=True)
-    tax = models.DecimalField(decimal_places=2, max_digits=12, default=0.00, null=True, blank=True)
     total = models.DecimalField(decimal_places=2, max_digits=12, default=0.00, null=True, blank=True)
     size = models.CharField(max_length=100, null=True, blank=True)
     color = models.CharField(max_length=100, null=True, blank=True)
@@ -182,8 +181,6 @@ class Order(models.Model):
     customer = models.ForeignKey(user_models.User, on_delete=models.SET_NULL, null=True, related_name="customer", blank=True)
     sub_total = models.DecimalField(default=0.00, max_digits=12, decimal_places=2)
     shipping = models.DecimalField(default=0.00, max_digits=12, decimal_places=2)
-    tax = models.DecimalField(default=0.00, max_digits=12, decimal_places=2)
-    service_fee = models.DecimalField(default=0.00, max_digits=12, decimal_places=2)
     total = models.DecimalField(default=0.00, max_digits=12, decimal_places=2)
     payment_status = models.CharField(max_length=100, choices=PAYMENT_STATUS, default="Processing")
     payment_method = models.CharField(max_length=100, choices=PAYMENT_METHOD, default=None, null=True, blank=True)
@@ -195,7 +192,7 @@ class Order(models.Model):
     order_id = ShortUUIDField(length=6, max_length=25, alphabet="1234567890")
     payment_id = models.CharField(null=True, blank=True, max_length=1000)
     date = models.DateTimeField(default=timezone.now)
-    
+
     class Meta:
         verbose_name_plural = "Order"
         ordering = ['-date']
@@ -205,7 +202,6 @@ class Order(models.Model):
 
     def order_items(self):
         return OrderItem.objects.filter(order=self)
-    
     
     
 class OrderItem(models.Model):
@@ -221,7 +217,6 @@ class OrderItem(models.Model):
     price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     sub_total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     shipping = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    tax = models.DecimalField(default=0.00, max_digits=12, decimal_places=2)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     initial_total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, help_text="Grand Total of all amount listed above before discount")
     saved = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, null=True, blank=True, help_text="Amount saved by customer")
@@ -236,7 +231,7 @@ class OrderItem(models.Model):
   
     def __str__(self):
         return self.item_id
-    
+
     class Meta:
         ordering = ['-date']
 

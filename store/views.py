@@ -16,7 +16,6 @@ from django.contrib.auth.decorators import login_required
 from decimal import Decimal
 import requests
 import stripe
-from plugin.service_fee import calculate_service_fee
 import razorpay
 
 from plugin.paginate_queryset import paginate_queryset
@@ -24,7 +23,6 @@ from store import models as store_models
 from customer import models as customer_models
 from vendor import models as vendor_models
 from userauths import models as userauths_models
-from plugin.tax_calculation import tax_calculation
 from plugin.exchange_rate import convert_ngn_to_inr, convert_ngn_to_kobo, convert_ngn_to_usd, get_ngn_to_usd_rate
 from store.models import Category
 

@@ -141,11 +141,11 @@ class BankAccount(models.Model):
         return bool(self.flutterwave_subaccount_id)
 
     def save(self, *args, **kwargs):
-        # Auto fill currency
+        # Auto-fill currency based on country
         if self.country and not self.currency:
             self.currency = CURRENCY_MAP.get(self.country, "USD")
 
-        # Fetch bank_code based on name
+        # Auto-set bank code from bank name if not provided
         if self.country and self.bank_name and not self.bank_code:
             banks = get_flutterwave_banks(self.country)
             for code, name in banks:
@@ -153,7 +153,7 @@ class BankAccount(models.Model):
                     self.bank_code = code
                     break
 
-        # Create subaccount if missing
+        # Create subaccount on Flutterwave if not yet created
         if not self.flutterwave_subaccount_id and self.account_number and self.bank_code:
             if self.vendor and self.vendor.store_name and self.email:
                 payload = {
@@ -165,8 +165,8 @@ class BankAccount(models.Model):
                         "name": self.account_name,
                         "email": self.email
                     },
-                    "split_type": "percentage",
-                    "split_value": self.split_value or 1
+                    "split_type": "flat",  # ✅ Use flat so vendor receives full payout
+                    "split_value": 0       # ✅ No deductions from vendor, platform handles fee
                 }
                 subaccount_id = create_flutterwave_subaccount(payload)
                 if subaccount_id:

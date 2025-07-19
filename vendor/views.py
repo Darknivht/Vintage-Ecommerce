@@ -455,28 +455,15 @@ def delete_product(request, product_id):
     return redirect("vendor:products")
 
 
-
-
-
-
 @login_required
 def add_bank_account(request):
     vendor = request.user.vendor
     account = vendor_models.BankAccount.objects.filter(vendor=vendor).first()
 
-    # Split settings
-    admin_share = 10
-    vendor_share = getattr(settings, "VENDOR_SPLIT_PERCENTAGE", 100 - admin_share)
+    # Vendor gets 100%, platform gets commission separately via its own subaccount
+    vendor_share = 0  # Always zero for flat logic (no cut from vendor)
 
-    # ✅ Country choices should be outside the POST block
-    country_choices = [
-        ("NG", "Nigeria"),
-        ("GH", "Ghana"),
-        ("CI", "Côte d'Ivoire"),
-        ("SN", "Senegal"),
-        ("BJ", "Benin"),
-        ("GLOBAL", "Global")
-    ]
+    country_choices = get_supported_flutterwave_countries()
 
     if request.method == "POST":
         account_name = request.POST.get("account_name")
@@ -486,12 +473,12 @@ def add_bank_account(request):
         account_type = request.POST.get("account_type")
         country = request.POST.get("country", "NG")
         branch_code = request.POST.get("branch_code") or None
-        currency = request.POST.get("currency", "NGN")  # fallback for now
+        currency = request.POST.get("currency", CURRENCY_MAP.get(country, "USD"))
 
         full_name = f"{request.user.first_name} {request.user.last_name}".strip() or vendor.store_name
         vendor_email = request.user.email
 
-        # Save to local DB
+        # Save or update the bank account
         account, created = vendor_models.BankAccount.objects.update_or_create(
             vendor=vendor,
             defaults={
@@ -504,27 +491,33 @@ def add_bank_account(request):
                 "branch_code": branch_code,
                 "currency": currency,
                 "email": vendor_email,
-                "split_value": vendor_share,
+                "split_value": vendor_share,  # always 0 in flat system
             }
         )
 
         if not account.flutterwave_subaccount_id:
             try:
-                # Call to create subaccount
-                subaccount_id = create_flutterwave_subaccount(
-                    account_name=full_name,
-                    account_number=account_number,
-                    bank_code=bank_code,
-                    vendor_email=vendor_email,
-                    country=country,
-                    currency=currency,
-                    split_value=vendor_share
-                )
+                # Manually construct subaccount payload
+                payload = {
+                    "account_bank": bank_code,
+                    "account_number": account_number,
+                    "business_name": vendor.store_name,
+                    "business_email": vendor_email,
+                    "business_contact": {
+                        "name": account_name,
+                        "email": vendor_email
+                    },
+                    "split_type": "flat",         # ✅ Flat type
+                    "split_value": 0              # ✅ Vendor receives 100%
+                }
+                subaccount_id = create_flutterwave_subaccount(payload)
 
-                account.flutterwave_subaccount_id = subaccount_id
-                account.save()
-                messages.success(request, "Bank account saved and Flutterwave subaccount created.")
-
+                if subaccount_id:
+                    account.flutterwave_subaccount_id = subaccount_id
+                    account.save()
+                    messages.success(request, "Bank account saved and Flutterwave subaccount created.")
+                else:
+                    messages.error(request, "Could not create Flutterwave subaccount.")
             except Exception as e:
                 messages.error(request, f"Flutterwave Error: {str(e)}")
 
@@ -540,6 +533,7 @@ def add_bank_account(request):
         "flutterwave_private_key": settings.FLUTTERWAVE_PRIVATE_KEY,
         "country_choices": country_choices,
     })
+
 
 
 @login_required
