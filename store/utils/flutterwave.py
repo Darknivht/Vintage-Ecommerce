@@ -20,6 +20,23 @@ def create_flutterwave_subaccount(
         "Content-Type": "application/json",
     }
 
+
+def get_supported_flutterwave_countries():
+    return [
+        ("NG", "Nigeria"),
+        ("GH", "Ghana"),
+        ("CI", "Côte d'Ivoire"),
+        ("SN", "Senegal"),
+        ("BJ", "Benin"),
+        ("TG", "Togo"),
+        ("GM", "Gambia"),
+        ("GN", "Guinea"),
+        ("LR", "Liberia"),
+        ("SL", "Sierra Leone"),
+        ("GLOBAL", "Other / Global"),
+    ]
+
+
     payload = {
         "account_bank": bank_code,
         "account_number": account_number,
