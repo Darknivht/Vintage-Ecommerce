@@ -11,8 +11,6 @@ import json
 from django.shortcuts import get_object_or_404
 from store.utils.flutterwave import initiate_flutterwave_payment
 from django.contrib.auth.decorators import login_required
-from plugin.tax_calculation import tax_calculation
-from plugin.service_fee import calculate_service_fee
 
 
 from decimal import Decimal
@@ -291,8 +289,6 @@ def create_order(request):
         order.customer = request.user
         order.address = address
         order.shipping = cart_shipping_total
-        order.tax = 0  # Removed tax
-        order.service_fee = 0  # Removed service fee
         order.total = order.sub_total + order.shipping
         order.save()
 
