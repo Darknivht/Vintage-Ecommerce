@@ -9,6 +9,7 @@ from django.db.models import Count
 from django.conf import settings
 import requests
 from vendor.models import PAYOUT_METHOD
+from vendor.models import CURRENCY_MAP
 
 from store.utils.flutterwave import create_flutterwave_subaccount  # ✅ import helper
 from vendor.utils.flutterwave_helper import get_supported_flutterwave_countries
