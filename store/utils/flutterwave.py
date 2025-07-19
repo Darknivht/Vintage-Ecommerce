@@ -7,8 +7,8 @@ FLW_SECRET_KEY = settings.FLUTTERWAVE_PRIVATE_KEY
 
 def create_flutterwave_subaccount(
     account_name, account_number, bank_code,
-    vendor_email, country, currency, split_value,
-    split_type="percentage"
+    vendor_email, country, currency, split_value=0.0,
+    split_type="flat"
 ):
     """
     Create a Flutterwave subaccount and return subaccount_id.
@@ -25,7 +25,7 @@ def create_flutterwave_subaccount(
         "account_number": account_number,
         "business_name": account_name,
         "business_email": vendor_email,
-        "split_type": split_type,
+        "split_type": split_type,       # "flat" for no platform fee at creation
         "split_value": float(split_value),
         "country": country,
         "currency": currency,
@@ -47,11 +47,12 @@ def create_flutterwave_subaccount(
 def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_url, subaccounts):
     """
     Initiates a Flutterwave payment with multiple subaccount splits.
+    
     Each subaccount dict must include:
         {
-            "id": str,  # subaccount ID
-            "transaction_charge_type": "percentage",
-            "transaction_charge": float  # e.g. 90.0 for 90%
+            "id": str,  # Flutterwave subaccount ID
+            "transaction_charge_type": "flat",
+            "transaction_charge": float  # flat amount to deduct from vendor
         }
     """
     url = "https://api.flutterwave.com/v3/payments"
@@ -97,10 +98,10 @@ def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
     ]
     """
     subaccount_amounts = {}
+    platform_total = 0.0
 
     for item in order.order_items():
         vendor = item.vendor
-
         if not vendor:
             continue
 
@@ -118,11 +119,13 @@ def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
             else:
                 subaccount_amounts[subaccount_id] = vendor_amount
 
+            platform_total += float(item.sub_total) * (platform_share_percent / 100)
+
         except Exception as e:
             print(f"Skipping vendor {vendor} due to: {e}")
             continue
 
-    return [
+    subaccounts = [
         {
             "id": sub_id,
             "transaction_charge_type": "flat",
@@ -131,3 +134,13 @@ def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
         for sub_id, amount in subaccount_amounts.items()
     ]
 
+    # Optional: Include platform subaccount if needed
+    PLATFORM_SUBACCOUNT_ID = getattr(settings, "FLUTTERWAVE_PLATFORM_SUBACCOUNT_ID", None)
+    if PLATFORM_SUBACCOUNT_ID:
+        subaccounts.append({
+            "id": PLATFORM_SUBACCOUNT_ID,
+            "transaction_charge_type": "flat",
+            "transaction_charge": round(platform_total, 2)
+        })
+
+    return subaccounts

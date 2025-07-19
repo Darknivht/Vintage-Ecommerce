@@ -11,6 +11,8 @@ import json
 from django.shortcuts import get_object_or_404
 from store.utils.flutterwave import initiate_flutterwave_payment
 from django.contrib.auth.decorators import login_required
+from plugin.tax_calculation import tax_calculation
+from plugin.service_fee import calculate_service_fee
 
 
 from decimal import Decimal
@@ -367,6 +369,7 @@ def coupon_apply(request, order_id):
 
 
 @login_required
+@login_required
 def checkout(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
 
@@ -374,7 +377,6 @@ def checkout(request, order_id):
     amount_in_usd = convert_ngn_to_usd(order.total)
 
     flutterwave_subaccounts = []
-    platform_total = 0  # Accumulate platform commission
 
     for item in order.order_items():
         vendor = item.vendor
@@ -386,17 +388,13 @@ def checkout(request, order_id):
             product_price = float(item.sub_total)
             shipping_fee = float(item.shipping)
 
-            # ✅ Platform gets 10% of product price only
+            # Platform takes (100 - vendor_share) percent of product price
             platform_commission = product_price * (1 - vendor_share_percent / 100)
-            platform_total += platform_commission
-
-            # ✅ Vendor gets 90% of product price + 100% shipping
-            vendor_total = product_price * (vendor_share_percent / 100) + shipping_fee
 
             flutterwave_subaccounts.append({
                 "id": sub_id,
                 "transaction_charge_type": "flat",
-                "transaction_charge": round(order.total - vendor_total - platform_commission, 2)
+                "transaction_charge": round(platform_commission, 2)  # ONLY platform cut per vendor
             })
 
         except Exception as e:
@@ -437,6 +435,7 @@ def checkout(request, order_id):
     }
 
     return render(request, "store/checkout.html", context)
+
 
 
 @csrf_exempt
