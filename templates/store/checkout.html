@@ -31,11 +31,12 @@
     </div>
 
     <div class="row">
+      <!-- Left Section -->
       <div class="col-lg-9">
         <!-- Cart Items -->
         <h4 class="fw-bold p-3">Cart items</h4>
         <div style="overflow-y: scroll; max-height: 650px;" class="p-3">
-          {% for item in order.order_items.all %}
+          {% for item in order.order_items %}
           <div class="shadow rounded mb-3">
             <div class="row d-flex align-items-center p-3">
               <div class="col-lg-4 d-flex gap-3">
@@ -75,23 +76,22 @@
         </div>
       </div>
 
-      <!-- Order Summary -->
+      <!-- Right Section -->
       <div class="col-lg-3">
         <h4 class="fw-bold">Order Summary</h4>
-          <div class="shadow rounded p-3 mt-3">
-            <div class="d-flex justify-content-between"><span>Subtotal</span><span>₦{{order.sub_total}}</span></div>
-            <div class="d-flex justify-content-between"><span>Shipping</span><span>₦{{order.shipping}}</span></div>
+        <div class="shadow rounded p-3 mt-3">
+          <div class="d-flex justify-content-between"><span>Subtotal</span><span>₦{{order.sub_total}}</span></div>
+          <div class="d-flex justify-content-between"><span>Shipping</span><span>₦{{order.shipping}}</span></div>
 
-            {% if order.saved %}
-              <div class="d-flex justify-content-between"><span>Discount</span><span>₦{{order.saved}}</span></div>
-              {% for coupon in order.coupons.all %}
-                <small class="text-success fw-bold">{{ coupon.code }} Applied</small>
-              {% endfor %}
-            {% endif %}
+          {% if order.saved %}
+            <div class="d-flex justify-content-between"><span>Discount</span><span>₦{{order.saved}}</span></div>
+            {% for coupon in order.coupons.all %}
+              <small class="text-success fw-bold">{{ coupon.code }} Applied</small>
+            {% endfor %}
+          {% endif %}
 
-            <div class="d-flex justify-content-between mt-3"><strong>Total</strong><strong>₦{{order.total}}</strong></div>
-          </div>
-
+          <div class="d-flex justify-content-between mt-3"><strong>Total</strong><strong>₦{{order.total}}</strong></div>
+        </div>
 
         <!-- Coupon Form -->
         <div class="shadow rounded p-3 mt-3">
@@ -119,7 +119,6 @@
 <script>
   function payWithFlutterwave() {
     const subaccounts = {{ flutterwave_subaccounts_json|safe }};
-
     console.log("Sending to Flutterwave:", subaccounts);
 
     FlutterwaveCheckout({
