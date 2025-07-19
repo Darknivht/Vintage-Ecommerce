@@ -153,16 +153,19 @@ class BankAccount(models.Model):
                     "split_type": "flat",  # ✅ Use flat so vendor receives full payout
                     "split_value": 0       # ✅ No deductions from vendor, platform handles fee
                 }
-                subaccount_id = create_flutterwave_subaccount(
-                    account_name=self.vendor.store_name,
-                    account_number=self.account_number,
-                    bank_code=self.bank_code,
-                    vendor_email=self.email,
-                    country=self.country,
-                    currency=self.currency,
-                    split_value=0.0,
-                    split_type="flat"
-                )
+                payload = {
+                    "account_bank": self.bank_code,
+                    "account_number": self.account_number,
+                    "business_name": self.vendor.store_name,
+                    "business_email": self.email,
+                    "split_type": "flat",
+                    "split_value": 0.0,
+                    "country": self.country,
+                    "currency": self.currency,
+                }
+
+                subaccount_id = create_flutterwave_subaccount(payload)
+
 
                 if subaccount_id:
                     self.flutterwave_subaccount_id = subaccount_id
