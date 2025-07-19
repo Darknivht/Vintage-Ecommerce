@@ -302,7 +302,6 @@ def create_order(request):
                 price=i.price,
                 sub_total=i.sub_total,
                 shipping=i.shipping,
-                tax=0,
                 total=i.total,
                 initial_total=i.total,
                 vendor=i.product.vendor
