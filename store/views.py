@@ -366,7 +366,6 @@ def coupon_apply(request, order_id):
         return redirect("store:checkout", order.order_id)
 
 
-
 @login_required
 def checkout(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
@@ -392,21 +391,16 @@ def checkout(request, order_id):
             platform_total += platform_commission
 
             # ✅ Vendor gets 90% of product price + 100% shipping
+            vendor_total = product_price * (vendor_share_percent / 100) + shipping_fee
+
             flutterwave_subaccounts.append({
                 "id": sub_id,
                 "transaction_charge_type": "flat",
-                "transaction_charge": 0  # Vendor receives full amount
+                "transaction_charge": round(order.total - vendor_total - platform_commission, 2)
             })
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
-
-    # ✅ Add platform as a subaccount with total flat commission
-    flutterwave_subaccounts.append({
-        "id": settings.FLUTTERWAVE_PLATFORM_SUBACCOUNT_ID,
-        "transaction_charge_type": "flat",
-        "transaction_charge": round(platform_total, 2)
-    })
 
     try:
         customer = {
