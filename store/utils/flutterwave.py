@@ -21,22 +21,6 @@ def create_flutterwave_subaccount(
     }
 
 
-def get_supported_flutterwave_countries():
-    return [
-        ("NG", "Nigeria"),
-        ("GH", "Ghana"),
-        ("CI", "Côte d'Ivoire"),
-        ("SN", "Senegal"),
-        ("BJ", "Benin"),
-        ("TG", "Togo"),
-        ("GM", "Gambia"),
-        ("GN", "Guinea"),
-        ("LR", "Liberia"),
-        ("SL", "Sierra Leone"),
-        ("GLOBAL", "Other / Global"),
-    ]
-
-
     payload = {
         "account_bank": bank_code,
         "account_number": account_number,
@@ -161,3 +145,21 @@ def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
         })
 
     return subaccounts
+
+
+
+
+def get_supported_flutterwave_countries():
+    return [
+        ("NG", "Nigeria"),
+        ("GH", "Ghana"),
+        ("CI", "Côte d'Ivoire"),
+        ("SN", "Senegal"),
+        ("BJ", "Benin"),
+        ("TG", "Togo"),
+        ("GM", "Gambia"),
+        ("GN", "Guinea"),
+        ("LR", "Liberia"),
+        ("SL", "Sierra Leone"),
+        ("GLOBAL", "Other / Global"),
+    ]

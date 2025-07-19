@@ -5,7 +5,7 @@ from django.utils.text import slugify
 from django.conf import settings
 import requests
 from cloudinary.models import CloudinaryField
-from store.utils.flutterwave import get_supported_flutterwave_countries
+from vendor.utils.flutterwave_helper import get_supported_flutterwave_countries
 
 
 # Helper: Get supported countries for dropdown
