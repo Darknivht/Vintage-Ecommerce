@@ -388,10 +388,8 @@ def checkout(request, order_id):
             product_price = float(item.sub_total)
             shipping_fee = float(item.shipping)
 
-            # Vendor receives 90% of product price + 100% of shipping fee
+            # ✅ Vendor receives 90% of product + 100% of shipping
             vendor_payout = (product_price * vendor_share_percent / 100) + shipping_fee
-
-            # Platform receives 10% of product price
             platform_commission = product_price * (1 - vendor_share_percent / 100)
 
             if sub_id not in vendor_subaccounts:
@@ -404,7 +402,6 @@ def checkout(request, order_id):
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
-
 
     flutterwave_subaccounts = [
         {"id": sub_id, **data} for sub_id, data in vendor_subaccounts.items()
