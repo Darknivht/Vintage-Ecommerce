@@ -34,10 +34,10 @@ def get_flutterwave_banks(country_code):
         banks = response.json().get("data", [])
         return [(bank["code"], bank["name"]) for bank in banks]
     except Exception as e:
-        print("Flutterwave bank fetch error:", e)
+        print("❌ Flutterwave bank fetch error:", e)
         return []
 
-# Create subaccount via Flutterwave API
+# Create subaccount via Flutterwave API (✅ Fixed)
 def create_flutterwave_subaccount(data):
     try:
         url = "https://api.flutterwave.com/v3/subaccounts"
@@ -47,9 +47,9 @@ def create_flutterwave_subaccount(data):
         }
         response = requests.post(url, json=data, headers=headers)
         response.raise_for_status()
-        return response.json().get("data", {}).get("id", None)
+        return response.json().get("data", {}).get("subaccount_id", None)  # ✅ Fixed key
     except Exception as e:
-        print("Flutterwave subaccount creation error:", e)
+        print("❌ Flutterwave subaccount creation error:", e)
         return None
 
 # ====================== MODELS ==========================
@@ -160,9 +160,11 @@ class BankAccount(models.Model):
 
                 if subaccount_id:
                     self.flutterwave_subaccount_id = subaccount_id
+                else:
+                    print("❌ Subaccount creation failed. Check payload and ensure valid values:")
+                    print(payload)
 
         super().save(*args, **kwargs)
-
 
 class Payout(models.Model):
     vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True)

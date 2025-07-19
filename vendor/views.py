@@ -476,7 +476,7 @@ def add_bank_account(request):
         currency = request.POST.get("currency", CURRENCY_MAP.get(country, "USD"))
         vendor_email = request.user.email
 
-        # Save or update the bank account – subaccount creation is handled in .save()
+        # ✅ Create/update without triggering .save() logic yet
         account, created = vendor_models.BankAccount.objects.update_or_create(
             vendor=vendor,
             defaults={
@@ -493,6 +493,9 @@ def add_bank_account(request):
             }
         )
 
+        # ✅ Force .save() to trigger subaccount creation logic
+        account.save()
+
         if created or not account.flutterwave_subaccount_id:
             messages.success(request, "Bank account saved. Subaccount will be created automatically.")
         else:
@@ -507,6 +510,7 @@ def add_bank_account(request):
         "flutterwave_private_key": settings.FLUTTERWAVE_PRIVATE_KEY,
         "country_choices": country_choices,
     })
+
 
 
 
