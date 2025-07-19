@@ -376,7 +376,8 @@ def checkout(request, order_id):
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
 
-    vendor_subaccounts = {}
+    flutterwave_subaccounts = []
+    platform_total = 0  # Accumulate platform commission
 
     for item in order.order_items():
         vendor = item.vendor
@@ -388,24 +389,26 @@ def checkout(request, order_id):
             product_price = float(item.sub_total)
             shipping_fee = float(item.shipping)
 
-            # ✅ Vendor receives 90% of product + 100% of shipping
-            vendor_payout = (product_price * vendor_share_percent / 100) + shipping_fee
+            # ✅ Platform gets 10% of product price only
             platform_commission = product_price * (1 - vendor_share_percent / 100)
+            platform_total += platform_commission
 
-            if sub_id not in vendor_subaccounts:
-                vendor_subaccounts[sub_id] = {
-                    "transaction_charge_type": "flat",
-                    "transaction_charge": round(platform_commission, 2)
-                }
-            else:
-                vendor_subaccounts[sub_id]["transaction_charge"] += round(platform_commission, 2)
+            # ✅ Vendor gets 90% of product price + 100% shipping
+            flutterwave_subaccounts.append({
+                "id": sub_id,
+                "transaction_charge_type": "flat",
+                "transaction_charge": 0  # Vendor receives full amount
+            })
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
-    flutterwave_subaccounts = [
-        {"id": sub_id, **data} for sub_id, data in vendor_subaccounts.items()
-    ]
+    # ✅ Add platform as a subaccount with total flat commission
+    flutterwave_subaccounts.append({
+        "id": settings.FLUTTERWAVE_PLATFORM_SUBACCOUNT_ID,
+        "transaction_charge_type": "flat",
+        "transaction_charge": round(platform_total, 2)
+    })
 
     try:
         customer = {
@@ -442,8 +445,6 @@ def checkout(request, order_id):
     }
 
     return render(request, "store/checkout.html", context)
-
-
 
 
 @csrf_exempt
