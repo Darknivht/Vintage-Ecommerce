@@ -1,0 +1,100 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+
+<section class="middle">
+    <div class="container">
+        <h2 class="fw-bold mb-5">Real Estate Listings (<span class="listing_count">{{ listings.count }}</span>)</h2>
+
+        <div class="mb-5 d-flex justify-content-between align-items-center gap-2">
+            <input type="text" class="form-control rounded search-filter" placeholder="Search Real Estate..." name="search-filter" id="">
+            <button class="btn bg-primary text-white rounded"><i class="fas fa-search"></i></button>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-3">
+                <!-- Filter Sidebar -->
+                <div class="border rounded p-3 mb-3">
+                    <h4>States</h4>
+                    <div>
+                        {% for state in states %}
+                        <div class="form-check mb-1">
+                            <input class="form-check-input state-filter" type="checkbox" value="{{ state }}" id="state{{ forloop.counter }}">
+                            <label class="form-check-label" for="state{{ forloop.counter }}">{{ state }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="border rounded p-3 mb-3">
+                    <h4>Price Range</h4>
+                    <div>
+                        {% for price in price_ranges %}
+                        <div class="form-check mb-1">
+                            <input class="form-check-input price-filter" type="radio" name="price" value="{{ price.id }}" id="price{{ price.id }}">
+                            <label class="form-check-label" for="price{{ price.id }}">{{ price.value }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="border rounded p-3 mb-3">
+                    <h4>Bedrooms</h4>
+                    <div>
+                        {% for b in bedrooms %}
+                        <div class="form-check mb-1">
+                            <input class="form-check-input bedroom-filter" type="checkbox" value="{{ b }}" id="bedroom{{ forloop.counter }}">
+                            <label class="form-check-label" for="bedroom{{ forloop.counter }}">{{ b }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="border rounded p-3 mb-3">
+                    <h4>Bathrooms</h4>
+                    <div>
+                        {% for bath in bathrooms %}
+                        <div class="form-check mb-1">
+                            <input class="form-check-input bathroom-filter" type="checkbox" value="{{ bath }}" id="bathroom{{ forloop.counter }}">
+                            <label class="form-check-label" for="bathroom{{ forloop.counter }}">{{ bath }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <button class="btn bg-primary btn-sm rounded reset_filter_btn">Reset Filter <i class="fas fa-rotate ms-2"></i></button>
+            </div>
+
+            <div class="col-lg-9">
+                <div class="row" id="listings-list">
+                    {% for listing in listings %}
+                    <div class="col-lg-4 mb-4">
+                        <div class="card rounded shadow-sm">
+                            <a href="{% url 'store:realestate_detail' listing.slug %}">
+                                {% if listing.images %}
+                                    <img src="{{ listing.images.url }}" alt="{{ listing.title }}" class="card-img-top" style="height: 230px; object-fit: cover;">
+                                {% else %}
+                                    <img src="{% static 'images/default_realestate.jpg' %}" alt="No Image" class="card-img-top" style="height: 230px; object-fit: cover;">
+                                {% endif %}
+                            </a>
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="{% url 'store:realestate_detail' listing.slug %}">{{ listing.title }}</a></h5>
+                                <p class="card-text text-muted small mb-1">{{ listing.state }}, {{ listing.local_government }}</p>
+                                <p class="card-text fw-bold mb-1">₦{{ listing.price|intcomma }}</p>
+                                <p class="card-text small">
+                                    {{ listing.number_of_bedrooms }} Bed &middot; {{ listing.number_of_bathrooms }} Bath
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p>No listings found.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock content %}

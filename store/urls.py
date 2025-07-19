@@ -16,6 +16,8 @@ urlpatterns = [
     path("coupon_apply/<order_id>/", views.coupon_apply, name="coupon_apply"),
     path("payment_status/<order_id>/", views.payment_status, name="payment_status"),
 
+    
+
     path("filter_products/", views.filter_products, name="filter_products"),
     path("add_to_cart/", views.add_to_cart, name="add_to_cart"),
     path("delete_cart_item/", views.delete_cart_item, name="delete_cart_item"),

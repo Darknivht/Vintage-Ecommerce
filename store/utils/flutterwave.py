@@ -4,32 +4,31 @@ from store.models import Order
 
 FLW_SECRET_KEY = settings.FLUTTERWAVE_PRIVATE_KEY
 
-
-def create_flutterwave_subaccount(
-    account_name, account_number, bank_code,
-    vendor_email, country, currency, split_value=0.0,
-    split_type="flat"
-):
+def create_flutterwave_subaccount(payload):
     """
     Create a Flutterwave subaccount and return subaccount_id.
-    Raises exception with detailed info on failure.
+
+    Args:
+        payload (dict): Required fields:
+            - account_bank (str)
+            - account_number (str)
+            - business_name (str)
+            - business_email (str)
+            - country (str)
+            - currency (str)
+            - split_type (str, default "flat")
+            - split_value (float, default 0.0)
+
+    Returns:
+        str: The subaccount_id from Flutterwave on success.
+
+    Raises:
+        Exception: Detailed error if creation fails.
     """
     url = "https://api.flutterwave.com/v3/subaccounts"
     headers = {
         "Authorization": f"Bearer {FLW_SECRET_KEY}",
         "Content-Type": "application/json",
-    }
-
-
-    payload = {
-        "account_bank": bank_code,
-        "account_number": account_number,
-        "business_name": account_name,
-        "business_email": vendor_email,
-        "split_type": split_type,       # "flat" for no platform fee at creation
-        "split_value": float(split_value),
-        "country": country,
-        "currency": currency,
     }
 
     try:
@@ -39,10 +38,12 @@ def create_flutterwave_subaccount(
         if response.status_code != 200 or data.get("status") != "success":
             raise Exception(f"Flutterwave Error: {data.get('message')} | Payload: {payload}")
 
-        return data["data"]["subaccount_id"]
+        # Support both 'subaccount_id' and 'id'
+        return data.get("data", {}).get("subaccount_id") or data.get("data", {}).get("id")
 
     except requests.RequestException as e:
         raise Exception(f"Request failed: {str(e)}")
+
 
 
 def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_url, subaccounts):

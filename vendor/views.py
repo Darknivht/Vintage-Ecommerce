@@ -461,9 +461,7 @@ def delete_product(request, product_id):
 def add_bank_account(request):
     vendor = request.user.vendor
     account = vendor_models.BankAccount.objects.filter(vendor=vendor).first()
-
-    # Vendor gets 100%, platform gets commission separately via its own subaccount
-    vendor_share = 0  # Always zero for flat logic (no cut from vendor)
+    vendor_share = 0  # Always zero for flat logic
 
     country_choices = get_supported_flutterwave_countries()
 
@@ -476,11 +474,9 @@ def add_bank_account(request):
         country = request.POST.get("country", "NG")
         branch_code = request.POST.get("branch_code") or None
         currency = request.POST.get("currency", CURRENCY_MAP.get(country, "USD"))
-
-        full_name = f"{request.user.first_name} {request.user.last_name}".strip() or vendor.store_name
         vendor_email = request.user.email
 
-        # Save or update the bank account
+        # Save or update the bank account – subaccount creation is handled in .save()
         account, created = vendor_models.BankAccount.objects.update_or_create(
             vendor=vendor,
             defaults={
@@ -493,36 +489,12 @@ def add_bank_account(request):
                 "branch_code": branch_code,
                 "currency": currency,
                 "email": vendor_email,
-                "split_value": vendor_share,  # always 0 in flat system
+                "split_value": vendor_share,
             }
         )
 
-        if not account.flutterwave_subaccount_id:
-            try:
-                # Manually construct subaccount payload
-                payload = {
-                    "account_bank": bank_code,
-                    "account_number": account_number,
-                    "business_name": vendor.store_name,
-                    "business_email": vendor_email,
-                    "business_contact": {
-                        "name": account_name,
-                        "email": vendor_email
-                    },
-                    "split_type": "flat",         # ✅ Flat type
-                    "split_value": 0              # ✅ Vendor receives 100%
-                }
-                subaccount_id = create_flutterwave_subaccount(payload)
-
-                if subaccount_id:
-                    account.flutterwave_subaccount_id = subaccount_id
-                    account.save()
-                    messages.success(request, "Bank account saved and Flutterwave subaccount created.")
-                else:
-                    messages.error(request, "Could not create Flutterwave subaccount.")
-            except Exception as e:
-                messages.error(request, f"Flutterwave Error: {str(e)}")
-
+        if created or not account.flutterwave_subaccount_id:
+            messages.success(request, "Bank account saved. Subaccount will be created automatically.")
         else:
             messages.info(request, "Bank account updated. Subaccount already exists.")
 
@@ -535,6 +507,7 @@ def add_bank_account(request):
         "flutterwave_private_key": settings.FLUTTERWAVE_PRIVATE_KEY,
         "country_choices": country_choices,
     })
+
 
 
 

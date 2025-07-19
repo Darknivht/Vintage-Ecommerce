@@ -771,3 +771,5 @@ def privacy_policy(request):
 
 def terms_conditions(request):
     return render(request, "pages/terms_conditions.html")
+
+

@@ -235,6 +235,7 @@ class OrderItem(models.Model):
     class Meta:
         ordering = ['-date']
 
+
 class Review(models.Model):
     user = models.ForeignKey(user_models.User, on_delete=models.SET_NULL, blank=True, null=True)
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, blank=True, null=True, related_name="reviews")

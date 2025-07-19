@@ -1,0 +1,59 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<section class="middle">
+  <div class="container">
+    <h2 class="fw-bold mb-5">Vehicles ({{ vehicles.count }})</h2>
+
+    {% if vehicles %}
+      <div class="row">
+        {% for vehicle in vehicles %}
+          <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 mb-4">
+            <div class="product_grid card b-0 shadow border brd-light">
+              <div class="card-body p-3">
+                <div class="text-center position-relative">
+                  <a href="{% url 'vehicle_detail' vehicle.slug %}" class="d-block">
+                    {% if vehicle.images %}
+                      <img src="{{ vehicle.images.url }}" class="img-fluid rounded" style="height:200px;object-fit:cover;" alt="{{ vehicle.title }}">
+                    {% else %}
+                      <img src="{% static 'images/placeholder-car.png' %}" class="img-fluid rounded" style="height:200px;object-fit:cover;" alt="No Image">
+                    {% endif %}
+                  </a>
+                </div>
+
+                <div class="text-left mt-3">
+                  <h5 class="fs-sm mb-1">
+                    <a href="{% url 'vehicle_detail' vehicle.slug %}" class="text-dark fw-medium">
+                      {{ vehicle.title|truncatechars:40 }}
+                    </a>
+                  </h5>
+                  <div class="elis_rty">
+                    <span class="text-muted fs-sm">
+                      {{ vehicle.vehicle_type }} &bull; {{ vehicle.year }}
+                    </span>
+                    <br>
+                    <span class="text-success fw-semibold fs-md">
+                      ₦{{ vehicle.price|intcomma }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="pagination mt-4">
+        {% include "partials/pagination.html" with page_obj=vehicles %}
+      </div>
+
+    {% else %}
+      <div class="alert alert-info">
+        No vehicles listed at the moment.
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
