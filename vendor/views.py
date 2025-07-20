@@ -9,10 +9,8 @@ from django.db.models import Count
 from django.conf import settings
 import requests
 from vendor.models import PAYOUT_METHOD
-from vendor.models import CURRENCY_MAP
 
 from store.utils.flutterwave import create_flutterwave_subaccount  # ✅ import helper
-from vendor.utils.flutterwave_helper import get_supported_flutterwave_countries
 
 
 
@@ -457,13 +455,28 @@ def delete_product(request, product_id):
     return redirect("vendor:products")
 
 
+
+
+
+
 @login_required
 def add_bank_account(request):
     vendor = request.user.vendor
     account = vendor_models.BankAccount.objects.filter(vendor=vendor).first()
-    vendor_share = 0  # Adjust as needed
 
-    country_choices = get_supported_flutterwave_countries()
+    # Split settings
+    admin_share = 10
+    vendor_share = getattr(settings, "VENDOR_SPLIT_PERCENTAGE", 100 - admin_share)
+
+    # ✅ Country choices should be outside the POST block
+    country_choices = [
+        ("NG", "Nigeria"),
+        ("GH", "Ghana"),
+        ("CI", "Côte d'Ivoire"),
+        ("SN", "Senegal"),
+        ("BJ", "Benin"),
+        ("GLOBAL", "Global")
+    ]
 
     if request.method == "POST":
         account_name = request.POST.get("account_name")
@@ -473,11 +486,12 @@ def add_bank_account(request):
         account_type = request.POST.get("account_type")
         country = request.POST.get("country", "NG")
         branch_code = request.POST.get("branch_code") or None
-        currency = request.POST.get("currency", CURRENCY_MAP.get(country, "USD"))
-        vendor_email = request.user.email
+        currency = request.POST.get("currency", "NGN")  # fallback for now
 
         full_name = f"{request.user.first_name} {request.user.last_name}".strip() or vendor.store_name
+        vendor_email = request.user.email
 
+        # Save to local DB
         account, created = vendor_models.BankAccount.objects.update_or_create(
             vendor=vendor,
             defaults={
@@ -494,9 +508,9 @@ def add_bank_account(request):
             }
         )
 
-        # ✅ Create subaccount if missing
         if not account.flutterwave_subaccount_id:
             try:
+                # Call to create subaccount
                 subaccount_id = create_flutterwave_subaccount(
                     account_name=full_name,
                     account_number=account_number,
@@ -506,11 +520,14 @@ def add_bank_account(request):
                     currency=currency,
                     split_value=vendor_share
                 )
+
                 account.flutterwave_subaccount_id = subaccount_id
                 account.save()
-                messages.success(request, "Bank account saved and subaccount created.")
+                messages.success(request, "Bank account saved and Flutterwave subaccount created.")
+
             except Exception as e:
-                messages.error(request, f"Subaccount creation failed: {e}")
+                messages.error(request, f"Flutterwave Error: {str(e)}")
+
         else:
             messages.info(request, "Bank account updated. Subaccount already exists.")
 
@@ -523,7 +540,6 @@ def add_bank_account(request):
         "flutterwave_private_key": settings.FLUTTERWAVE_PRIVATE_KEY,
         "country_choices": country_choices,
     })
-
 
 
 @login_required

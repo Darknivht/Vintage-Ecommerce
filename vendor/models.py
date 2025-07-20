@@ -5,7 +5,22 @@ from django.utils.text import slugify
 from django.conf import settings
 import requests
 from cloudinary.models import CloudinaryField
-from vendor.utils.flutterwave_helper import get_supported_flutterwave_countries
+
+# Helper: Get supported countries for dropdown
+def get_supported_flutterwave_countries():
+    return [
+        ("NG", "Nigeria"),
+        ("GH", "Ghana"),
+        ("CI", "Côte d'Ivoire"),
+        ("SN", "Senegal"),
+        ("BJ", "Benin"),
+        ("TG", "Togo"),
+        ("GM", "Gambia"),
+        ("GN", "Guinea"),
+        ("LR", "Liberia"),
+        ("SL", "Sierra Leone"),
+        ("GLOBAL", "Other / Global"),
+    ]
 
 # Helper: Map country to currency
 CURRENCY_MAP = {
@@ -34,7 +49,7 @@ def get_flutterwave_banks(country_code):
         banks = response.json().get("data", [])
         return [(bank["code"], bank["name"]) for bank in banks]
     except Exception as e:
-        print("❌ Flutterwave bank fetch error:", e)
+        print("Flutterwave bank fetch error:", e)
         return []
 
 # Create subaccount via Flutterwave API
@@ -47,15 +62,9 @@ def create_flutterwave_subaccount(data):
         }
         response = requests.post(url, json=data, headers=headers)
         response.raise_for_status()
-
-        data = response.json()
-        if data.get("status") == "success":
-            return data.get("data", {}).get("id")  # ✅ Correct key is "id"
-        else:
-            print("❌ Flutterwave error:", data.get("message"))
-            return None
+        return response.json().get("data", {}).get("id", None)
     except Exception as e:
-        print("❌ Flutterwave subaccount creation error:", e)
+        print("Flutterwave subaccount creation error:", e)
         return None
 
 # ====================== MODELS ==========================
@@ -132,11 +141,11 @@ class BankAccount(models.Model):
         return bool(self.flutterwave_subaccount_id)
 
     def save(self, *args, **kwargs):
-        # Auto-fill currency based on country
+        # Auto fill currency
         if self.country and not self.currency:
             self.currency = CURRENCY_MAP.get(self.country, "USD")
 
-        # Auto-set bank code from bank name if not provided
+        # Fetch bank_code based on name
         if self.country and self.bank_name and not self.bank_code:
             banks = get_flutterwave_banks(self.country)
             for code, name in banks:
@@ -144,7 +153,7 @@ class BankAccount(models.Model):
                     self.bank_code = code
                     break
 
-        # Create subaccount on Flutterwave if not yet created
+        # Create subaccount if missing
         if not self.flutterwave_subaccount_id and self.account_number and self.bank_code:
             if self.vendor and self.vendor.store_name and self.email:
                 payload = {
@@ -156,19 +165,12 @@ class BankAccount(models.Model):
                         "name": self.account_name,
                         "email": self.email
                     },
-                    "split_type": "flat",
-                    "split_value": float(self.split_value or 1),  # ✅ Avoid 0
-                    "country": self.country,
-                    "currency": self.currency,
+                    "split_type": "percentage",
+                    "split_value": self.split_value or 1
                 }
-
                 subaccount_id = create_flutterwave_subaccount(payload)
-
                 if subaccount_id:
                     self.flutterwave_subaccount_id = subaccount_id
-                else:
-                    print("❌ Subaccount creation failed. Check payload and ensure valid values:")
-                    print(payload)
 
         super().save(*args, **kwargs)
 

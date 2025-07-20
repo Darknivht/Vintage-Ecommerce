@@ -4,31 +4,31 @@ from store.models import Order
 
 FLW_SECRET_KEY = settings.FLUTTERWAVE_PRIVATE_KEY
 
-def create_flutterwave_subaccount(payload):
+
+def create_flutterwave_subaccount(
+    account_name, account_number, bank_code,
+    vendor_email, country, currency, split_value,
+    split_type="percentage"
+):
     """
     Create a Flutterwave subaccount and return subaccount_id.
-
-    Args:
-        payload (dict): Required fields:
-            - account_bank (str)
-            - account_number (str)
-            - business_name (str)
-            - business_email (str)
-            - country (str)
-            - currency (str)
-            - split_type (str, default "flat")
-            - split_value (float, default 0.0)
-
-    Returns:
-        str: The subaccount_id from Flutterwave on success.
-
-    Raises:
-        Exception: Detailed error if creation fails.
+    Raises exception with detailed info on failure.
     """
     url = "https://api.flutterwave.com/v3/subaccounts"
     headers = {
         "Authorization": f"Bearer {FLW_SECRET_KEY}",
         "Content-Type": "application/json",
+    }
+
+    payload = {
+        "account_bank": bank_code,
+        "account_number": account_number,
+        "business_name": account_name,
+        "business_email": vendor_email,
+        "split_type": split_type,
+        "split_value": float(split_value),
+        "country": country,
+        "currency": currency,
     }
 
     try:
@@ -38,23 +38,20 @@ def create_flutterwave_subaccount(payload):
         if response.status_code != 200 or data.get("status") != "success":
             raise Exception(f"Flutterwave Error: {data.get('message')} | Payload: {payload}")
 
-        # Support both 'subaccount_id' and 'id'
-        return data.get("data", {}).get("subaccount_id") or data.get("data", {}).get("id")
+        return data["data"]["subaccount_id"]
 
     except requests.RequestException as e:
         raise Exception(f"Request failed: {str(e)}")
 
 
-
 def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_url, subaccounts):
     """
     Initiates a Flutterwave payment with multiple subaccount splits.
-    
     Each subaccount dict must include:
         {
-            "id": str,  # Flutterwave subaccount ID
-            "transaction_charge_type": "flat",
-            "transaction_charge": float  # flat amount to deduct from vendor
+            "id": str,  # subaccount ID
+            "transaction_charge_type": "percentage",
+            "transaction_charge": float  # e.g. 90.0 for 90%
         }
     """
     url = "https://api.flutterwave.com/v3/payments"
@@ -100,10 +97,10 @@ def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
     ]
     """
     subaccount_amounts = {}
-    platform_total = 0.0
 
     for item in order.order_items():
         vendor = item.vendor
+
         if not vendor:
             continue
 
@@ -121,13 +118,11 @@ def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
             else:
                 subaccount_amounts[subaccount_id] = vendor_amount
 
-            platform_total += float(item.sub_total) * (platform_share_percent / 100)
-
         except Exception as e:
             print(f"Skipping vendor {vendor} due to: {e}")
             continue
 
-    subaccounts = [
+    return [
         {
             "id": sub_id,
             "transaction_charge_type": "flat",
@@ -136,31 +131,3 @@ def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
         for sub_id, amount in subaccount_amounts.items()
     ]
 
-    # Optional: Include platform subaccount if needed
-    PLATFORM_SUBACCOUNT_ID = getattr(settings, "FLUTTERWAVE_PLATFORM_SUBACCOUNT_ID", None)
-    if PLATFORM_SUBACCOUNT_ID:
-        subaccounts.append({
-            "id": PLATFORM_SUBACCOUNT_ID,
-            "transaction_charge_type": "flat",
-            "transaction_charge": round(platform_total, 2)
-        })
-
-    return subaccounts
-
-
-
-
-def get_supported_flutterwave_countries():
-    return [
-        ("NG", "Nigeria"),
-        ("GH", "Ghana"),
-        ("CI", "Côte d'Ivoire"),
-        ("SN", "Senegal"),
-        ("BJ", "Benin"),
-        ("TG", "Togo"),
-        ("GM", "Gambia"),
-        ("GN", "Guinea"),
-        ("LR", "Liberia"),
-        ("SL", "Sierra Leone"),
-        ("GLOBAL", "Other / Global"),
-    ]
