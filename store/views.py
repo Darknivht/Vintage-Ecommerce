@@ -295,10 +295,7 @@ def create_order(request):
         order.customer = request.user
         order.address = address
         order.shipping = cart_shipping_total
-        order.tax = tax_calculation(address.country, cart_sub_total)
-        order.total = order.sub_total + order.shipping + Decimal(order.tax)
-        order.service_fee = calculate_service_fee(order.total)
-        order.total += order.service_fee
+        order.total = order.sub_total + order.shipping
         order.save()
 
         for i in items:
@@ -311,7 +308,6 @@ def create_order(request):
                 price=i.price,
                 sub_total=i.sub_total,
                 shipping=i.shipping,
-                tax=tax_calculation(address.country, i.sub_total),
                 total=i.total,
                 initial_total=i.total,
                 vendor=i.product.vendor
