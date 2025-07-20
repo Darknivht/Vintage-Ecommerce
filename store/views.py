@@ -377,7 +377,7 @@ def checkout(request, order_id):
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
 
-    # ✅ Step 1: Calculate earnings per vendor (90%) and platform commission (10%)
+    # ✅ Step 1: Calculate vendor share (including shipping fee)
     vendor_totals = {}
     platform_share = 0
 
@@ -386,20 +386,25 @@ def checkout(request, order_id):
         try:
             bank_account = vendor.vendor.bankaccount
             sub_id = bank_account.flutterwave_subaccount_id
+
             vendor_share_percent = float(bank_account.split_value or 90)
-            vendor_amount = float(item.sub_total) * (vendor_share_percent / 100)
+
+            # ✅ Add sub_total + shipping_fee to vendor
+            item_total = float(item.sub_total) + float(item.shipping_fee or 0)
+
+            vendor_amount = item_total * (vendor_share_percent / 100)
 
             if sub_id in vendor_totals:
                 vendor_totals[sub_id] += vendor_amount
             else:
                 vendor_totals[sub_id] = vendor_amount
 
-            platform_share += float(item.sub_total) * (1 - vendor_share_percent / 100)
+            platform_share += item_total * (1 - vendor_share_percent / 100)
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
-    # ✅ Step 2: Convert totals to ratio-based split
+    # ✅ Step 2: Ratio-based split
     split_total = sum(vendor_totals.values()) + platform_share
 
     flutterwave_subaccounts = []
@@ -410,7 +415,7 @@ def checkout(request, order_id):
             "transaction_split_ratio": round(ratio, 2)
         })
 
-    # ✅ Step 3: Initiate Flutterwave Payment
+    # ✅ Step 3: Initiate payment
     try:
         customer = {
             "email": order.address.email,
@@ -419,7 +424,7 @@ def checkout(request, order_id):
         }
 
         flutterwave_data = initiate_flutterwave_payment(
-            amount=order.total,
+            amount=order.total,  # Already includes product + shipping
             currency="NGN",
             tx_ref=f"ORDER-{order.order_id}",
             customer=customer,
@@ -435,7 +440,7 @@ def checkout(request, order_id):
         flutterwave_checkout_link = None
         print("Flutterwave error:", str(e))
 
-    # ✅ Step 4: Render checkout page
+    # ✅ Step 4: Render
     context = {
         "order": order,
         "amount_in_kobo": amount_in_kobo,
