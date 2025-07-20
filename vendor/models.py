@@ -37,7 +37,7 @@ def get_flutterwave_banks(country_code):
         print("❌ Flutterwave bank fetch error:", e)
         return []
 
-# Create subaccount via Flutterwave API (✅ Fixed)
+# Create subaccount via Flutterwave API
 def create_flutterwave_subaccount(data):
     try:
         url = "https://api.flutterwave.com/v3/subaccounts"
@@ -47,7 +47,13 @@ def create_flutterwave_subaccount(data):
         }
         response = requests.post(url, json=data, headers=headers)
         response.raise_for_status()
-        return response.json().get("data", {}).get("subaccount_id", None)  # ✅ Fixed key
+
+        data = response.json()
+        if data.get("status") == "success":
+            return data.get("data", {}).get("id")  # ✅ Correct key is "id"
+        else:
+            print("❌ Flutterwave error:", data.get("message"))
+            return None
     except Exception as e:
         print("❌ Flutterwave subaccount creation error:", e)
         return None
@@ -151,7 +157,7 @@ class BankAccount(models.Model):
                         "email": self.email
                     },
                     "split_type": "flat",
-                    "split_value": float(self.split_value or 0),
+                    "split_value": float(self.split_value or 1),  # ✅ Avoid 0
                     "country": self.country,
                     "currency": self.currency,
                 }
