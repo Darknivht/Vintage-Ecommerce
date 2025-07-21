@@ -369,8 +369,6 @@ def coupon_apply(request, order_id):
         return redirect("store:checkout", order.order_id)
 
 
-
-
 @login_required
 def checkout(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
@@ -424,7 +422,7 @@ def checkout(request, order_id):
         {
             "id": sub_id,
             "transaction_charge_type": details["transaction_charge_type"],
-            "transaction_charge": round(details["transaction_charge"], 2)
+            "transaction_charge": float(details["transaction_charge"])
         }
         for sub_id, details in vendor_subaccounts.items()
     ]
