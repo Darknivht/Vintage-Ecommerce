@@ -378,7 +378,6 @@ def checkout(request, order_id):
     amount_in_usd = convert_ngn_to_usd(order.total)
 
     vendor_subaccounts = {}
-    platform_share = 0
 
     for item in order.order_items():
         vendor = item.vendor
@@ -390,25 +389,31 @@ def checkout(request, order_id):
             product_price = float(item.sub_total)
             shipping_fee = float(item.shipping)
 
-            # Vendor earnings: 90% of product price + 100% of shipping
+            # Vendor receives 90% of product price + 100% of shipping
             vendor_earnings = (product_price * vendor_share_percent / 100) + shipping_fee
-
-            # Platform commission: 10% of product price
-            commission = product_price * (1 - vendor_share_percent / 100)
+            platform_commission = product_price * (1 - vendor_share_percent / 100)
 
             if sub_id not in vendor_subaccounts:
                 vendor_subaccounts[sub_id] = {
                     "transaction_charge_type": "flat",
-                    "transaction_charge": round(commission, 2)
+                    "transaction_charge": round(platform_commission, 2),
+                    "total_earnings": vendor_earnings
                 }
             else:
-                vendor_subaccounts[sub_id]["transaction_charge"] += round(commission, 2)
+                vendor_subaccounts[sub_id]["transaction_charge"] += round(platform_commission, 2)
+                vendor_subaccounts[sub_id]["total_earnings"] += vendor_earnings
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
+    # Create final subaccount list for Flutterwave
     flutterwave_subaccounts = [
-        {"id": sub_id, **details} for sub_id, details in vendor_subaccounts.items()
+        {
+            "id": sub_id,
+            "transaction_charge_type": details["transaction_charge_type"],
+            "transaction_charge": round(details["transaction_charge"], 2)
+        }
+        for sub_id, details in vendor_subaccounts.items()
     ]
 
     try:
@@ -446,8 +451,6 @@ def checkout(request, order_id):
     }
 
     return render(request, "store/checkout.html", context)
-
-
 
 
 @csrf_exempt
