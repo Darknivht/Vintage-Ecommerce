@@ -369,34 +369,40 @@ def coupon_apply(request, order_id):
         return redirect("store:checkout", order.order_id)
 
 
+
 @login_required
 def checkout(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
+
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
 
-    # Calculate total amount for each vendor
-    vendor_totals = {}
-    platform_commission_total = 0
+    vendor_subaccounts = {}
+
     for item in order.order_items():
         vendor = item.vendor
         try:
             bank_account = vendor.vendor.bankaccount
             sub_id = bank_account.flutterwave_subaccount_id
-            vendor_share_percent = Decimal(90)  # Vendor gets 90%
-            product_price = item.price  # Use item price instead of sub_total
-            shipping_fee = item.shipping
-            platform_commission = product_price * (Decimal(10) / 100)  # Calculate platform commission
-            platform_commission_total += platform_commission
-            vendor_earnings = product_price - platform_commission + shipping_fee
+            vendor_share_percent = float(bank_account.split_value or 90)
 
-            if sub_id not in vendor_totals:
-                vendor_totals[sub_id] = {
-                    "vendor_earnings": vendor_earnings,
-                    "sub_id": sub_id,
+            product_price = float(item.sub_total)
+            shipping_fee = float(item.shipping)
+
+            # Vendor receives 90% of product price + 100% of shipping
+            vendor_earnings = (product_price * vendor_share_percent / 100) + shipping_fee
+            platform_commission = product_price * (1 - vendor_share_percent / 100)
+
+            if sub_id not in vendor_subaccounts:
+                vendor_subaccounts[sub_id] = {
+                    "transaction_charge_type": "flat",
+                    "transaction_charge": round(platform_commission, 2),
+                    "total_earnings": vendor_earnings
                 }
             else:
-                vendor_totals[sub_id]["vendor_earnings"] += vendor_earnings
+                vendor_subaccounts[sub_id]["transaction_charge"] += round(platform_commission, 2)
+                vendor_subaccounts[sub_id]["total_earnings"] += vendor_earnings
+
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
@@ -404,10 +410,10 @@ def checkout(request, order_id):
     flutterwave_subaccounts = [
         {
             "id": sub_id,
-            "transaction_charge_type": "flat",
-            "transaction_charge": 0  # Platform commission will be deducted from the vendor's earnings
+            "transaction_charge_type": details["transaction_charge_type"],
+            "transaction_charge": round(details["transaction_charge"], 2)
         }
-        for sub_id, details in vendor_totals.items()
+        for sub_id, details in vendor_subaccounts.items()
     ]
 
     try:
@@ -416,6 +422,7 @@ def checkout(request, order_id):
             "name": order.address.full_name,
             "phonenumber": order.address.mobile,
         }
+
         flutterwave_data = initiate_flutterwave_payment(
             amount=order.total,
             currency="NGN",
@@ -426,7 +433,9 @@ def checkout(request, order_id):
             ),
             subaccounts=flutterwave_subaccounts
         )
+
         flutterwave_checkout_link = flutterwave_data.get("link")
+
     except Exception as e:
         flutterwave_checkout_link = None
         print("Flutterwave error:", str(e))
@@ -440,8 +449,8 @@ def checkout(request, order_id):
         "flutterwave_checkout_link": flutterwave_checkout_link,
         "flutterwave_subaccounts_json": json.dumps(flutterwave_subaccounts),
     }
-    return render(request, "store/checkout.html", context)
 
+    return render(request, "store/checkout.html", context)
 
 
 @csrf_exempt

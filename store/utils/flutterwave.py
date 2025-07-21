@@ -88,27 +88,36 @@ def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_ur
 
 
 def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
-    """ Calculates vendor payouts using flat amounts. Returns a list of Flutterwave-compatible subaccounts: [ {"id": "RS_XXX", "transaction_charge_type": "flat", "transaction_charge": 1350.00}, ... ] """
+    """
+    Calculates vendor payouts using flat amounts.
+    Returns a list of Flutterwave-compatible subaccounts:
+    [
+        {"id": "RS_XXX", "transaction_charge_type": "flat", "transaction_charge": 1350.00},
+        ...
+    ]
+    """
     subaccount_amounts = {}
-    platform_commission = 0
+
     for item in order.order_items():
         vendor = item.vendor
+
         if not vendor:
             continue
+
         try:
             bank_account = vendor.vendor.bankaccount
             subaccount_id = bank_account.flutterwave_subaccount_id
             if not subaccount_id:
                 continue
-            product_price = float(item.price)
-            shipping_fee = float(item.shipping)
-            platform_commission += product_price * (platform_share_percent / 100)
-            vendor_amount = product_price - (product_price * (platform_share_percent / 100)) + shipping_fee
+
+            vendor_percent = 100 - platform_share_percent
+            vendor_amount = float(item.sub_total) * (vendor_percent / 100)
 
             if subaccount_id in subaccount_amounts:
                 subaccount_amounts[subaccount_id] += vendor_amount
             else:
                 subaccount_amounts[subaccount_id] = vendor_amount
+
         except Exception as e:
             print(f"Skipping vendor {vendor} due to: {e}")
             continue
@@ -117,8 +126,7 @@ def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
         {
             "id": sub_id,
             "transaction_charge_type": "flat",
-            "transaction_charge": 0  # Platform commission will be deducted from the total amount
+            "transaction_charge": round(amount, 2)
         }
         for sub_id, amount in subaccount_amounts.items()
     ]
-
