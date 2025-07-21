@@ -384,9 +384,9 @@ def checkout(request, order_id):
         try:
             bank_account = vendor.vendor.bankaccount
             sub_id = bank_account.flutterwave_subaccount_id
-            vendor_share_percent = float(bank_account.split_value or 90)
-            product_price = float(item.sub_total)
-            shipping_fee = float(item.shipping)
+            vendor_share_percent = Decimal(bank_account.split_value or 90)
+            product_price = item.sub_total
+            shipping_fee = item.shipping
             total_amount = product_price + shipping_fee
 
             if sub_id not in vendor_totals:
@@ -406,8 +406,8 @@ def checkout(request, order_id):
     for sub_id, details in vendor_totals.items():
         vendor_share_percent = details["vendor_share_percent"]
         vendor_total_amount = details["total_amount"]
-        vendor_earnings = (vendor_total_amount / total_order_amount) * order.total * (vendor_share_percent / 100)
-        platform_commission = (vendor_total_amount / total_order_amount) * order.total * (1 - vendor_share_percent / 100)
+        vendor_earnings = (vendor_total_amount / total_order_amount) * total_order_amount * (vendor_share_percent / 100)
+        platform_commission = (vendor_total_amount / total_order_amount) * total_order_amount * (Decimal(1) - vendor_share_percent / 100)
 
         if sub_id not in vendor_subaccounts:
             vendor_subaccounts[sub_id] = {
