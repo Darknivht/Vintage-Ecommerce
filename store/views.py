@@ -385,28 +385,28 @@ def checkout(request, order_id):
         try:
             bank_account = vendor.vendor.bankaccount
             sub_id = bank_account.flutterwave_subaccount_id
-            vendor_share_percent = float(bank_account.split_value or 90)
+            vendor_share_percent = 90  # Fixed as requested
+            platform_share_percent = 10
 
             product_price = float(item.sub_total)
             shipping_fee = float(item.shipping)
 
-            # Calculate vendor earnings = 90% of product + full shipping
+            # Vendor earns 90% of product price + full shipping
             vendor_earnings = (product_price * vendor_share_percent / 100) + shipping_fee
 
-            # Platform earns 10% of product only (not shipping)
-            platform_commission = product_price * (1 - vendor_share_percent / 100)
+            # Platform earns 10% of product price (not shipping)
+            platform_commission = product_price * platform_share_percent / 100
 
             if sub_id not in vendor_earnings_map:
-                vendor_earnings_map[sub_id] = vendor_earnings
-            else:
-                vendor_earnings_map[sub_id] += vendor_earnings
+                vendor_earnings_map[sub_id] = 0
+            vendor_earnings_map[sub_id] += vendor_earnings
 
             platform_total_commission += platform_commission
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
-    total_order_amount = float(order.total)  # Should include product + shipping
+    total_order_amount = float(order.total)
 
     # ✅ Build split ratios
     flutterwave_subaccounts = []
@@ -417,7 +417,7 @@ def checkout(request, order_id):
             "transaction_split_ratio": round(split_ratio, 2)
         })
 
-    # ✅ Optional: Add platform share if you have a platform subaccount
+    # ✅ Add platform share
     platform_subaccount_id = getattr(settings, "FLUTTERWAVE_PLATFORM_SUBACCOUNT_ID", None)
     if platform_subaccount_id and platform_total_commission > 0:
         platform_ratio = (platform_total_commission / total_order_amount) * 100
@@ -461,6 +461,7 @@ def checkout(request, order_id):
     }
 
     return render(request, "store/checkout.html", context)
+
 
 
 
