@@ -377,54 +377,44 @@ def checkout(request, order_id):
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
 
-    vendor_earnings_map = {}      # Actual amounts each vendor earns
-    vendor_contribution_map = {}  # Sum of product+shipping per vendor (contribution to cart)
-    platform_total_commission = 0
-
-    total_order_amount = float(order.total)
+    vendor_subaccounts = {}
 
     for item in order.order_items():
         vendor = item.vendor
         try:
             bank_account = vendor.vendor.bankaccount
             sub_id = bank_account.flutterwave_subaccount_id
+            vendor_share_percent = float(bank_account.split_value or 90)
 
             product_price = float(item.sub_total)
             shipping_fee = float(item.shipping)
 
-            vendor_contribution = product_price + shipping_fee
-            vendor_cut = (product_price * 90 / 100) + shipping_fee
-            platform_cut = product_price * 10 / 100
+            # Vendor receives 90% of product price + 100% of shipping
+            vendor_earnings = (product_price * vendor_share_percent / 100) + shipping_fee
+            platform_commission = product_price * (1 - vendor_share_percent / 100)
 
-            if sub_id not in vendor_earnings_map:
-                vendor_earnings_map[sub_id] = 0
-                vendor_contribution_map[sub_id] = 0
-
-            vendor_earnings_map[sub_id] += vendor_cut
-            vendor_contribution_map[sub_id] += vendor_contribution
-            platform_total_commission += platform_cut
+            if sub_id not in vendor_subaccounts:
+                vendor_subaccounts[sub_id] = {
+                    "transaction_charge_type": "flat",
+                    "transaction_charge": round(platform_commission, 2),
+                    "total_earnings": vendor_earnings
+                }
+            else:
+                vendor_subaccounts[sub_id]["transaction_charge"] += round(platform_commission, 2)
+                vendor_subaccounts[sub_id]["total_earnings"] += vendor_earnings
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
-    # ✅ Build split ratios with normalized shares
-    flutterwave_subaccounts = []
-
-    for sub_id, vendor_earning in vendor_earnings_map.items():
-        split_ratio = (vendor_earning / total_order_amount) * 100
-        flutterwave_subaccounts.append({
+    # Create final subaccount list for Flutterwave
+    flutterwave_subaccounts = [
+        {
             "id": sub_id,
-            "transaction_split_ratio": round(split_ratio, 2)
-        })
-
-    # ✅ Platform share from all products
-    platform_subaccount_id = getattr(settings, "FLUTTERWAVE_PLATFORM_SUBACCOUNT_ID", None)
-    if platform_subaccount_id and platform_total_commission > 0:
-        platform_ratio = (platform_total_commission / total_order_amount) * 100
-        flutterwave_subaccounts.append({
-            "id": platform_subaccount_id,
-            "transaction_split_ratio": round(platform_ratio, 2)
-        })
+            "transaction_charge_type": details["transaction_charge_type"],
+            "transaction_charge": round(details["transaction_charge"], 2)
+        }
+        for sub_id, details in vendor_subaccounts.items()
+    ]
 
     try:
         customer = {
@@ -461,7 +451,6 @@ def checkout(request, order_id):
     }
 
     return render(request, "store/checkout.html", context)
-
 
 
 @csrf_exempt
