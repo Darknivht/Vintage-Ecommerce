@@ -378,6 +378,8 @@ def checkout(request, order_id):
     amount_in_usd = convert_ngn_to_usd(order.total)
 
     vendor_subaccounts = {}
+    total_order_amount = float(order.total)
+    platform_share = 0
 
     for item in order.order_items():
         vendor = item.vendor
@@ -389,19 +391,22 @@ def checkout(request, order_id):
             product_price = float(item.sub_total)
             shipping_fee = float(item.shipping)
 
-            # Vendor receives 90% of product price + 100% of shipping
-            vendor_earnings = (product_price * vendor_share_percent / 100) + shipping_fee
+            # Calculate vendor's earnings and platform's commission
+            vendor_product_share = product_price * vendor_share_percent / 100
             platform_commission = product_price * (1 - vendor_share_percent / 100)
+            platform_share += platform_commission
+            
+            # Vendor gets their share of product price + 100% of shipping
+            vendor_earnings = vendor_product_share + shipping_fee
 
             if sub_id not in vendor_subaccounts:
                 vendor_subaccounts[sub_id] = {
+                    "transaction_split_type": "flat",
                     "transaction_charge_type": "flat",
-                    "transaction_charge": round(platform_commission, 2),
-                    "total_earnings": vendor_earnings
+                    "transaction_amount": round(vendor_earnings, 2)
                 }
             else:
-                vendor_subaccounts[sub_id]["transaction_charge"] += round(platform_commission, 2)
-                vendor_subaccounts[sub_id]["total_earnings"] += vendor_earnings
+                vendor_subaccounts[sub_id]["transaction_amount"] += round(vendor_earnings, 2)
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
@@ -410,11 +415,22 @@ def checkout(request, order_id):
     flutterwave_subaccounts = [
         {
             "id": sub_id,
-            "transaction_charge_type": details["transaction_charge_type"],
-            "transaction_charge": round(details["transaction_charge"], 2)
+            "transaction_split_type": "flat",
+            "transaction_charge_type": "flat",
+            "transaction_amount": round(details["transaction_amount"], 2)
         }
         for sub_id, details in vendor_subaccounts.items()
     ]
+
+    # Verify the split calculation
+    total_vendor_earnings = sum(details["transaction_amount"] for details in vendor_subaccounts.values())
+    calculated_platform_share = total_order_amount - total_vendor_earnings
+    
+    # Log verification for debugging
+    print(f"Order total: {total_order_amount}")
+    print(f"Total vendor earnings: {total_vendor_earnings}")
+    print(f"Platform share: {platform_share}")
+    print(f"Calculated platform share: {calculated_platform_share}")
 
     try:
         customer = {

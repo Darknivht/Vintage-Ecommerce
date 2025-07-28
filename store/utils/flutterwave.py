@@ -50,8 +50,9 @@ def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_ur
     Each subaccount dict must include:
         {
             "id": str,  # subaccount ID
-            "transaction_charge_type": "percentage",
-            "transaction_charge": float  # e.g. 90.0 for 90%
+            "transaction_split_type": "flat",
+            "transaction_charge_type": "flat",
+            "transaction_amount": float  # exact amount the vendor should receive
         }
     """
     url = "https://api.flutterwave.com/v3/payments"
@@ -92,11 +93,18 @@ def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
     Calculates vendor payouts using flat amounts.
     Returns a list of Flutterwave-compatible subaccounts:
     [
-        {"id": "RS_XXX", "transaction_charge_type": "flat", "transaction_charge": 1350.00},
+        {
+            "id": "RS_XXX",
+            "transaction_split_type": "flat",
+            "transaction_charge_type": "flat",
+            "transaction_amount": 1350.00
+        },
         ...
     ]
     """
     subaccount_amounts = {}
+    total_order_amount = float(order.total)
+    platform_share = 0
 
     for item in order.order_items():
         vendor = item.vendor
@@ -110,8 +118,17 @@ def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
             if not subaccount_id:
                 continue
 
-            vendor_percent = 100 - platform_share_percent
-            vendor_amount = float(item.sub_total) * (vendor_percent / 100)
+            vendor_share_percent = 100 - platform_share_percent
+            product_price = float(item.sub_total)
+            shipping_fee = float(item.shipping)
+            
+            # Calculate vendor's earnings and platform's commission
+            vendor_product_share = product_price * vendor_share_percent / 100
+            platform_commission = product_price * platform_share_percent / 100
+            platform_share += platform_commission
+            
+            # Vendor gets their share of product price + 100% of shipping
+            vendor_amount = vendor_product_share + shipping_fee
 
             if subaccount_id in subaccount_amounts:
                 subaccount_amounts[subaccount_id] += vendor_amount
@@ -125,8 +142,9 @@ def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
     return [
         {
             "id": sub_id,
+            "transaction_split_type": "flat",
             "transaction_charge_type": "flat",
-            "transaction_charge": round(amount, 2)
+            "transaction_amount": round(amount, 2)
         }
         for sub_id, amount in subaccount_amounts.items()
     ]
