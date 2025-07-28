@@ -24,75 +24,474 @@
 			</div>
 		{% endif %}
 
-		<form class="mb-5 d-flex justify-content-between align-items-center gap-2">
-			<input type="text" class="form-control rounded" placeholder="Search Products..." name="q">
-			<button type="submit" class="btn bg-primary text-white rounded"><i class="fas fa-search"></i></button>
-		</form>
+		<div class="d-flex justify-content-between align-items-center mb-4">
+			<form class="d-flex justify-content-between align-items-center gap-2">
+				<input type="text" class="form-control rounded" placeholder="Search Products..." name="q">
+				<button type="submit" class="btn bg-primary text-white rounded"><i class="fas fa-search"></i></button>
+			</form>
+			
+			{% if request.user.is_authenticated %}
+				<a href="{% url 'store:select_category' %}" class="btn bg-primary text-white rounded">
+					<i class="fas fa-plus me-2"></i> Add Listing
+				</a>
+			{% endif %}
+		</div>
 
-		<div class="row">
-			<div class="col-lg-12"> 
-				<div class="row align-items-center rows-products" id="products-list">						
-					{% for p in products %}
-						<div class="col-lg-3">
-							<div class="product_grid card b-0 rounded-3 shadow m-2 p-2">
-								<div class="card-body p-0">
-									<div class="shop_thumb position-relative">
-										<a class="card-img-top d-block overflow-hidden" href="{% url 'store:product_detail' p.slug %}">
-											<img class="card-img-top" style="width: 100%; height: 230px; object-fit: cover;" src="{{ p.image.url }}" alt="{{ p.name }}" />
-										</a>
+		<!-- Tabs for different listing types -->
+		<ul class="nav nav-tabs mb-4" id="listingTabs" role="tablist">
+			<li class="nav-item" role="presentation">
+				<button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="true">All</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="products-tab" data-bs-toggle="tab" data-bs-target="#products" type="button" role="tab" aria-controls="products" aria-selected="false">Products</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="realestate-tab" data-bs-toggle="tab" data-bs-target="#realestate" type="button" role="tab" aria-controls="realestate" aria-selected="false">Real Estate</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="vehicles-tab" data-bs-toggle="tab" data-bs-target="#vehicles" type="button" role="tab" aria-controls="vehicles" aria-selected="false">Vehicles</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="jobs-tab" data-bs-toggle="tab" data-bs-target="#jobs" type="button" role="tab" aria-controls="jobs" aria-selected="false">Jobs</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="services-tab" data-bs-toggle="tab" data-bs-target="#services" type="button" role="tab" aria-controls="services" aria-selected="false">Services</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="paybills-tab" data-bs-toggle="tab" data-bs-target="#paybills" type="button" role="tab" aria-controls="paybills" aria-selected="false">Paybills</button>
+			</li>
+		</ul>
+
+		<div class="tab-content" id="listingTabsContent">
+			<!-- All Listings Tab -->
+			<div class="tab-pane fade show active" id="all" role="tabpanel" aria-labelledby="all-tab">
+				<div class="row">
+					<div class="col-lg-12"> 
+						<div class="row align-items-center rows-products" id="products-list">						
+							{% for p in products %}
+								<div class="col-lg-3">
+									<div class="product_grid card b-0 rounded-3 shadow m-2 p-2">
+										<div class="card-body p-0">
+											<div class="shop_thumb position-relative">
+												<a class="card-img-top d-block overflow-hidden" href="{% url 'store:product_detail' p.slug %}">
+													<img class="card-img-top" style="width: 100%; height: 230px; object-fit: cover;" src="{{ p.image.url }}" alt="{{ p.name }}" />
+												</a>
+											</div>
+										</div>
+										<div class="card-footer b-0 p-0 pt-2 bg-white d-flex align-items-start justify-content-between">
+											<div class="text-left">
+												<div class="text-left">
+													<div class="elso_titl">
+														<span class="small">
+															{% if p.category and p.category.id %}
+																<a href="{% url 'store:category' p.category.id %}">{{ p.category.title }}</a>
+															{% else %}
+																{{ p.category.title }}
+															{% endif %}
+														</span>
+													</div>
+													<h5 class="fs-md mb-0 lh-1 mb-1">
+														<a href="{% url 'store:product_detail' p.slug %}">{{ p.name }}</a>
+													</h5>
+
+													<div class="star-rating align-items-center d-flex justify-content-left mb-2 p-0 mt-3">
+														{% if not p.average_rating %}
+															<i class="fas fa-star text-warning"></i>
+														{% elif p.average_rating > 0 and p.average_rating < 2 %}
+															<i class="fas fa-star text-warning"></i>
+														{% elif p.average_rating > 1 and p.average_rating < 3 %}
+															<i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
+														{% elif p.average_rating > 2 and p.average_rating < 4 %}
+															<i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
+														{% elif p.average_rating > 3 and p.average_rating < 5 %}
+															<i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
+														{% elif p.average_rating > 4 %}
+															<i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
+														{% endif %}
+													</div>
+
+													<div class="elis_rty">
+														<span class="ft-bold text-dark fs-sm">₦{{ p.price }}</span>
+													</div>
+												</div>
+
+												<div class="d-flex align-items-center gap-3">
+													<button type="button" class="btn btn-sm bg-primary text-white rounded add_to_cart" data-id="{{ p.id }}">Add to cart <i class="fas fa-shopping-cart ms-2"></i></button>
+													<a href="#" class="me-2 add_to_wishlist" data-product_id="{{ p.id }}"><i class="fas fa-heart fs-4 text-dark"></i></a>
+													<input type="hidden" class="quantity" value="1">
+												</div>
+											</div>
+										</div>
 									</div>
 								</div>
-								<div class="card-footer b-0 p-0 pt-2 bg-white d-flex align-items-start justify-content-between">
-									<div class="text-left">
-										<div class="text-left">
-											<div class="elso_titl">
-												<span class="small">
-													{% if p.category and p.category.id %}
-														<a href="{% url 'store:category' p.category.id %}">{{ p.category.title }}</a>
-													{% else %}
-														{{ p.category.title }}
-													{% endif %}
-												</span>
-											</div>
-											<h5 class="fs-md mb-0 lh-1 mb-1">
-												<a href="{% url 'store:product_detail' p.slug %}">{{ p.name }}</a>
-											</h5>
+							{% empty %}
+								<p>No products found in this category</p>
+							{% endfor %}
 
-											<div class="star-rating align-items-center d-flex justify-content-left mb-2 p-0 mt-3">
-												{% if not p.average_rating %}
-													<i class="fas fa-star text-warning"></i>
-												{% elif p.average_rating > 0 and p.average_rating < 2 %}
-													<i class="fas fa-star text-warning"></i>
-												{% elif p.average_rating > 1 and p.average_rating < 3 %}
-													<i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
-												{% elif p.average_rating > 2 and p.average_rating < 4 %}
-													<i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
-												{% elif p.average_rating > 3 and p.average_rating < 5 %}
-													<i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
-												{% elif p.average_rating > 4 %}
-													<i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
+							<!-- Real Estate Listings -->
+							{% for listing in realestate_listings %}
+								<div class="col-lg-4">
+									<div class="product_grid card b-0 rounded-3 shadow m-2 p-2">
+										<div class="card-body p-0">
+											<div class="shop_thumb position-relative">
+												{% if listing.images %}
+													<img class="card-img-top" style="width: 100%; height: 230px; object-fit: cover;" src="{{ listing.images.url }}" alt="{{ listing.title }}" />
+												{% else %}
+													<div class="bg-light" style="width: 100%; height: 230px; display: flex; align-items: center; justify-content: center;">
+														<i class="fas fa-home fa-3x text-secondary"></i>
+													</div>
 												{% endif %}
 											</div>
-
-											<div class="elis_rty">
-												<span class="ft-bold text-dark fs-sm">₦{{ p.price }}</span>
-											</div>
 										</div>
-
-										<div class="d-flex align-items-center gap-3">
-											<button type="button" class="btn btn-sm bg-primary text-white rounded add_to_cart" data-id="{{ p.id }}">Add to cart <i class="fas fa-shopping-cart ms-2"></i></button>
-											<a href="#" class="me-2 add_to_wishlist" data-product_id="{{ p.id }}"><i class="fas fa-heart fs-4 text-dark"></i></a>
-											<input type="hidden" class="quantity" value="1">
+										<div class="card-footer b-0 p-3 bg-white">
+											<div class="text-left">
+												<h5 class="fs-md mb-2">{{ listing.title }}</h5>
+												<p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i>{{ listing.state }}, {{ listing.local_government }}</p>
+												<p class="mb-1"><i class="fas fa-bed me-2"></i>{{ listing.number_of_bedrooms }} Bedrooms</p>
+												<p class="mb-3"><i class="fas fa-bath me-2"></i>{{ listing.number_of_bathrooms }} Bathrooms</p>
+												<div class="d-flex justify-content-between align-items-center">
+													<span class="ft-bold text-dark fs-md">₦{{ listing.price|intcomma }}</span>
+													<a href="#" class="btn btn-sm bg-primary text-white rounded">View Details</a>
+												</div>
+											</div>
 										</div>
 									</div>
 								</div>
-							</div>
+							{% endfor %}
+
+							<!-- Vehicle Listings -->
+							{% for listing in vehicle_listings %}
+								<div class="col-lg-4">
+									<div class="product_grid card b-0 rounded-3 shadow m-2 p-2">
+										<div class="card-body p-0">
+											<div class="shop_thumb position-relative">
+												{% if listing.images %}
+													<img class="card-img-top" style="width: 100%; height: 230px; object-fit: cover;" src="{{ listing.images.url }}" alt="{{ listing.title }}" />
+												{% else %}
+													<div class="bg-light" style="width: 100%; height: 230px; display: flex; align-items: center; justify-content: center;">
+														<i class="fas fa-car fa-3x text-secondary"></i>
+													</div>
+												{% endif %}
+											</div>
+										</div>
+										<div class="card-footer b-0 p-3 bg-white">
+											<div class="text-left">
+												<h5 class="fs-md mb-2">{{ listing.title }}</h5>
+												<p class="mb-1"><i class="fas fa-tag me-2"></i>{{ listing.brand }}</p>
+												<p class="mb-1"><i class="fas fa-calendar me-2"></i>{{ listing.year }}</p>
+												<p class="mb-3"><i class="fas fa-tachometer-alt me-2"></i>{{ listing.mileage }} km</p>
+												<div class="d-flex justify-content-between align-items-center">
+													<span class="ft-bold text-dark fs-md">₦{{ listing.price|intcomma }}</span>
+													<a href="#" class="btn btn-sm bg-primary text-white rounded">View Details</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							{% endfor %}
+
+							<!-- Job Listings -->
+							{% for listing in job_listings %}
+								<div class="col-lg-4">
+									<div class="product_grid card b-0 rounded-3 shadow m-2 p-2">
+										<div class="card-footer b-0 p-3 bg-white">
+											<div class="text-left">
+												<h5 class="fs-md mb-2">{{ listing.title }}</h5>
+												<p class="mb-1"><i class="fas fa-building me-2"></i>{{ listing.company }}</p>
+												<p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i>{{ listing.location }}</p>
+												<p class="mb-3"><i class="fas fa-briefcase me-2"></i>{{ listing.job_type }}</p>
+												<div class="d-flex justify-content-between align-items-center">
+													<span class="ft-bold text-dark fs-md">{{ listing.salary_range }}</span>
+													<a href="{{ listing.application_link }}" class="btn btn-sm bg-primary text-white rounded">Apply Now</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							{% endfor %}
+
+							<!-- Service Listings -->
+							{% for listing in service_listings %}
+								<div class="col-lg-4">
+									<div class="product_grid card b-0 rounded-3 shadow m-2 p-2">
+										<div class="card-footer b-0 p-3 bg-white">
+											<div class="text-left">
+												<h5 class="fs-md mb-2">{{ listing.title }}</h5>
+												<p class="mb-1"><i class="fas fa-tag me-2"></i>{{ listing.service_type }}</p>
+												<p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i>{{ listing.service_area }}</p>
+												<p class="mb-3"><i class="fas fa-phone me-2"></i>{{ listing.contact_phone }}</p>
+												<div class="d-flex justify-content-between align-items-center">
+													<a href="mailto:{{ listing.contact_email }}" class="btn btn-sm bg-secondary text-white rounded">Email</a>
+													<a href="#" class="btn btn-sm bg-primary text-white rounded">View Details</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							{% endfor %}
+
+							<!-- Paybill Listings -->
+							{% for listing in paybill_listings %}
+								<div class="col-lg-4">
+									<div class="product_grid card b-0 rounded-3 shadow m-2 p-2">
+										<div class="card-footer b-0 p-3 bg-white">
+											<div class="text-left">
+												<h5 class="fs-md mb-2">{{ listing.title }}</h5>
+												<p class="mb-1"><i class="fas fa-tag me-2"></i>{{ listing.service_category }}</p>
+												<p class="mb-1"><i class="fas fa-building me-2"></i>{{ listing.payment_provider }}</p>
+												<p class="mb-3"><i class="fas fa-hashtag me-2"></i>{{ listing.payment_code }}</p>
+												<div class="d-flex justify-content-between align-items-center">
+													<a href="#" class="btn btn-sm bg-primary text-white rounded w-100">Pay Now</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							{% endfor %}
 						</div>
-					{% empty %}
-						<p>No product for this category</p>
-					{% endfor %}
+					</div>				
 				</div>
-			</div>				
+			</div>
+
+			<!-- Products Tab -->
+			<div class="tab-pane fade" id="products" role="tabpanel" aria-labelledby="products-tab">
+				<div class="row">
+					<div class="col-lg-12"> 
+						<div class="row align-items-center rows-products">						
+							{% for p in products %}
+								<div class="col-lg-3">
+									<div class="product_grid card b-0 rounded-3 shadow m-2 p-2">
+										<div class="card-body p-0">
+											<div class="shop_thumb position-relative">
+												<a class="card-img-top d-block overflow-hidden" href="{% url 'store:product_detail' p.slug %}">
+													<img class="card-img-top" style="width: 100%; height: 230px; object-fit: cover;" src="{{ p.image.url }}" alt="{{ p.name }}" />
+												</a>
+											</div>
+										</div>
+										<div class="card-footer b-0 p-0 pt-2 bg-white d-flex align-items-start justify-content-between">
+											<div class="text-left">
+												<div class="text-left">
+													<div class="elso_titl">
+														<span class="small">
+															{% if p.category and p.category.id %}
+																<a href="{% url 'store:category' p.category.id %}">{{ p.category.title }}</a>
+															{% else %}
+																{{ p.category.title }}
+															{% endif %}
+														</span>
+													</div>
+													<h5 class="fs-md mb-0 lh-1 mb-1">
+														<a href="{% url 'store:product_detail' p.slug %}">{{ p.name }}</a>
+													</h5>
+
+													<div class="star-rating align-items-center d-flex justify-content-left mb-2 p-0 mt-3">
+														{% if not p.average_rating %}
+															<i class="fas fa-star text-warning"></i>
+														{% elif p.average_rating > 0 and p.average_rating < 2 %}
+															<i class="fas fa-star text-warning"></i>
+														{% elif p.average_rating > 1 and p.average_rating < 3 %}
+															<i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
+														{% elif p.average_rating > 2 and p.average_rating < 4 %}
+															<i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
+														{% elif p.average_rating > 3 and p.average_rating < 5 %}
+															<i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
+														{% elif p.average_rating > 4 %}
+															<i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
+														{% endif %}
+													</div>
+
+													<div class="elis_rty">
+														<span class="ft-bold text-dark fs-sm">₦{{ p.price }}</span>
+													</div>
+												</div>
+
+												<div class="d-flex align-items-center gap-3">
+													<button type="button" class="btn btn-sm bg-primary text-white rounded add_to_cart" data-id="{{ p.id }}">Add to cart <i class="fas fa-shopping-cart ms-2"></i></button>
+													<a href="#" class="me-2 add_to_wishlist" data-product_id="{{ p.id }}"><i class="fas fa-heart fs-4 text-dark"></i></a>
+													<input type="hidden" class="quantity" value="1">
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							{% empty %}
+								<p>No products found in this category</p>
+							{% endfor %}
+						</div>
+					</div>				
+				</div>
+			</div>
+
+			<!-- Real Estate Tab -->
+			<div class="tab-pane fade" id="realestate" role="tabpanel" aria-labelledby="realestate-tab">
+				<div class="row">
+					<div class="col-lg-12"> 
+						<div class="row align-items-center rows-products">						
+							{% for listing in realestate_listings %}
+								<div class="col-lg-4">
+									<div class="product_grid card b-0 rounded-3 shadow m-2 p-2">
+										<div class="card-body p-0">
+											<div class="shop_thumb position-relative">
+												{% if listing.images %}
+													<img class="card-img-top" style="width: 100%; height: 230px; object-fit: cover;" src="{{ listing.images.url }}" alt="{{ listing.title }}" />
+												{% else %}
+													<div class="bg-light" style="width: 100%; height: 230px; display: flex; align-items: center; justify-content: center;">
+														<i class="fas fa-home fa-3x text-secondary"></i>
+													</div>
+												{% endif %}
+											</div>
+										</div>
+										<div class="card-footer b-0 p-3 bg-white">
+											<div class="text-left">
+												<h5 class="fs-md mb-2">{{ listing.title }}</h5>
+												<p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i>{{ listing.state }}, {{ listing.local_government }}</p>
+												<p class="mb-1"><i class="fas fa-bed me-2"></i>{{ listing.number_of_bedrooms }} Bedrooms</p>
+												<p class="mb-3"><i class="fas fa-bath me-2"></i>{{ listing.number_of_bathrooms }} Bathrooms</p>
+												<div class="d-flex justify-content-between align-items-center">
+													<span class="ft-bold text-dark fs-md">₦{{ listing.price|intcomma }}</span>
+													<a href="#" class="btn btn-sm bg-primary text-white rounded">View Details</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							{% empty %}
+								<p>No real estate listings found in this category</p>
+							{% endfor %}
+						</div>
+					</div>				
+				</div>
+			</div>
+
+			<!-- Vehicles Tab -->
+			<div class="tab-pane fade" id="vehicles" role="tabpanel" aria-labelledby="vehicles-tab">
+				<div class="row">
+					<div class="col-lg-12"> 
+						<div class="row align-items-center rows-products">						
+							{% for listing in vehicle_listings %}
+								<div class="col-lg-4">
+									<div class="product_grid card b-0 rounded-3 shadow m-2 p-2">
+										<div class="card-body p-0">
+											<div class="shop_thumb position-relative">
+												{% if listing.images %}
+													<img class="card-img-top" style="width: 100%; height: 230px; object-fit: cover;" src="{{ listing.images.url }}" alt="{{ listing.title }}" />
+												{% else %}
+													<div class="bg-light" style="width: 100%; height: 230px; display: flex; align-items: center; justify-content: center;">
+														<i class="fas fa-car fa-3x text-secondary"></i>
+													</div>
+												{% endif %}
+											</div>
+										</div>
+										<div class="card-footer b-0 p-3 bg-white">
+											<div class="text-left">
+												<h5 class="fs-md mb-2">{{ listing.title }}</h5>
+												<p class="mb-1"><i class="fas fa-tag me-2"></i>{{ listing.brand }}</p>
+												<p class="mb-1"><i class="fas fa-calendar me-2"></i>{{ listing.year }}</p>
+												<p class="mb-3"><i class="fas fa-tachometer-alt me-2"></i>{{ listing.mileage }} km</p>
+												<div class="d-flex justify-content-between align-items-center">
+													<span class="ft-bold text-dark fs-md">₦{{ listing.price|intcomma }}</span>
+													<a href="#" class="btn btn-sm bg-primary text-white rounded">View Details</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							{% empty %}
+								<p>No vehicle listings found in this category</p>
+							{% endfor %}
+						</div>
+					</div>				
+				</div>
+			</div>
+
+			<!-- Jobs Tab -->
+			<div class="tab-pane fade" id="jobs" role="tabpanel" aria-labelledby="jobs-tab">
+				<div class="row">
+					<div class="col-lg-12"> 
+						<div class="row align-items-center rows-products">						
+							{% for listing in job_listings %}
+								<div class="col-lg-4">
+									<div class="product_grid card b-0 rounded-3 shadow m-2 p-2">
+										<div class="card-footer b-0 p-3 bg-white">
+											<div class="text-left">
+												<h5 class="fs-md mb-2">{{ listing.title }}</h5>
+												<p class="mb-1"><i class="fas fa-building me-2"></i>{{ listing.company }}</p>
+												<p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i>{{ listing.location }}</p>
+												<p class="mb-3"><i class="fas fa-briefcase me-2"></i>{{ listing.job_type }}</p>
+												<div class="d-flex justify-content-between align-items-center">
+													<span class="ft-bold text-dark fs-md">{{ listing.salary_range }}</span>
+													<a href="{{ listing.application_link }}" class="btn btn-sm bg-primary text-white rounded">Apply Now</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							{% empty %}
+								<p>No job listings found in this category</p>
+							{% endfor %}
+						</div>
+					</div>				
+				</div>
+			</div>
+
+			<!-- Services Tab -->
+			<div class="tab-pane fade" id="services" role="tabpanel" aria-labelledby="services-tab">
+				<div class="row">
+					<div class="col-lg-12"> 
+						<div class="row align-items-center rows-products">						
+							{% for listing in service_listings %}
+								<div class="col-lg-4">
+									<div class="product_grid card b-0 rounded-3 shadow m-2 p-2">
+										<div class="card-footer b-0 p-3 bg-white">
+											<div class="text-left">
+												<h5 class="fs-md mb-2">{{ listing.title }}</h5>
+												<p class="mb-1"><i class="fas fa-tag me-2"></i>{{ listing.service_type }}</p>
+												<p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i>{{ listing.service_area }}</p>
+												<p class="mb-3"><i class="fas fa-phone me-2"></i>{{ listing.contact_phone }}</p>
+												<div class="d-flex justify-content-between align-items-center">
+													<a href="mailto:{{ listing.contact_email }}" class="btn btn-sm bg-secondary text-white rounded">Email</a>
+													<a href="#" class="btn btn-sm bg-primary text-white rounded">View Details</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							{% empty %}
+								<p>No service listings found in this category</p>
+							{% endfor %}
+						</div>
+					</div>				
+				</div>
+			</div>
+
+			<!-- Paybills Tab -->
+			<div class="tab-pane fade" id="paybills" role="tabpanel" aria-labelledby="paybills-tab">
+				<div class="row">
+					<div class="col-lg-12"> 
+						<div class="row align-items-center rows-products">						
+							{% for listing in paybill_listings %}
+								<div class="col-lg-4">
+									<div class="product_grid card b-0 rounded-3 shadow m-2 p-2">
+										<div class="card-footer b-0 p-3 bg-white">
+											<div class="text-left">
+												<h5 class="fs-md mb-2">{{ listing.title }}</h5>
+												<p class="mb-1"><i class="fas fa-tag me-2"></i>{{ listing.service_category }}</p>
+												<p class="mb-1"><i class="fas fa-building me-2"></i>{{ listing.payment_provider }}</p>
+												<p class="mb-3"><i class="fas fa-hashtag me-2"></i>{{ listing.payment_code }}</p>
+												<div class="d-flex justify-content-between align-items-center">
+													<a href="#" class="btn btn-sm bg-primary text-white rounded w-100">Pay Now</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							{% empty %}
+								<p>No bill payment services found in this category</p>
+							{% endfor %}
+						</div>
+					</div>				
+				</div>
+			</div>
 		</div>
 	</div>
 </section>

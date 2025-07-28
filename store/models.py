@@ -59,20 +59,60 @@ class Category(models.Model):
     image = CloudinaryField(folder="images", null=True, blank=True)
     slug = models.SlugField(unique=True)
     parent = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="subcategories")
+    description = models.TextField(blank=True, null=True)
+    icon = models.CharField(max_length=50, blank=True, null=True, help_text="Font Awesome icon class")
+    order = models.IntegerField(default=0, help_text="Order in which to display this category")
+    is_featured = models.BooleanField(default=False, help_text="Whether to feature this category on the homepage")
 
     class Meta:
         verbose_name_plural = "Categories"
+        ordering = ['order', 'title']
+
+    def __str__(self):
+        if self.parent:
+            return f"{self.parent.title} > {self.title}"
+        return self.title
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('store:category', args=[self.slug])
+
+    def get_full_path(self):
+        """Return the full path of the category (e.g. 'Parent > Child > Grandchild')"""
+        if self.parent:
+            return f"{self.parent.get_full_path()} > {self.title}"
+        return self.title
+
+    def get_level(self):
+        """Return the level of the category in the hierarchy (0 for top-level)"""
+        level = 0
+        parent = self.parent
+        while parent:
+            level += 1
+            parent = parent.parent
+        return level
 
     def all_products(self):
+        """Return all products in this category and its subcategories"""
         subcategories = self.subcategories.all()
         return Product.objects.filter(category__in=[self] + list(subcategories))
 
-
-    def __str__(self):
-        return self.title
-
     def products(self):
+        """Return only products directly in this category"""
         return Product.objects.filter(category=self)
+
+    def get_all_subcategories(self):
+        """Return all subcategories recursively"""
+        all_subcategories = list(self.subcategories.all())
+        for subcategory in self.subcategories.all():
+            all_subcategories.extend(subcategory.get_all_subcategories())
+        return all_subcategories
+
+    def get_siblings(self):
+        """Return all categories with the same parent"""
+        if self.parent:
+            return Category.objects.filter(parent=self.parent).exclude(id=self.id)
+        return Category.objects.filter(parent__isnull=True).exclude(id=self.id)
 
     
 class Product(models.Model):
@@ -247,4 +287,94 @@ class Review(models.Model):
 
     def __str__(self):
         return f"{self.user.username} review on {self.product.name}"
-        
+
+
+# Specialized Listing Models
+
+VEHICLE_TYPES = (
+    ("New", "New"),
+    ("Used", "Used"),
+    ("Motorcycle", "Motorcycle"),
+    ("Spare Parts", "Spare Parts"),
+)
+
+class BaseListing(models.Model):
+    """
+    Abstract base model for all specialized listings
+    """
+    title = models.CharField(max_length=150)
+    description = CKEditor5Field('Text', config_name='extends', null=True, blank=True)
+    status = models.CharField(choices=STATUS, max_length=50, default="Published")
+    slug = models.SlugField(null=True, blank=True)
+    date_posted = models.DateTimeField(default=timezone.now)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
+    vendor = models.ForeignKey(user_models.User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        abstract = True
+        ordering = ['-date_posted']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title) + "-" + str(shortuuid.uuid().lower()[:4])
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+
+class RealEstateListing(BaseListing):
+    """
+    Model for real estate listings (lands and houses)
+    """
+    state = models.CharField(max_length=100, null=True, blank=True)
+    local_government = models.CharField(max_length=100, null=True, blank=True)
+    neighborhood = models.CharField(max_length=150, null=True, blank=True)
+    price = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    land_size = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="In square meters or acres")
+    house_size = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    number_of_bedrooms = models.IntegerField(null=True, blank=True)
+    number_of_bathrooms = models.IntegerField(null=True, blank=True)
+    images = CloudinaryField(folder="images", null=True, blank=True)
+
+
+class VehicleListing(BaseListing):
+    """
+    Model for vehicle listings
+    """
+    brand = models.CharField(max_length=100, null=True, blank=True)
+    vehicle_type = models.CharField(choices=VEHICLE_TYPES, max_length=100, default="Used")
+    price = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    year = models.IntegerField(null=True, blank=True)
+    mileage = models.IntegerField(null=True, blank=True, help_text="Mileage in kilometers")
+    images = CloudinaryField(folder="images", null=True, blank=True)
+
+
+class JobListing(BaseListing):
+    """
+    Model for job listings
+    """
+    company = models.CharField(max_length=150, null=True, blank=True)
+    location = models.CharField(max_length=150, null=True, blank=True)
+    salary_range = models.CharField(max_length=100, null=True, blank=True)
+    application_link = models.URLField(null=True, blank=True)
+    job_type = models.CharField(max_length=100, null=True, blank=True, help_text="Full-time, Part-time, Contract, etc")
+
+
+class ServiceListing(BaseListing):
+    """
+    Model for service listings
+    """
+    service_type = models.CharField(max_length=150, null=True, blank=True)
+    contact_phone = models.CharField(max_length=50, null=True, blank=True)
+    contact_email = models.EmailField(null=True, blank=True)
+    service_area = models.CharField(max_length=150, null=True, blank=True)
+
+
+class Paybill(BaseListing):
+    """
+    Model for bill payment services
+    """
+    service_category = models.CharField(max_length=150, null=True, blank=True)
+    payment_provider = models.CharField(max_length=150, null=True, blank=True)
+    payment_code = models.CharField(max_length=50, null=True, blank=True)

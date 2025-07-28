@@ -52,23 +52,9 @@
                             <ul class="nav-menu">
                                 <li><a href="/">Home</a></li>
                                 <li><a href="{% url 'store:shop' %}">Shop</a></li>
-                                <li><a href="javascript:void(0);">Category</a>
-                                    <ul class="nav-dropdown nav-submenu">
-                                        {% for c in category_ %}
-                                            {% if not c.parent %}
-                                                <li>
-                                                    <a href="{% url 'store:category' c.id %}">{{ c.title }}</a>
-                                                    {% if c.subcategories.all %}
-                                                        <ul class="nav-dropdown">
-                                                            {% for sub in c.subcategories.all %}
-                                                                <li><a href="{% url 'store:category' sub.id %}">{{ sub.title }}</a></li>
-                                                            {% endfor %}
-                                                        </ul>
-                                                    {% endif %}
-                                                </li>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </ul>
+                                <li><a href="javascript:void(0);">Categories</a>
+                                    {% load category_tags %}
+                                    {% category_menu %}
                                 </li>
 
                                 {% if user_type == "Vendor" %}

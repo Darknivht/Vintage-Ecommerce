@@ -104,26 +104,97 @@ def shop(request):
 def category(request, id):
     category = get_object_or_404(store_models.Category, id=id)
 
-
     # Include products under this category and all its subcategories
     subcategories = category.subcategories.all()
     categories_to_include = [category] + list(subcategories)
 
+    # Get all types of listings for this category
     products_list = store_models.Product.objects.filter(
         status="Published",
         category__in=categories_to_include
     )
 
+    # Get specialized listings
+    try:
+        realestate_listings = store_models.RealEstateListing.objects.filter(
+            status="Published",
+            category__in=categories_to_include
+        )
+    except:
+        realestate_listings = []
+
+    try:
+        vehicle_listings = store_models.VehicleListing.objects.filter(
+            status="Published",
+            category__in=categories_to_include
+        )
+    except:
+        vehicle_listings = []
+
+    try:
+        job_listings = store_models.JobListing.objects.filter(
+            status="Published",
+            category__in=categories_to_include
+        )
+    except:
+        job_listings = []
+
+    try:
+        service_listings = store_models.ServiceListing.objects.filter(
+            status="Published",
+            category__in=categories_to_include
+        )
+    except:
+        service_listings = []
+
+    try:
+        paybill_listings = store_models.Paybill.objects.filter(
+            status="Published",
+            category__in=categories_to_include
+        )
+    except:
+        paybill_listings = []
+
+    # Filter by search query if provided
     query = request.GET.get("q")
     if query:
         products_list = products_list.filter(name__icontains=query)
+        
+        # Also filter specialized listings
+        if realestate_listings:
+            realestate_listings = realestate_listings.filter(title__icontains=query)
+        if vehicle_listings:
+            vehicle_listings = vehicle_listings.filter(title__icontains=query)
+        if job_listings:
+            job_listings = job_listings.filter(title__icontains=query)
+        if service_listings:
+            service_listings = service_listings.filter(title__icontains=query)
+        if paybill_listings:
+            paybill_listings = paybill_listings.filter(title__icontains=query)
 
+    # Paginate regular products
     products = paginate_queryset(request, products_list, 10)
+
+    # Calculate total count of all listings
+    total_count = (
+        products_list.count() +
+        (len(realestate_listings) if realestate_listings else 0) +
+        (len(vehicle_listings) if vehicle_listings else 0) +
+        (len(job_listings) if job_listings else 0) +
+        (len(service_listings) if service_listings else 0) +
+        (len(paybill_listings) if paybill_listings else 0)
+    )
 
     context = {
         "products": products,
         "products_list": products_list,
         "category": category,
+        "realestate_listings": realestate_listings,
+        "vehicle_listings": vehicle_listings,
+        "job_listings": job_listings,
+        "service_listings": service_listings,
+        "paybill_listings": paybill_listings,
+        "total_count": total_count,
     }
     return render(request, "store/category.html", context)
 
@@ -803,3 +874,184 @@ def privacy_policy(request):
 
 def terms_conditions(request):
     return render(request, "pages/terms_conditions.html")
+
+
+# Category and Product Submission Views
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from store.forms import (
+    CategorySelectForm, ProductForm, RealEstateListingForm, VehicleListingForm,
+    JobListingForm, ServiceListingForm, PaybillForm
+)
+from store.models import Category
+
+
+@login_required
+def select_category(request):
+    """View for selecting a category to add a product to"""
+    if request.method == 'POST':
+        form = CategorySelectForm(request.POST)
+        if form.is_valid():
+            category = form.cleaned_data['category']
+            return redirect('store:add_product', category_id=category.id)
+    else:
+        form = CategorySelectForm()
+    
+    return render(request, 'store/select_category.html', {'form': form})
+
+
+@login_required
+def add_product(request, category_id):
+    """View for adding a product based on the selected category"""
+    category = get_object_or_404(Category, id=category_id)
+    
+    # Determine which form to use based on the category
+    category_path = category.get_full_path().lower()
+    
+    if 'lands and house' in category_path:
+        return add_real_estate_listing(request, category)
+    elif 'trucks and vehicles' in category_path:
+        return add_vehicle_listing(request, category)
+    elif 'jobs and vacancies' in category_path:
+        return add_job_listing(request, category)
+    elif any(service_type in category_path for service_type in ['professional service', 'security and safety', 'transportation']):
+        return add_service_listing(request, category)
+    elif 'paybills' in category_path:
+        return add_paybill(request, category)
+    else:
+        # Default to regular product form
+        return add_regular_product(request, category)
+
+
+@login_required
+def add_regular_product(request, category):
+    """View for adding a regular product"""
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES)
+        if form.is_valid():
+            product = form.save(commit=False)
+            product.vendor = request.user
+            product.category = category
+            product.save()
+            messages.success(request, 'Product added successfully!')
+            return redirect('store:product_detail', slug=product.slug)
+    else:
+        form = ProductForm(initial={'category': category})
+    
+    return render(request, 'store/add_product.html', {
+        'form': form,
+        'category': category,
+        'product_type': 'Regular Product'
+    })
+
+
+@login_required
+def add_real_estate_listing(request, category):
+    """View for adding a real estate listing"""
+    if request.method == 'POST':
+        form = RealEstateListingForm(request.POST, request.FILES)
+        if form.is_valid():
+            listing = form.save(commit=False)
+            listing.vendor = request.user
+            listing.category = category
+            listing.save()
+            messages.success(request, 'Real Estate Listing added successfully!')
+            return redirect('store:category', id=category.id)
+    else:
+        form = RealEstateListingForm(initial={'category': category})
+    
+    return render(request, 'store/add_product.html', {
+        'form': form,
+        'category': category,
+        'product_type': 'Real Estate Listing'
+    })
+
+
+@login_required
+def add_vehicle_listing(request, category):
+    """View for adding a vehicle listing"""
+    if request.method == 'POST':
+        form = VehicleListingForm(request.POST, request.FILES)
+        if form.is_valid():
+            listing = form.save(commit=False)
+            listing.vendor = request.user
+            listing.category = category
+            listing.save()
+            messages.success(request, 'Vehicle Listing added successfully!')
+            return redirect('store:category', id=category.id)
+    else:
+        form = VehicleListingForm(initial={'category': category})
+    
+    return render(request, 'store/add_product.html', {
+        'form': form,
+        'category': category,
+        'product_type': 'Vehicle Listing'
+    })
+
+
+@login_required
+def add_job_listing(request, category):
+    """View for adding a job listing"""
+    if request.method == 'POST':
+        form = JobListingForm(request.POST)
+        if form.is_valid():
+            listing = form.save(commit=False)
+            listing.vendor = request.user
+            listing.category = category
+            listing.save()
+            messages.success(request, 'Job Listing added successfully!')
+            return redirect('store:category', id=category.id)
+    else:
+        form = JobListingForm(initial={'category': category})
+    
+    return render(request, 'store/add_product.html', {
+        'form': form,
+        'category': category,
+        'product_type': 'Job Listing'
+    })
+
+
+@login_required
+def add_service_listing(request, category):
+    """View for adding a service listing"""
+    if request.method == 'POST':
+        form = ServiceListingForm(request.POST)
+        if form.is_valid():
+            listing = form.save(commit=False)
+            listing.vendor = request.user
+            listing.category = category
+            listing.save()
+            messages.success(request, 'Service Listing added successfully!')
+            return redirect('store:category', id=category.id)
+    else:
+        form = ServiceListingForm(initial={'category': category})
+    
+    return render(request, 'store/add_product.html', {
+        'form': form,
+        'category': category,
+        'product_type': 'Service Listing'
+    })
+
+
+@login_required
+def add_paybill(request, category):
+    """View for adding a bill payment service"""
+    if request.method == 'POST':
+        form = PaybillForm(request.POST)
+        if form.is_valid():
+            listing = form.save(commit=False)
+            listing.vendor = request.user
+            listing.category = category
+            listing.save()
+            messages.success(request, 'Bill Payment Service added successfully!')
+            return redirect('store:category', id=category.id)
+    else:
+        form = PaybillForm(initial={'category': category})
+    
+    return render(request, 'store/add_product.html', {
+        'form': form,
+        'category': category,
+        'product_type': 'Bill Payment Service'
+    })

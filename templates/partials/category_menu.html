@@ -1,0 +1,55 @@
+<div class="dropdown-menu dropdown-menu-lg p-0">
+    <div class="row">
+        {% for category in categories %}
+            <div class="col-lg-3">
+                <div class="dropdown-item-header">
+                    <a href="{% url 'store:category' category.id %}" class="dropdown-item-title">
+                        {% if category.icon %}
+                            <i class="fa {{ category.icon }} me-2"></i>
+                        {% endif %}
+                        {{ category.title }}
+                    </a>
+                </div>
+                <div class="dropdown-item-content">
+                    <ul class="list-unstyled">
+                        {% for subcategory in category.subcategories.all|slice:":5" %}
+                            <li>
+                                <a href="{% url 'store:category' subcategory.id %}" class="dropdown-item">
+                                    {{ subcategory.title }}
+                                </a>
+                                {% if subcategory.subcategories.exists %}
+                                    <ul class="list-unstyled ps-3">
+                                        {% for subsubcategory in subcategory.subcategories.all|slice:":3" %}
+                                            <li>
+                                                <a href="{% url 'store:category' subsubcategory.id %}" class="dropdown-item">
+                                                    {{ subsubcategory.title }}
+                                                </a>
+                                            </li>
+                                        {% endfor %}
+                                        {% if subcategory.subcategories.count > 3 %}
+                                            <li>
+                                                <a href="{% url 'store:category' subcategory.id %}" class="dropdown-item text-primary">
+                                                    More...
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                        {% if category.subcategories.count > 5 %}
+                            <li>
+                                <a href="{% url 'store:category' category.id %}" class="dropdown-item text-primary">
+                                    More...
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            {% if forloop.counter|divisibleby:4 and not forloop.last %}
+                </div><div class="row">
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
