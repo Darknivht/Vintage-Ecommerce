@@ -130,3 +130,4 @@ def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
         }
         for sub_id, amount in subaccount_amounts.items()
     ]
+
