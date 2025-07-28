@@ -36,13 +36,4 @@ urlpatterns = [
     path("privacy_policy/", views.privacy_policy, name="privacy_policy"),
     path("terms_conditions/", views.terms_conditions, name="terms_conditions"),
 
-    # Product submission URLs
-    path("select_category/", views.select_category, name="select_category"),
-    path("add_product/<int:category_id>/", views.add_product, name="add_product"),
-    path("add_regular_product/<int:category_id>/", views.add_regular_product, name="add_regular_product"),
-    path("add_real_estate_listing/<int:category_id>/", views.add_real_estate_listing, name="add_real_estate_listing"),
-    path("add_vehicle_listing/<int:category_id>/", views.add_vehicle_listing, name="add_vehicle_listing"),
-    path("add_job_listing/<int:category_id>/", views.add_job_listing, name="add_job_listing"),
-    path("add_service_listing/<int:category_id>/", views.add_service_listing, name="add_service_listing"),
-    path("add_paybill/<int:category_id>/", views.add_paybill, name="add_paybill"),
 ]
