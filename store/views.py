@@ -378,59 +378,37 @@ def checkout(request, order_id):
     amount_in_usd = convert_ngn_to_usd(order.total)
 
     vendor_subaccounts = {}
-    total_order_amount = float(order.total)
-    platform_share = 0
 
     for item in order.order_items():
         vendor = item.vendor
         try:
             bank_account = vendor.vendor.bankaccount
             sub_id = bank_account.flutterwave_subaccount_id
-            vendor_share_percent = float(bank_account.split_value or 90)
 
             product_price = float(item.sub_total)
             shipping_fee = float(item.shipping)
 
-            # Calculate vendor's earnings and platform's commission
-            vendor_product_share = product_price * vendor_share_percent / 100
-            platform_commission = product_price * (1 - vendor_share_percent / 100)
-            platform_share += platform_commission
-            
-            # Vendor gets their share of product price + 100% of shipping
-            vendor_earnings = vendor_product_share + shipping_fee
+            # Vendor gets full product + shipping
+            vendor_earnings = product_price + shipping_fee
 
             if sub_id not in vendor_subaccounts:
-                vendor_subaccounts[sub_id] = {
-                    "transaction_split_type": "flat",
-                    "transaction_charge_type": "flat",
-                    "transaction_amount": round(vendor_earnings, 2)
-                }
+                vendor_subaccounts[sub_id] = vendor_earnings
             else:
-                vendor_subaccounts[sub_id]["transaction_amount"] += round(vendor_earnings, 2)
+                vendor_subaccounts[sub_id] += vendor_earnings
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
-    # Create final subaccount list for Flutterwave
+    # Prepare flat payment to vendors only; platform will earn from subaccount config
     flutterwave_subaccounts = [
         {
             "id": sub_id,
             "transaction_split_type": "flat",
             "transaction_charge_type": "flat",
-            "transaction_amount": round(details["transaction_amount"], 2)
+            "transaction_charge": round(amount, 2),
         }
-        for sub_id, details in vendor_subaccounts.items()
+        for sub_id, amount in vendor_subaccounts.items()
     ]
-
-    # Verify the split calculation
-    total_vendor_earnings = sum(details["transaction_amount"] for details in vendor_subaccounts.values())
-    calculated_platform_share = total_order_amount - total_vendor_earnings
-    
-    # Log verification for debugging
-    print(f"Order total: {total_order_amount}")
-    print(f"Total vendor earnings: {total_vendor_earnings}")
-    print(f"Platform share: {platform_share}")
-    print(f"Calculated platform share: {calculated_platform_share}")
 
     try:
         customer = {
@@ -467,6 +445,7 @@ def checkout(request, order_id):
     }
 
     return render(request, "store/checkout.html", context)
+
 
 
 @csrf_exempt

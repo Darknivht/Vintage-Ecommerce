@@ -1,9 +1,7 @@
 import requests
 from django.conf import settings
-from store.models import Order
 
 FLW_SECRET_KEY = settings.FLUTTERWAVE_PRIVATE_KEY
-
 
 def create_flutterwave_subaccount(
     account_name, account_number, bank_code,
@@ -12,7 +10,6 @@ def create_flutterwave_subaccount(
 ):
     """
     Create a Flutterwave subaccount and return subaccount_id.
-    Raises exception with detailed info on failure.
     """
     url = "https://api.flutterwave.com/v3/subaccounts"
     headers = {
@@ -46,13 +43,13 @@ def create_flutterwave_subaccount(
 
 def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_url, subaccounts):
     """
-    Initiates a Flutterwave payment with multiple subaccount splits.
+    Initiates a Flutterwave payment with subaccount splits.
     Each subaccount dict must include:
         {
             "id": str,  # subaccount ID
             "transaction_split_type": "flat",
             "transaction_charge_type": "flat",
-            "transaction_amount": float  # exact amount the vendor should receive
+            "transaction_charge": float  # amount vendor should receive
         }
     """
     url = "https://api.flutterwave.com/v3/payments"
@@ -70,7 +67,7 @@ def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_ur
         "customer": customer,
         "customizations": {
             "title": "Vintage Store Payment",
-            "description": f"Order split for {len(subaccounts)} vendors",
+            "description": f"Order split for {len(subaccounts)} vendor(s)",
         },
         "subaccounts": subaccounts
     }
@@ -86,66 +83,3 @@ def initiate_flutterwave_payment(amount, currency, tx_ref, customer, redirect_ur
 
     except requests.RequestException as e:
         raise Exception(f"Payment request failed: {str(e)}")
-
-
-def calculate_vendor_flat_splits(order: Order, platform_share_percent=10):
-    """
-    Calculates vendor payouts using flat amounts.
-    Returns a list of Flutterwave-compatible subaccounts:
-    [
-        {
-            "id": "RS_XXX",
-            "transaction_split_type": "flat",
-            "transaction_charge_type": "flat",
-            "transaction_amount": 1350.00
-        },
-        ...
-    ]
-    """
-    subaccount_amounts = {}
-    total_order_amount = float(order.total)
-    platform_share = 0
-
-    for item in order.order_items():
-        vendor = item.vendor
-
-        if not vendor:
-            continue
-
-        try:
-            bank_account = vendor.vendor.bankaccount
-            subaccount_id = bank_account.flutterwave_subaccount_id
-            if not subaccount_id:
-                continue
-
-            vendor_share_percent = 100 - platform_share_percent
-            product_price = float(item.sub_total)
-            shipping_fee = float(item.shipping)
-            
-            # Calculate vendor's earnings and platform's commission
-            vendor_product_share = product_price * vendor_share_percent / 100
-            platform_commission = product_price * platform_share_percent / 100
-            platform_share += platform_commission
-            
-            # Vendor gets their share of product price + 100% of shipping
-            vendor_amount = vendor_product_share + shipping_fee
-
-            if subaccount_id in subaccount_amounts:
-                subaccount_amounts[subaccount_id] += vendor_amount
-            else:
-                subaccount_amounts[subaccount_id] = vendor_amount
-
-        except Exception as e:
-            print(f"Skipping vendor {vendor} due to: {e}")
-            continue
-
-    return [
-        {
-            "id": sub_id,
-            "transaction_split_type": "flat",
-            "transaction_charge_type": "flat",
-            "transaction_amount": round(amount, 2)
-        }
-        for sub_id, amount in subaccount_amounts.items()
-    ]
-
