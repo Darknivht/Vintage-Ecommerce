@@ -376,7 +376,6 @@ def checkout(request, order_id):
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
     vendor_subaccounts = {}
-    platform_fee = 0
 
     for item in order.order_items():
         vendor = item.vendor
@@ -387,9 +386,8 @@ def checkout(request, order_id):
                 continue
             product_price = float(item.sub_total)
             shipping_fee = float(item.shipping)
-            total_item_amount = product_price + shipping_fee
-            platform_fee += total_item_amount * 0.10  # 10% platform fee
-            vendor_earnings = total_item_amount * 0.90  # 90% vendor earnings
+            platform_fee = product_price * 0.10  # 10% platform fee
+            vendor_earnings = product_price - platform_fee + shipping_fee  # Vendor earnings
 
             if sub_id not in vendor_subaccounts:
                 vendor_subaccounts[sub_id] = vendor_earnings
@@ -398,34 +396,14 @@ def checkout(request, order_id):
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
-    # Tell Flutterwave exactly how much each vendor should earn
-    flutterwave_subaccounts = [
-        {
-            "id": sub_id,
-            "transaction_split_type": "percentage",
-            "transaction_charge_type": "flat",
-            "transaction_charge": round(platform_fee, 2),  # Platform fee
-            "transaction_split_ratio": int((1 - 0.10) * 100),  # 90% vendor earnings
-        }
-        for sub_id in vendor_subaccounts.keys()
-    ]
-    # However, since transaction_charge doesn't support percentage-based splits directly,
-    # we'll adjust the vendor earnings amount directly instead of using transaction_charge.
-    # Let's recalculate the flutterwave_subaccounts with flat amounts.
-
     flutterwave_subaccounts = [
         {
             "id": sub_id,
             "transaction_split_type": "flat",
-            "transaction_split_ratio": 1,  # This might not be necessary in flat split type
             "transaction_amount": round(amount, 2),
         }
         for sub_id, amount in vendor_subaccounts.items()
     ]
-
-    # Add platform fee to the main transaction amount
-    # Since the platform fee is already factored into the vendor earnings,
-    # we don't need to add it separately.
 
     try:
         customer = {
