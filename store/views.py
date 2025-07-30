@@ -377,7 +377,9 @@ def checkout(request, order_id):
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
 
-    vendor_subaccounts = {}
+    # ✅ Collect unique vendor subaccount IDs
+    flutterwave_subaccounts = []
+    added_subaccounts = set()
 
     for item in order.order_items():
         vendor = item.vendor
@@ -385,30 +387,14 @@ def checkout(request, order_id):
             bank_account = vendor.vendor.bankaccount
             sub_id = bank_account.flutterwave_subaccount_id
 
-            product_price = float(item.sub_total)
-            shipping_fee = float(item.shipping)
-
-            # Vendor gets full product + shipping
-            vendor_earnings = product_price + shipping_fee
-
-            if sub_id not in vendor_subaccounts:
-                vendor_subaccounts[sub_id] = vendor_earnings
-            else:
-                vendor_subaccounts[sub_id] += vendor_earnings
+            if sub_id and sub_id not in added_subaccounts:
+                flutterwave_subaccounts.append({
+                    "id": sub_id  # No need to specify split values here
+                })
+                added_subaccounts.add(sub_id)
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
-
-    # Prepare flat payment to vendors only; platform will earn from subaccount config
-    flutterwave_subaccounts = [
-        {
-            "id": sub_id,
-            "transaction_split_type": "flat",
-            "transaction_charge_type": "flat",
-            "transaction_charge": round(amount, 2),
-        }
-        for sub_id, amount in vendor_subaccounts.items()
-    ]
 
     try:
         customer = {
