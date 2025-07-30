@@ -377,24 +377,40 @@ def checkout(request, order_id):
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
 
-    # ✅ Collect unique vendor subaccount IDs
-    flutterwave_subaccounts = []
-    added_subaccounts = set()
+    vendor_subaccounts = {}
 
     for item in order.order_items():
         vendor = item.vendor
         try:
             bank_account = vendor.vendor.bankaccount
             sub_id = bank_account.flutterwave_subaccount_id
+            if not sub_id:
+                continue
 
-            if sub_id and sub_id not in added_subaccounts:
-                flutterwave_subaccounts.append({
-                    "id": sub_id  # No need to specify split values here
-                })
-                added_subaccounts.add(sub_id)
+            product_price = float(item.sub_total)
+            shipping_fee = float(item.shipping)
+
+            # Vendor earns full product + shipping, platform takes cut via Flutterwave subaccount split
+            vendor_earnings = product_price + shipping_fee
+
+            if sub_id not in vendor_subaccounts:
+                vendor_subaccounts[sub_id] = vendor_earnings
+            else:
+                vendor_subaccounts[sub_id] += vendor_earnings
 
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
+
+    # 🧠 Tell Flutterwave exactly how much each vendor should earn
+    flutterwave_subaccounts = [
+        {
+            "id": sub_id,
+            "transaction_split_type": "flat",
+            "transaction_charge_type": "flat",
+            "transaction_amount": round(amount, 2),
+        }
+        for sub_id, amount in vendor_subaccounts.items()
+    ]
 
     try:
         customer = {
@@ -431,7 +447,6 @@ def checkout(request, order_id):
     }
 
     return render(request, "store/checkout.html", context)
-
 
 
 @csrf_exempt
