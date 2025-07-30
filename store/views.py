@@ -373,11 +373,10 @@ def coupon_apply(request, order_id):
 @login_required
 def checkout(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
-
     amount_in_kobo = convert_ngn_to_kobo(order.total)
     amount_in_usd = convert_ngn_to_usd(order.total)
-
     vendor_subaccounts = {}
+    platform_fee = 0
 
     for item in order.order_items():
         vendor = item.vendor
@@ -386,31 +385,47 @@ def checkout(request, order_id):
             sub_id = bank_account.flutterwave_subaccount_id
             if not sub_id:
                 continue
-
             product_price = float(item.sub_total)
             shipping_fee = float(item.shipping)
-
-            # Vendor earns full product + shipping, platform takes cut via Flutterwave subaccount split
-            vendor_earnings = product_price + shipping_fee
+            total_item_amount = product_price + shipping_fee
+            platform_fee += total_item_amount * 0.10  # 10% platform fee
+            vendor_earnings = total_item_amount * 0.90  # 90% vendor earnings
 
             if sub_id not in vendor_subaccounts:
                 vendor_subaccounts[sub_id] = vendor_earnings
             else:
                 vendor_subaccounts[sub_id] += vendor_earnings
-
         except Exception as e:
             print(f"Skipping vendor {vendor}: {e}")
 
-    # 🧠 Tell Flutterwave exactly how much each vendor should earn
+    # Tell Flutterwave exactly how much each vendor should earn
+    flutterwave_subaccounts = [
+        {
+            "id": sub_id,
+            "transaction_split_type": "percentage",
+            "transaction_charge_type": "flat",
+            "transaction_charge": round(platform_fee, 2),  # Platform fee
+            "transaction_split_ratio": int((1 - 0.10) * 100),  # 90% vendor earnings
+        }
+        for sub_id in vendor_subaccounts.keys()
+    ]
+    # However, since transaction_charge doesn't support percentage-based splits directly,
+    # we'll adjust the vendor earnings amount directly instead of using transaction_charge.
+    # Let's recalculate the flutterwave_subaccounts with flat amounts.
+
     flutterwave_subaccounts = [
         {
             "id": sub_id,
             "transaction_split_type": "flat",
-            "transaction_charge_type": "flat",
+            "transaction_split_ratio": 1,  # This might not be necessary in flat split type
             "transaction_amount": round(amount, 2),
         }
         for sub_id, amount in vendor_subaccounts.items()
     ]
+
+    # Add platform fee to the main transaction amount
+    # Since the platform fee is already factored into the vendor earnings,
+    # we don't need to add it separately.
 
     try:
         customer = {
@@ -418,7 +433,6 @@ def checkout(request, order_id):
             "name": order.address.full_name,
             "phonenumber": order.address.mobile,
         }
-
         flutterwave_data = initiate_flutterwave_payment(
             amount=order.total,
             currency="NGN",
@@ -429,9 +443,7 @@ def checkout(request, order_id):
             ),
             subaccounts=flutterwave_subaccounts
         )
-
         flutterwave_checkout_link = flutterwave_data.get("link")
-
     except Exception as e:
         flutterwave_checkout_link = None
         print("Flutterwave error:", str(e))
@@ -445,8 +457,8 @@ def checkout(request, order_id):
         "flutterwave_checkout_link": flutterwave_checkout_link,
         "flutterwave_subaccounts_json": json.dumps(flutterwave_subaccounts),
     }
-
     return render(request, "store/checkout.html", context)
+
 
 
 @csrf_exempt
