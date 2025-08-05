@@ -67,6 +67,7 @@ class Category(models.Model):
     image = CloudinaryField(folder="images", null=True, blank=True)
     slug = models.SlugField(unique=True)
     is_featured = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
     parent = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="subcategories")
     type = models.CharField(max_length=20, choices=CATEGORY_TYPE_CHOICES, default="product")
 
