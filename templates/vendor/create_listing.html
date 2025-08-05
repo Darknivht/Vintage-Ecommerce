@@ -13,53 +13,72 @@
 
         <div class="card border-0 shadow mb-4">
           <div class="card-body">
-            <form method="POST" enctype="multipart/form-data">
-              {% csrf_token %}
-              <div class="card border-0 mb-3">
-                <!-- Basic Info Section -->
-                <div class="card-header border-0 px-4 py-3 rounded">
-                  <h4 class="mb-0">Basic Information</h4>
+            <div class="row mt-0">
+              <form method="POST" enctype="multipart/form-data" class="pb-8 mt-2">
+                {% csrf_token %}
+                <div class="card border-0 mb-3">
+                  <!-- Basic Info Section -->
+                  <div class="card-header border-0 px-4 py-3 rounded">
+                    <h4 class="mb-0">Basic Information</h4>
+                  </div>
+
+                  <div class="card-body border-0">
+                    <div class="text-center d-flex justify-content-center align-items-center">
+                      <img id="imagePreview" src="" alt="Image preview" style="width: 100%; height: 500px; object-fit: cover; border-radius: 10px; display: none;">
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="imageInput" class="form-label">Listing Thumbnail</label>
+                      {{ form.image }}
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label">Listing Title</label>
+                      {{ form.title }}
+                      <small>Write a 60 character title for this listing.</small>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label">Listing Category</label>
+                      <select name="category" class="form-select" id="parentCategorySelect">
+                        <option value="">-- Select Main Category --</option>
+                        {% for c in categories %}
+                          {% if not c.parent %}
+                            <option value="{{ c.id }}" {% if form.category.value == c.id %}selected{% endif %}>
+                              {{ c.title }}
+                            </option>
+                          {% endif %}
+                        {% endfor %}
+                      </select>
+                      <small>Help people find this listing by selecting the right category.</small>
+                    </div>
+
+                    <div class="mb-3" id="subcategoryWrapper" style="display:none;">
+                      <label class="form-label">Subcategory (Optional)</label>
+                      <select name="subcategory_id" class="form-select" id="subcategorySelect">
+                        <option value="">-- Select Subcategory --</option>
+                      </select>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label">Listing Description</label>
+                      {{ form.description }}
+                      <small>Give a clear, honest description of the listing.</small>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label">Price</label>
+                      {{ form.price }}
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label">Location</label>
+                      {{ form.location }}
+                    </div>
+                  </div>
                 </div>
 
-                <div class="card-body border-0">
-                  <div class="text-center d-flex justify-content-center align-items-center">
-                    <img id="imagePreview" src="" alt="Image preview" style="width: 100%; height: 500px; object-fit: cover; border-radius: 10px; display: none;">
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="imageInput" class="form-label">Listing Thumbnail</label>
-                    {{ form.image }}
-                  </div>
-
-                  <div class="mb-3">
-                    <label class="form-label">Listing Title</label>
-                    {{ form.title }}
-                  </div>
-
-                  <div class="mb-3">
-                    <label class="form-label">Listing Category</label>
-                    {{ form.category }}
-                  </div>
-
-                  <div class="mb-3">
-                    <label class="form-label">Listing Description</label>
-                    {{ form.description }}
-                  </div>
-
-                  <div class="mb-3">
-                    <label class="form-label">Price (optional)</label>
-                    {{ form.price }}
-                  </div>
-
-                  <div class="mb-3">
-                    <label class="form-label">Location (optional)</label>
-                    {{ form.location }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Dynamic Fields (from extra_data) -->
-              {% if form %}
+                <!-- Dynamic Fields from Schema -->
                 {% for field in form %}
                   {% if field.name not in 'title image category description price location csrfmiddlewaretoken' %}
                     <div class="mb-3">
@@ -68,12 +87,12 @@
                     </div>
                   {% endif %}
                 {% endfor %}
-              {% endif %}
 
-              <button class="btn btn-lg bg-primary rounded btn-sm text-white w-100 mt-2" type="submit">
-                Publish Listing <i class="fas fa-arrow-right"></i>
-              </button>
-            </form>
+                <button class="btn btn-lg bg-primary rounded btn-sm text-white w-100 mt-2" type="submit">
+                  Publish Listing <i class="fas fa-arrow-right"></i>
+                </button>
+              </form>
+            </div>
           </div>
         </div>
 
@@ -96,12 +115,41 @@
     }
   }
 
-  // Attach preview to image input if it's in the form
   document.addEventListener("DOMContentLoaded", function () {
     const fileInput = document.querySelector('input[type="file"][name="image"]');
     if (fileInput) {
       fileInput.addEventListener('change', previewImage);
     }
+
+    const parentSelect = document.getElementById("parentCategorySelect");
+    const subcategoryWrapper = document.getElementById("subcategoryWrapper");
+    const subcategorySelect = document.getElementById("subcategorySelect");
+
+    parentSelect.addEventListener("change", function () {
+      const parentId = this.value;
+      if (parentId) {
+        fetch(`/get-subcategories/?parent_id=${parentId}`)
+          .then(response => response.json())
+          .then(data => {
+            subcategorySelect.innerHTML = `<option value="">-- Select Subcategory --</option>`;
+            if (data.length > 0) {
+              data.forEach(sub => {
+                subcategorySelect.innerHTML += `<option value="${sub.id}">${sub.title}</option>`;
+              });
+              subcategoryWrapper.style.display = "block";
+            } else {
+              subcategoryWrapper.style.display = "none";
+            }
+          })
+          .catch(error => {
+            console.error("Error fetching subcategories:", error);
+            subcategoryWrapper.style.display = "none";
+          });
+      } else {
+        subcategoryWrapper.style.display = "none";
+        subcategorySelect.innerHTML = `<option value="">-- Select Subcategory --</option>`;
+      }
+    });
   });
 </script>
 
