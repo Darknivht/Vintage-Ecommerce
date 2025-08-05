@@ -11,6 +11,8 @@
                 <li>
                     <a href="{% url 'vendor:create_product' %}"><i class="fas fa-plus-circle me-2"></i>Create Product</a>
                 </li>
+                <li><a href="{% url 'store:vendor_listings' %}"><i class="fas fa-clipboard-list me-2"></i> My Listings</a>
+                </li>
                 <li>
                     <a href="{% url 'vendor:orders' %}" class="{% if '/vendor/orders/' in request.path or '/vendor/order_detail/' in request.path %} active {% endif %}"><i class="fas fa-shopping-cart me-2"></i>Orders</a>
                 </li>

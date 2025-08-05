@@ -16,6 +16,13 @@ urlpatterns = [
     path("coupon_apply/<order_id>/", views.coupon_apply, name="coupon_apply"),
     path("payment_status/<order_id>/", views.payment_status, name="payment_status"),
 
+    # Listings
+    path("listing/create/", views.create_listing, name="create_listing"),
+    path("listing/<slug:slug>/", views.listing_detail, name="listing_detail"),
+    path("listings/", views.browse_listings, name="browse_listings"),
+    path("vendor/listings/", views.vendor_listings, name="vendor_listings"),
+
+
     path("filter_products/", views.filter_products, name="filter_products"),
     path("add_to_cart/", views.add_to_cart, name="add_to_cart"),
     path("delete_cart_item/", views.delete_cart_item, name="delete_cart_item"),

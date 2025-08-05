@@ -1,0 +1,61 @@
+{% extends 'vendor/base.html' %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+
+<section class="middle">
+  <div class="container-fluid">
+    <div class="row align-items-start justify-content-between">
+      {% include 'vendor/sidebar.html' %}
+
+      <div class="col-12 col-md-12 col-lg-9 col-xl-10">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h4 class="fw-bold mb-0">My Listings</h4>
+          <a href="{% url 'store:create_listing' %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus me-1"></i> New Listing
+          </a>
+        </div>
+
+        <div class="row">
+          {% for listing in listings %}
+          <div class="col-md-6 col-xl-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+              <a href="{% url 'store:listing_detail' listing.slug %}">
+                {% if listing.image %}
+                  <img src="{{ listing.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ listing.title }}">
+                {% else %}
+                  <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
+                    <span class="text-muted">No Image</span>
+                  </div>
+                {% endif %}
+              </a>
+              <div class="card-body">
+                <h5 class="fw-bold mb-1">
+                  <a href="{% url 'store:listing_detail' listing.slug %}" class="text-dark text-decoration-none">
+                    {{ listing.title|truncatechars:45 }}
+                  </a>
+                </h5>
+                <p class="text-muted small mb-1">{{ listing.category.title }}</p>
+                {% if listing.price %}
+                  <p class="fw-bold text-primary mb-0">₦{{ listing.price|intcomma }}</p>
+                {% endif %}
+              </div>
+              <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
+                <small class="text-muted">{{ listing.created_at|naturaltime }}</small>
+                <a href="#" class="btn btn-sm btn-outline-secondary">Edit</a>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+            <div class="col-12 text-center">
+              <p class="text-muted">You haven’t posted any listings yet.</p>
+            </div>
+          {% endfor %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock content %}

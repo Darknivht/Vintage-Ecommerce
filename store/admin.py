@@ -1,6 +1,8 @@
 from django.contrib import admin
 from store import models as store_models
+from store.forms import ListingForm
 
+# === Inlines ===
 class GalleryInline(admin.TabularInline):
     model = store_models.Gallery
 
@@ -10,14 +12,22 @@ class VariantInline(admin.TabularInline):
 class VariantItemInline(admin.TabularInline):
     model = store_models.VariantItem
 
+
+# === Category & Schema ===
+class CategorySchemaInline(admin.StackedInline):
+    model = store_models.CategorySchema
+    extra = 0
+
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ['title', 'parent', 'image']
     list_editable = ['image']
     prepopulated_fields = {'slug': ('title',)}
     list_filter = ['parent']
     search_fields = ['title']
+    inlines = [CategorySchemaInline]
 
 
+# === Product Admin ===
 class ProductAdmin(admin.ModelAdmin):
     list_display = ['name', 'category', 'price', 'regular_price', 'stock', 'status', 'featured', 'vendor', 'date']
     search_fields = ['name', 'category__title']
@@ -25,15 +35,19 @@ class ProductAdmin(admin.ModelAdmin):
     inlines = [GalleryInline, VariantInline]
     prepopulated_fields = {'slug': ('name',)}
 
+
+# === Variant Admins ===
 class VariantAdmin(admin.ModelAdmin):
     list_display = ['product', 'name']
     search_fields = ['product__name', 'name']
     inlines = [VariantItemInline]
-    
+
 class VariantItemAdmin(admin.ModelAdmin):
     list_display = ['variant', 'title', 'content']
     search_fields = ['variant__name', 'title']
 
+
+# === Other Admins ===
 class GalleryAdmin(admin.ModelAdmin):
     list_display = ['product', 'gallery_id']
     search_fields = ['product__name', 'gallery_id']
@@ -63,7 +77,29 @@ class ReviewAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'product__name']
     list_filter = ['active', 'rating']
 
+
+# === Listing Admin ===
+class ListingAdmin(admin.ModelAdmin):
+    form = ListingForm
+    list_display = ['title', 'category', 'vendor', 'price', 'location', 'featured', 'is_active', 'created_at']
+    search_fields = ['title', 'category__title', 'vendor__username', 'location']
+    list_filter = ['category', 'is_active', 'featured']
+    prepopulated_fields = {'slug': ('title',)}
+    readonly_fields = ['slug', 'created_at']
+
+    fieldsets = (
+        (None, {
+            'fields': ('title', 'vendor', 'category', 'price', 'location', 'image', 'description', 'extra_data')
+        }),
+        ('Status', {
+            'fields': ('featured', 'is_active', 'slug', 'created_at')
+        }),
+    )
+
+
+# === Register Everything ===
 admin.site.register(store_models.Category, CategoryAdmin)
+admin.site.register(store_models.CategorySchema)
 admin.site.register(store_models.Product, ProductAdmin)
 admin.site.register(store_models.Variant, VariantAdmin)
 admin.site.register(store_models.VariantItem, VariantItemAdmin)
@@ -73,3 +109,4 @@ admin.site.register(store_models.Coupon, CouponAdmin)
 admin.site.register(store_models.Order, OrderAdmin)
 admin.site.register(store_models.OrderItem, OrderItemAdmin)
 admin.site.register(store_models.Review, ReviewAdmin)
+admin.site.register(store_models.Listing, ListingAdmin)

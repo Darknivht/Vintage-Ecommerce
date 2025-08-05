@@ -11,6 +11,10 @@ import json
 from django.shortcuts import get_object_or_404
 from store.utils.flutterwave import initiate_flutterwave_payment
 from django.contrib.auth.decorators import login_required
+from store.forms import ListingForm
+from store.models import Listing
+from store.models import Category
+from django.core.paginator import Paginator
 
 
 from decimal import Decimal
@@ -773,3 +777,51 @@ def privacy_policy(request):
 
 def terms_conditions(request):
     return render(request, "pages/terms_conditions.html")
+
+
+@login_required
+def create_listing(request):
+    if request.method == 'POST':
+        form = ListingForm(request.POST, request.FILES)
+        if form.is_valid():
+            listing = form.save(commit=False)
+            listing.vendor = request.user
+            listing.save()
+            messages.success(request, "Listing created successfully.")
+            return redirect("store:listing_detail", slug=listing.slug)
+    else:
+        form = ListingForm()
+
+    return render(request, 'store/listing_form.html', {'form': form})
+
+
+
+def browse_listings(request):
+    listings = Listing.objects.filter(is_active=True).order_by("-created_at")
+    category_id = request.GET.get("category")
+
+    if category_id:
+        listings = listings.filter(category_id=category_id)
+
+    paginator = Paginator(listings, 12)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    categories = Category.objects.filter(parent__isnull=True)
+
+    return render(request, "store/browse_listings.html", {
+        "listings": page_obj,
+        "categories": categories,
+        "selected_category": int(category_id) if category_id else None
+    })
+
+
+def listing_detail(request, slug):
+    listing = get_object_or_404(Listing, slug=slug, is_active=True)
+    return render(request, 'store/listing_detail.html', {'listing': listing})
+
+
+@login_required
+def vendor_listings(request):
+    listings = request.user.listing_set.all().order_by('-created_at')  # reverse chronological
+    return render(request, 'vendor/listings.html', {'listings': listings})

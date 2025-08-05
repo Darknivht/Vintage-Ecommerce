@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+
+<section class="middle">
+  <div class="container">
+    <div class="row align-items-start justify-content-center">
+      <div class="col-xl-10 col-lg-10 col-md-12">
+        <div class="card mb-4 border-0 shadow">
+          <div class="row g-0 align-items-center">
+            <div class="col-md-6">
+              {% if listing.image %}
+                <img src="{{ listing.image.url }}" class="img-fluid rounded-start" style="width: 100%; height: 500px; object-fit: cover;" alt="{{ listing.title }}">
+              {% else %}
+                <div class="d-flex align-items-center justify-content-center bg-light" style="width: 100%; height: 500px;">
+                  <span class="text-muted">No Image</span>
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <div class="card-body px-4 py-4">
+                <h3 class="card-title fw-bold mb-2">{{ listing.title }}</h3>
+                <p class="text-muted mb-2"><i class="fas fa-tag me-1"></i> {{ listing.category.title }}</p>
+                <p class="text-muted mb-2"><i class="fas fa-user me-1"></i> Listed by: {{ listing.vendor.get_full_name|default:listing.vendor.username }}</p>
+                {% if listing.location %}
+                  <p class="text-muted mb-2"><i class="fas fa-map-marker-alt me-1"></i> {{ listing.location }}</p>
+                {% endif %}
+                {% if listing.price %}
+                  <h4 class="text-primary mt-3">₦{{ listing.price|intcomma }}</h4>
+                {% endif %}
+                <p class="text-muted"><small>{{ listing.created_at|naturaltime }}</small></p>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-0">
+
+          <div class="card-body px-4 py-4">
+            <h5 class="fw-bold mb-3">Description</h5>
+            <p>{{ listing.description|linebreaks }}</p>
+
+            {% if listing.extra_data %}
+              <hr>
+              <h5 class="fw-bold mb-3">Listing Details</h5>
+              <ul class="list-group list-group-flush">
+                {% for key, value in listing.extra_data.items %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <strong class="text-capitalize">{{ key|replace:"_"|" " }}:</strong>
+                    <span>{{ value }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock content %}
