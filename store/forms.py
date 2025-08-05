@@ -5,7 +5,7 @@ import json
 class ListingForm(forms.ModelForm):
     class Meta:
         model = Listing
-        fields = ['title', 'category', 'description', 'price', 'cover_image']
+        fields = ['title', 'category', 'description', 'price', 'image']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

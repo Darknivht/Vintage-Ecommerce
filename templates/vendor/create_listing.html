@@ -10,7 +10,6 @@
 
       <div class="col-12 col-md-12 col-lg-9 col-xl-10">
         <h4 class="mb-0 mb-4 fw-bold">Create Listing</h4>
-
         <div class="card border-0 shadow mb-4">
           <div class="card-body">
             <div class="row mt-0">
@@ -43,11 +42,9 @@
                       <select name="category" class="form-select" id="parentCategorySelect">
                         <option value="">-- Select Main Category --</option>
                         {% for c in categories %}
-                          {% if not c.parent %}
-                            <option value="{{ c.id }}" {% if form.category.value == c.id %}selected{% endif %}>
-                              {{ c.title }}
-                            </option>
-                          {% endif %}
+                          <option value="{{ c.id }}" {% if form.category.value == c.id %}selected{% endif %}>
+                            {{ c.title }}
+                          </option>
                         {% endfor %}
                       </select>
                       <small>Help people find this listing by selecting the right category.</small>
@@ -128,7 +125,7 @@
     parentSelect.addEventListener("change", function () {
       const parentId = this.value;
       if (parentId) {
-        fetch(`/get-subcategories/?parent_id=${parentId}`)
+        fetch(`/get-subcategories/?parent_id=${parentId}&type=listing`)
           .then(response => response.json())
           .then(data => {
             subcategorySelect.innerHTML = `<option value="">-- Select Subcategory --</option>`;

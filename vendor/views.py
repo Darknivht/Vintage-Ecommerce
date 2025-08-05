@@ -293,7 +293,7 @@ def change_password(request):
 
 @login_required
 def create_product(request):
-    categories = store_models.Category.objects.filter(parent__isnull=True)  # only top-level categories
+    categories = store_models.Category.objects.filter(type="product", parent__isnull=True)  # only top-level categories
 
     if request.method == "POST":
         image = request.FILES.get("image")
@@ -335,7 +335,7 @@ def update_product(request, id):
     product = get_object_or_404(store_models.Product, id=id, vendor=request.user)
 
     # Fetch all categories (for category selection in the form)
-    categories = store_models.Category.objects.all()
+    categories = store_models.Category.objects.filter(type="product")
 
     if request.method == "POST":
         # Get data from the form submission

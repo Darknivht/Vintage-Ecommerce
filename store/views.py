@@ -33,11 +33,22 @@ from plugin.exchange_rate import convert_ngn_to_inr, convert_ngn_to_kobo, conver
 from store.models import Category
 
 def get_subcategories(request):
-    parent_id = request.GET.get('parent_id')
-    if parent_id:
-        subcategories = Category.objects.filter(parent_id=parent_id).values('id', 'title')
-        return JsonResponse(list(subcategories), safe=False)
-    return JsonResponse([], safe=False)
+    parent_id = request.GET.get("parent_id")
+    category_type = request.GET.get("type", None)  # optional, can be 'product' or 'listing'
+
+    if not parent_id:
+        return JsonResponse([], safe=False)
+
+    subcategories = Category.objects.filter(parent_id=parent_id)
+
+    # Optional: filter by type if provided (e.g., only 'product' or 'listing' categories)
+    if category_type:
+        subcategories = subcategories.filter(type=category_type)
+
+    data = [{"id": sub.id, "title": sub.title} for sub in subcategories]
+
+    return JsonResponse(data, safe=False)
+
 
 
 stripe.api_key = settings.STRIPE_SECRET_KEY

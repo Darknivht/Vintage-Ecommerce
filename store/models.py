@@ -148,7 +148,7 @@ class Listing(models.Model):
     description = CKEditor5Field('Text', config_name='extends')
     price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     location = models.CharField(max_length=255, blank=True, null=True)
-    cover_image = CloudinaryField(folder="listings", null=True, blank=True)
+    image = CloudinaryField(folder="listings", null=True, blank=True)
     extra_data = models.JSONField(default=dict, blank=True)
     is_active = models.BooleanField(default=True)
     featured = models.BooleanField(default=False)
