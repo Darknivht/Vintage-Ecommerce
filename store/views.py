@@ -823,5 +823,5 @@ def listing_detail(request, slug):
 
 @login_required
 def vendor_listings(request):
-    listings = request.user.listing_set.all().order_by('-created_at')  # reverse chronological
+    listings = Listing.objects.filter(vendor=request.user).order_by('-created_at')
     return render(request, 'vendor/listings.html', {'listings': listings})
