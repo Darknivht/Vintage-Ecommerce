@@ -792,7 +792,7 @@ def create_listing(request):
     else:
         form = ListingForm()
 
-    return render(request, 'store/listing_form.html', {'form': form})
+    return render(request, 'vendor/create_listing.html', {'form': form})
 
 
 
