@@ -53,7 +53,7 @@ def clear_cart_items(request):
 
 def index(request):
     products = store_models.Product.objects.filter(status="Published")
-    categories = store_models.Category.objects.filter(parent=None)
+    categories = store_models.Category.objects.filter(type="product", parent=None)
     
     context = {
         "products": products,
@@ -61,11 +61,14 @@ def index(request):
     }
     return render(request, "store/index.html", context)
 
+
 def shop(request):
     products_list = store_models.Product.objects.filter(status="Published")
-    categories = store_models.Category.objects.filter(parent=None)
+    categories = store_models.Category.objects.filter(type="product", parent=None)
+
     colors = store_models.VariantItem.objects.filter(variant__name='Color').values('title', 'content').distinct()
     sizes = store_models.VariantItem.objects.filter(variant__name='Size').values('title', 'content').distinct()
+
     item_display = [
         {"id": "1", "value": 1},
         {"id": "2", "value": 2},
@@ -88,28 +91,24 @@ def shop(request):
         {"id": "highest", "value": "Lowest to Highest"},
     ]
 
-
-    print(sizes)
-
     products = paginate_queryset(request, products_list, 10)
 
     context = {
         "products": products,
         "products_list": products_list,
         "categories": categories,
-         'colors': colors,
-        'sizes': sizes,
-        'item_display': item_display,
-        'ratings': ratings,
-        'prices': prices,
+        "colors": colors,
+        "sizes": sizes,
+        "item_display": item_display,
+        "ratings": ratings,
+        "prices": prices,
     }
     return render(request, "store/shop.html", context)
 
+
 def category(request, id):
-    category = get_object_or_404(store_models.Category, id=id)
+    category = get_object_or_404(store_models.Category, id=id, type="product")
 
-
-    # Include products under this category and all its subcategories
     subcategories = category.subcategories.all()
     categories_to_include = [category] + list(subcategories)
 
@@ -130,6 +129,7 @@ def category(request, id):
         "category": category,
     }
     return render(request, "store/category.html", context)
+
 
 
 def vendors(request):
@@ -807,7 +807,7 @@ def browse_listings(request):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    categories = Category.objects.filter(parent__isnull=True)
+    categories = Category.objects.filter(type="listing", parent=None)
 
     return render(request, "store/browse_listings.html", {
         "listings": page_obj,

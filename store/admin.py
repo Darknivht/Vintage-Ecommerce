@@ -19,12 +19,12 @@ class CategorySchemaInline(admin.StackedInline):
     extra = 0
 
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['title', 'parent', 'image']
-    list_editable = ['image']
+    list_display = ['title', 'type', 'parent', 'image']
+    list_editable = ['type', 'image']
     prepopulated_fields = {'slug': ('title',)}
-    list_filter = ['parent']
+    list_filter = ['type', 'parent']
     search_fields = ['title']
-    inlines = [CategorySchemaInline]
+
 
 
 # === Product Admin ===

@@ -58,20 +58,32 @@ RATING = (
 
 # === CATEGORY MODELS ===
 class Category(models.Model):
-    title = models.CharField(max_length=100)
+    CATEGORY_TYPE_CHOICES = (
+        ("product", "Product"),
+        ("listing", "Listing"),
+    )
+
+    title = models.CharField(max_length=100, blank=False)
     image = CloudinaryField(folder="images", null=True, blank=True)
     slug = models.SlugField(unique=True)
     parent = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="subcategories")
+    type = models.CharField(max_length=20, choices=CATEGORY_TYPE_CHOICES, default="product")
 
     class Meta:
         verbose_name_plural = "Categories"
 
-    def __str__(self):
-        return self.title
-
     def all_products(self):
         subcategories = self.subcategories.all()
         return Product.objects.filter(category__in=[self] + list(subcategories))
+
+    def __str__(self):
+        return self.title
+
+    def products(self):
+        return Product.objects.filter(category=self)
+
+    def listings(self):
+        return Listing.objects.filter(category=self)
 
 
 # NEW: Define dynamic schemas per category
