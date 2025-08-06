@@ -18,32 +18,30 @@
           <div class="border rounded p-3">
             <h4>Categories</h4>
             <div id="category-filter-container">
-              {% for c in categories %}
+            {% for c in categories %}
                 {% if not c.parent %}
-                  <div class="mb-1">
+                <div class="mb-1">
                     <div class="form-check d-flex justify-content-between align-items-center">
-                      <div>
-                        <input type="radio" class="form-check-input category-filter parent-category" name="category" value="{{ c.id }}" id="category{{ c.id }}">
-                        <label class="form-check-label fs-6 fw-bold" for="category{{ c.id }}">{{ c.title }}</label>
-                      </div>
-                      {% if c.subcategories.all %}
-                        <button type="button" class="btn btn-sm text-muted toggle-sub" data-target="#sub{{ c.id }}"><i class="fas fa-chevron-down small"></i></button>
-                      {% endif %}
+                    <input type="radio" class="form-check-input category-filter parent-category" name="category" value="{{ c.id }}" id="category{{ c.id }}">
+                    <label class="form-check-label fs-6 fw-bold w-100 cursor-pointer category-toggle" data-target="#sub{{ c.id }}" for="category{{ c.id }}">
+                        {{ c.title }}
+                    </label>
                     </div>
                     {% if c.subcategories.all %}
-                      <div class="ms-3 mt-1 subcategory-dropdown d-none" id="sub{{ c.id }}">
+                    <div class="ms-3 mt-1 subcategory-dropdown d-none" id="sub{{ c.id }}">
                         {% for sub in c.subcategories.all %}
-                          <div class="form-check mb-1">
+                        <div class="form-check mb-1">
                             <input type="checkbox" class="form-check-input subcategory-filter" value="{{ sub.id }}" id="subcategory{{ sub.id }}">
                             <label class="form-check-label small text-muted" for="subcategory{{ sub.id }}">{{ sub.title }}</label>
-                          </div>
+                        </div>
                         {% endfor %}
-                      </div>
+                    </div>
                     {% endif %}
-                  </div>
+                </div>
                 {% endif %}
-              {% endfor %}
+            {% endfor %}
             </div>
+
 
             <hr>
             <h4>Location</h4>
@@ -116,16 +114,17 @@ document.addEventListener("DOMContentLoaded", function () {
   const resetBtn = document.querySelector(".reset-filter");
 
   // Subcategory toggle
-  document.querySelectorAll(".toggle-sub").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const target = document.querySelector(btn.dataset.target);
-      if (target.classList.contains("d-none")) {
-        target.classList.remove("d-none");
-      } else {
-        target.classList.add("d-none");
-      }
-    });
+// Subcategory toggle when label is clicked
+document.querySelectorAll(".category-toggle").forEach(label => {
+  label.addEventListener("click", (e) => {
+    const targetId = label.dataset.target;
+    const target = document.querySelector(targetId);
+    if (target) {
+      target.classList.toggle("d-none");
+    }
   });
+});
+
 
   applyBtn.addEventListener("click", () => {
     const selectedCategory = document.querySelector('input[name="category"]:checked');
