@@ -81,12 +81,18 @@ class ReviewAdmin(admin.ModelAdmin):
 # === Listing Admin ===
 class ListingAdmin(admin.ModelAdmin):
     form = ListingForm
-    list_display = ['title', 'category', 'vendor', 'price', 'location', 'featured', 'is_active', 'created_at']
+    list_display = ['title', 'category', 'vendor', 'price', 'location', 'featured', 'is_active', 'created_at', 'slug']
     search_fields = ['title', 'category__title', 'vendor__username', 'location']
     list_filter = ['category', 'is_active', 'featured']
-    prepopulated_fields = {'slug': ('title',)}
-    readonly_fields = ['created_at']
-
+    readonly_fields = ['created_at', 'slug']
+    fieldsets = (
+        (None, {
+            'fields': ('title', 'vendor', 'category', 'price', 'location', 'image', 'description', 'extra_data')
+        }),
+        ('Status', {
+            'fields': ('featured', 'is_active', 'created_at')
+        }),
+    )
 
 # === Register Everything ===
 admin.site.register(store_models.Category, CategoryAdmin)
