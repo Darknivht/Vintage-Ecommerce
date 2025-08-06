@@ -804,7 +804,7 @@ def create_listing(request):
     else:
         form = ListingForm()
 
-    return render(request, "store/create_listing.html", {
+    return render(request, "vendor/create_listing.html", {
         "form": form,
         "categories": categories
     })
