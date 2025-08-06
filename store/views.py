@@ -792,18 +792,22 @@ def terms_conditions(request):
 
 @login_required
 def create_listing(request):
-    categories = Category.objects.filter(type="listing", parent__isnull=True)
-
-    if request.method == 'POST':
+    if request.method == "POST":
         form = ListingForm(request.POST, request.FILES)
         if form.is_valid():
             listing = form.save(commit=False)
             listing.vendor = request.user
             listing.save()
-            return redirect('store:listing_detail', slug=listing.slug)
+            messages.success(request, "Listing created successfully.")
+            return redirect("store:vendor_listings")
+        else:
+            print("🚨 Form errors:", form.errors)
+            messages.error(request, "Something went wrong. Please check your input.")
     else:
         form = ListingForm()
 
+    categories = Category.objects.filter(type="listing", parent=None)
+    
     return render(request, "vendor/create_listing.html", {
         "form": form,
         "categories": categories
