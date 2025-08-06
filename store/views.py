@@ -802,7 +802,6 @@ def create_listing(request):
             return redirect("store:vendor_listings")
         else:
             print("🚨 Form errors:", form.errors)
-            messages.error(request, "Something went wrong. Please check your input.")
     else:
         form = ListingForm()
 

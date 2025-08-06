@@ -11,7 +11,7 @@ class ListingForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # Limit to listing categories only
-        self.fields['category'].queryset = Category.objects.filter(type="listing", parent__isnull=False)
+        self.fields['category'].queryset = Category.objects.filter(type="listing")
 
         # Add consistent styling to standard fields
         self.fields['title'].widget.attrs.update({'class': 'form-control rounded'})
