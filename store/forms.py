@@ -18,7 +18,7 @@ class ListingForm(forms.ModelForm):
         self.fields['description'].widget.attrs.update({'class': 'form-control rounded'})
         self.fields['price'].widget.attrs.update({'class': 'form-control rounded'})
         self.fields['location'].widget.attrs.update({'class': 'form-control rounded'})
-        self.fields['cover_image'].widget.attrs.update({'class': 'form-control rounded'})
+        self.fields['image'].widget.attrs.update({'class': 'form-control rounded'})
 
         # If editing, get category from instance or POST
         category = None
