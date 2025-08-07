@@ -1,45 +1,41 @@
 from django.contrib import admin
-from vendor import models as vendor_models
-
-
-class VendorAdmin(admin.ModelAdmin):
-    list_display = ['store_name', 'user', 'country', 'vendor_id', 'date']
-    search_fields = ['store_name', 'user__username', 'vendor_id']
-    prepopulated_fields = {'slug': ('store_name',)}
-    list_filter = ['country', 'date']
-    readonly_fields = ['vendor_id', 'slug']
-
-
-from django.contrib import admin
 from .models import Vendor, BankAccount, Payout, Notifications
 
 
+@admin.register(Vendor)
+class VendorAdmin(admin.ModelAdmin):
+    list_display = ("store_name", "user", "subaccount_code", "country", "date")
+    readonly_fields = ("subaccount_code", "slug")
+    search_fields = ("store_name", "user__email")
+    list_filter = ("country", "date")
+    ordering = ("-date",)
+
+    fieldsets = (
+        (None, {
+            "fields": ("user", "store_name", "slug", "description", "image", "country")
+        }),
+        ("Paystack", {
+            "fields": ("subaccount_code",),
+            "description": "This is the Paystack subaccount code used for split payments."
+        }),
+    )
+
+
+@admin.register(BankAccount)
 class BankAccountAdmin(admin.ModelAdmin):
-    list_display = ['vendor', 'bank_name', 'account_number', 'account_name']
-    search_fields = ['vendor__store_name', 'bank_name', 'account_number', 'account_name']
-    list_filter = ['bank_name']
-    readonly_fields = []
-
-    def has_add_permission(self, request):
-        # Prevent adding from admin directly
-        return False
+    list_display = ("vendor", "bank_name", "account_number")
+    search_fields = ("vendor__store_name", "account_number")
+    list_filter = ("bank_name",)
 
 
+@admin.register(Payout)
 class PayoutAdmin(admin.ModelAdmin):
-    list_display = ['payout_id', 'vendor', 'item', 'amount', 'date']
-    search_fields = ['payout_id', 'vendor__store_name', 'item__order__order_id']
-    list_filter = ['date', 'vendor']
-    readonly_fields = ['payout_id', 'date']
+    list_display = ("vendor", "amount", "item", "date")
+    search_fields = ("vendor__store_name",)
+    list_filter = ("date",)
 
 
+@admin.register(Notifications)
 class NotificationsAdmin(admin.ModelAdmin):
-    list_display = ['user', 'type', 'order', 'seen', 'date']
-    list_editable = ['order', 'seen']
-    list_filter = ['type', 'seen', 'date']
-
-
-# ✅ Register models once only
-admin.site.register(vendor_models.Vendor, VendorAdmin)
-admin.site.register(vendor_models.BankAccount, BankAccountAdmin)
-admin.site.register(vendor_models.Payout, PayoutAdmin)
-admin.site.register(vendor_models.Notifications, NotificationsAdmin)
+    list_display = ("user", "type", "order", "seen", "date")
+    list_filter = ("type", "seen", "date")

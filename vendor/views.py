@@ -11,7 +11,7 @@ import requests
 #from vendor.models import PAYOUT_METHOD
 from vendor.forms import BankAccountForm
 from vendor.models import BankAccount, Vendor
-from vendor.utils.paystack import create_paystack_subaccount
+from vendor.utils.paystack import create_paystack_subaccount  # We'll implement this next
 
 from store.utils.flutterwave import create_flutterwave_subaccount  # ✅ import helper
 
@@ -462,41 +462,51 @@ def delete_product(request, product_id):
 def create_bank_account(request):
     user = request.user
 
-    # Check if user is a vendor
+    # Ensure user is a vendor
     if not hasattr(user, 'vendor'):
         messages.error(request, "Only vendors can set up bank accounts.")
-        return redirect('vendor:dashboard')
+        return redirect("dashboard")
 
     vendor = user.vendor
 
-    # Prevent duplicate bank account creation
-    if hasattr(vendor, 'bankaccount'):
-        messages.info(request, "You already added a bank account.")
-        return redirect('vendor:dashboard')
+    if request.method == "POST":
+        form = BankAccountForm(request.POST, instance=vendor)
 
-    if request.method == 'POST':
-        form = BankAccountForm(request.POST)
         if form.is_valid():
-            bank_account = form.save(commit=False)
-            bank_account.vendor = vendor
-            bank_account.save()
+            vendor = form.save(commit=False)
 
-            # Attempt to create Paystack subaccount immediately
-            sub_code = create_paystack_subaccount(vendor)
-            if sub_code:
-                vendor.subaccount_code = sub_code
-                vendor.save()
-                messages.success(request, "Bank account and subaccount created successfully.")
-            else:
-                messages.warning(request, "Bank account saved, but subaccount creation failed. Please try again.")
+            # Map selected bank_name to bank_code
+            selected_bank_code = form.cleaned_data.get("bank_name")
+            vendor.bank_code = selected_bank_code
 
-            return redirect('dashboard')
+            # Set fallback business name
+            if not vendor.account_name:
+                vendor.account_name = vendor.store_name or user.get_full_name()
+
+            try:
+                # Call Paystack subaccount API
+                subaccount_code = create_paystack_subaccount(
+                    business_name=vendor.account_name,
+                    account_number=vendor.account_number,
+                    bank_code=vendor.bank_code,
+                    vendor_email=user.email
+                )
+
+                if subaccount_code:
+                    vendor.subaccount_code = subaccount_code
+                    vendor.save()
+                    messages.success(request, "Bank account and Paystack subaccount created successfully.")
+                    return redirect("dashboard")
+                else:
+                    messages.error(request, "Subaccount creation failed. Please verify your details and try again.")
+            except Exception as e:
+                messages.error(request, f"Error: {e}")
         else:
-            messages.error(request, "Please fix the errors below.")
+            messages.error(request, "Please correct the errors below.")
     else:
-        form = BankAccountForm()
+        form = BankAccountForm(instance=vendor)
 
-    return render(request, 'vendor/create_bank_account.html', {'form': form})
+    return render(request, "vendor/create_bank_account.html", {"form": form})
 
 
 

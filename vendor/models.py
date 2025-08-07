@@ -14,34 +14,31 @@ NOTIFICATION_EVENT = (
 
 
 class Vendor(models.Model):
-    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, related_name="vendor")
-    image = CloudinaryField(folder="images", blank=True)
-    store_name = models.CharField(max_length=100, null=True, blank=True)
-    description = models.TextField(null=True, blank=True)
-    country = models.CharField(max_length=100, null=True, blank=True)
-    vendor_id = ShortUUIDField(unique=True, length=6, max_length=20, alphabet="1234567890")
-    subaccount_code = models.CharField(max_length=100, null=True, blank=True, help_text="Paystack Subaccount Code")
-    date = models.DateTimeField(auto_now_add=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="vendor")
+    store_name = models.CharField(max_length=100)
     slug = models.SlugField(blank=True, null=True)
+    image = CloudinaryField(folder="vendors", blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    country = models.CharField(max_length=100, default="NG")
 
-    def __str__(self):
-        return str(self.store_name)
+    # 🔐 Paystack Banking Info
+    bank_name = models.CharField(max_length=255, blank=True, null=True)
+    bank_code = models.CharField(max_length=10, blank=True, null=True)
+    account_number = models.CharField(max_length=20, blank=True, null=True)
+    account_name = models.CharField(max_length=255, blank=True, null=True)
+    subaccount_code = models.CharField(max_length=255, blank=True, null=True, help_text="Generated from Paystack")
+
+    vendor_id = ShortUUIDField(unique=True, length=6, max_length=20, alphabet="1234567890")
+    date = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.store_name)
-
-        if not self.subaccount_code:
-            try:
-                bank_account = self.bankaccount
-                if bank_account.bank_name and bank_account.account_number:
-                    sub_code = create_paystack_subaccount(self)
-                    if sub_code:
-                        self.subaccount_code = sub_code
-            except Exception:
-                pass  # No bank account yet
-
         super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.store_name
+
 
 
 class BankAccount(models.Model):
