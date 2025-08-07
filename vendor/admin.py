@@ -10,19 +10,19 @@ class VendorAdmin(admin.ModelAdmin):
     readonly_fields = ['vendor_id', 'slug']
 
 
-class BankAccountAdmin(admin.ModelAdmin):
-    list_display = [
-        'vendor', 'country', 'currency', 'bank_name',
-        'account_number', 'account_type',
-        'flutterwave_subaccount_id', 'split_value'
-    ]
-    search_fields = ['vendor__store_name', 'bank_name', 'account_number', 'flutterwave_subaccount_id']
-    list_filter = ['account_type', 'country', 'flutterwave_subaccount_id']
-    list_editable = ['split_value']
-    readonly_fields = ['flutterwave_subaccount_id', 'bank_code', 'currency']
+from django.contrib import admin
+from .models import Vendor, BankAccount, Payout, Notifications
 
-    def save_model(self, request, obj, form, change):
-        obj.save()
+
+class BankAccountAdmin(admin.ModelAdmin):
+    list_display = ['vendor', 'bank_name', 'account_number']
+    search_fields = ['vendor__store_name', 'bank_name', 'account_number']
+    list_filter = ['bank_name']
+    readonly_fields = []
+
+    def has_add_permission(self, request):
+        # Prevent adding from admin directly
+        return False
 
 
 class PayoutAdmin(admin.ModelAdmin):

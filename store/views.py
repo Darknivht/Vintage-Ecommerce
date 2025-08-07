@@ -7,6 +7,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives, send_mail
+from store.utils.paystack import initialize_paystack_transaction
 import json
 from django.shortcuts import get_object_or_404
 from store.utils.flutterwave import initiate_flutterwave_payment
@@ -388,69 +389,65 @@ def coupon_apply(request, order_id):
 @login_required
 def checkout(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
-    amount_in_kobo = convert_ngn_to_kobo(order.total)
-    amount_in_usd = convert_ngn_to_usd(order.total)
-    vendor_subaccounts = {}
+    amount_in_kobo = int(order.total * 100)
+    vendor_splits = []
 
     for item in order.order_items():
         vendor = item.vendor
         try:
             bank_account = vendor.vendor.bankaccount
-            sub_id = bank_account.flutterwave_subaccount_id
-            if not sub_id:
+            subaccount_code = bank_account.subaccount_code
+            if not subaccount_code:
                 continue
-            product_price = float(item.sub_total)
-            shipping_fee = float(item.shipping)
-            platform_fee = product_price * 0.10  # 10% platform fee
-            vendor_earnings = product_price - platform_fee + shipping_fee  # Vendor earnings
 
-            if sub_id not in vendor_subaccounts:
-                vendor_subaccounts[sub_id] = vendor_earnings
-            else:
-                vendor_subaccounts[sub_id] += vendor_earnings
+            vendor_amount = float(item.sub_total)
+            vendor_share = vendor_amount * 0.90  # 90% to vendor, 10% platform
+
+            vendor_splits.append({
+                "subaccount": subaccount_code,
+                "share": round(vendor_share, 2),
+            })
         except Exception as e:
-            print(f"Skipping vendor {vendor}: {e}")
+            print(f"[Split Error] Vendor: {vendor}, Reason: {e}")
+            continue
 
-    flutterwave_subaccounts = [
-        {
-            "id": sub_id,
-            "transaction_split_type": "flat",
-            "transaction_amount": round(amount, 2),
-        }
-        for sub_id, amount in vendor_subaccounts.items()
-    ]
+    # Construct Paystack split object
+    paystack_split = {
+        "type": "flat",
+        "currency": "NGN",
+        "subaccounts": [
+            {
+                "subaccount": s["subaccount"],
+                "share": s["share"]
+            } for s in vendor_splits
+        ]
+    }
 
+    # Initialize Paystack payment
     try:
-        customer = {
-            "email": order.address.email,
-            "name": order.address.full_name,
-            "phonenumber": order.address.mobile,
-        }
-        flutterwave_data = initiate_flutterwave_payment(
-            amount=order.total,
-            currency="NGN",
-            tx_ref=f"ORDER-{order.order_id}",
-            customer=customer,
-            redirect_url=request.build_absolute_uri(
-                reverse("store:flutterwave_payment_callback", args=[order.order_id])
-            ),
-            subaccounts=flutterwave_subaccounts
+        paystack_tx = initialize_paystack_transaction(
+            email=order.address.email,
+            amount_in_kobo=amount_in_kobo,
+            split_data=paystack_split,
+            callback_url=request.build_absolute_uri(
+                reverse("store:paystack_payment_verify", args=[order.order_id])
+            ) + "?payment_method=Paystack",
+            reference=f"ORDER-{order.order_id}"
         )
-        flutterwave_checkout_link = flutterwave_data.get("link")
+        paystack_checkout_link = paystack_tx["authorization_url"]
     except Exception as e:
-        flutterwave_checkout_link = None
-        print("Flutterwave error:", str(e))
+        paystack_checkout_link = None
+        print("[Paystack Init Error]", e)
 
     context = {
         "order": order,
         "amount_in_kobo": amount_in_kobo,
-        "amount_in_usd": round(amount_in_usd, 2),
         "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
-        "flutterwave_public_key": settings.FLUTTERWAVE_PUBLIC_KEY,
-        "flutterwave_checkout_link": flutterwave_checkout_link,
-        "flutterwave_subaccounts_json": json.dumps(flutterwave_subaccounts),
+        "paystack_split_data": json.dumps(paystack_split),
+        "paystack_checkout_link": paystack_checkout_link,
     }
     return render(request, "store/checkout.html", context)
+
 
 
 

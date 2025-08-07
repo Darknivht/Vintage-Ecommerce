@@ -105,9 +105,14 @@
 
         <!-- Payment -->
         <div class="w-100 mt-4">
-          <button type="button" onclick="payWithFlutterwave()" class="btn rounded text-primary fw-bold w-100 mb-3" style="background-color: #e8d3c4;">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Flutterwave_Logo.png/1200px-Flutterwave_Logo.png" style="height: 40px;" alt="">
-          </button>
+        <!-- Paystack -->
+        {% if paystack_checkout_link %}
+          <a href="{{ paystack_checkout_link }}" class="btn rounded bg-success text-white fw-bold w-100">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Paystack_Logo.png/800px-Paystack_Logo.png" style="height: 30px; margin-right: 10px;">
+            Pay with Paystack
+          </a>
+        {% endif %}
+
         </div>
       </div>
     </div>

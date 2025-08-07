@@ -8,7 +8,9 @@ from django.db.models.functions import TruncMonth
 from django.db.models import Count
 from django.conf import settings
 import requests
-from vendor.models import PAYOUT_METHOD
+#from vendor.models import PAYOUT_METHOD
+from vendor.forms import BankAccountForm
+from vendor.models import BankAccount, Vendor
 
 from store.utils.flutterwave import create_flutterwave_subaccount  # ✅ import helper
 
@@ -455,91 +457,37 @@ def delete_product(request, product_id):
     return redirect("vendor:products")
 
 
-
-
-
-
 @login_required
-def add_bank_account(request):
-    vendor = request.user.vendor
-    account = vendor_models.BankAccount.objects.filter(vendor=vendor).first()
+def create_bank_account(request):
+    user = request.user
 
-    # Split settings
-    admin_share = 10
-    vendor_share = getattr(settings, "VENDOR_SPLIT_PERCENTAGE", 100 - admin_share)
+    # Ensure the user is a vendor
+    if not hasattr(user, 'vendor'):
+        messages.error(request, "Only vendors can set up bank accounts.")
+        return redirect('dashboard')
 
-    # ✅ Country choices should be outside the POST block
-    country_choices = [
-        ("NG", "Nigeria"),
-        ("GH", "Ghana"),
-        ("CI", "Côte d'Ivoire"),
-        ("SN", "Senegal"),
-        ("BJ", "Benin"),
-        ("GLOBAL", "Global")
-    ]
+    vendor = user.vendor
 
-    if request.method == "POST":
-        account_name = request.POST.get("account_name")
-        account_number = request.POST.get("account_number")
-        bank_code = request.POST.get("bank_code")
-        bank_name = request.POST.get("bank_name")
-        account_type = request.POST.get("account_type")
-        country = request.POST.get("country", "NG")
-        branch_code = request.POST.get("branch_code") or None
-        currency = request.POST.get("currency", "NGN")  # fallback for now
+    # If bank account already exists, redirect to update view
+    if hasattr(vendor, 'bankaccount'):
+        messages.info(request, "You already added a bank account.")
+        return redirect('vendor:update_bank_account')
 
-        full_name = f"{request.user.first_name} {request.user.last_name}".strip() or vendor.store_name
-        vendor_email = request.user.email
-
-        # Save to local DB
-        account, created = vendor_models.BankAccount.objects.update_or_create(
-            vendor=vendor,
-            defaults={
-                "account_name": account_name,
-                "account_number": account_number,
-                "bank_code": bank_code,
-                "bank_name": bank_name,
-                "account_type": account_type,
-                "country": country,
-                "branch_code": branch_code,
-                "currency": currency,
-                "email": vendor_email,
-                "split_value": vendor_share,
-            }
-        )
-
-        if not account.flutterwave_subaccount_id:
-            try:
-                # Call to create subaccount
-                subaccount_id = create_flutterwave_subaccount(
-                    account_name=full_name,
-                    account_number=account_number,
-                    bank_code=bank_code,
-                    vendor_email=vendor_email,
-                    country=country,
-                    currency=currency,
-                    split_value=vendor_share
-                )
-
-                account.flutterwave_subaccount_id = subaccount_id
-                account.save()
-                messages.success(request, "Bank account saved and Flutterwave subaccount created.")
-
-            except Exception as e:
-                messages.error(request, f"Flutterwave Error: {str(e)}")
-
+    if request.method == 'POST':
+        form = BankAccountForm(request.POST)
+        if form.is_valid():
+            bank_account = form.save(commit=False)
+            bank_account.vendor = vendor
+            bank_account.save()
+            messages.success(request, "Bank account added successfully. Subaccount creation will trigger automatically.")
+            return redirect('dashboard')
         else:
-            messages.info(request, "Bank account updated. Subaccount already exists.")
+            messages.error(request, "Please fix the errors below.")
+    else:
+        form = BankAccountForm()
 
-        return redirect("vendor:profile")
+    return render(request, 'vendor/create_bank_account.html', {'form': form})
 
-    return render(request, "vendor/add_bank_account.html", {
-        "account": account,
-        "split_percentage": vendor_share,
-        "payout_methods": PAYOUT_METHOD,
-        "flutterwave_private_key": settings.FLUTTERWAVE_PRIVATE_KEY,
-        "country_choices": country_choices,
-    })
 
 
 @login_required
