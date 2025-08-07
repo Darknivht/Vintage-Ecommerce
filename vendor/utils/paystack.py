@@ -1,7 +1,9 @@
+import requests
+from django.conf import settings
 
-def create_paystack_subaccount(vendor, bank_name, bank_code, account_number, account_name=None):
+def create_paystack_subaccount(vendor, bank_code, account_number, account_name=None):
     """
-    Creates a Paystack subaccount for vendor using their bank details.
+    Create a Paystack subaccount and return the subaccount code.
     """
     url = "https://api.paystack.co/subaccount"
     headers = {
@@ -10,7 +12,7 @@ def create_paystack_subaccount(vendor, bank_name, bank_code, account_number, acc
     }
 
     payload = {
-        "business_name": account_name,
+        "business_name": account_name or vendor.store_name,
         "settlement_bank": bank_code,
         "account_number": account_number,
         "percentage_charge": 10  # Platform keeps 10%, vendor gets 90%
