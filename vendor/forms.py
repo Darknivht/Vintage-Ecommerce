@@ -6,7 +6,7 @@ from vendor.models import BankAccount
 
 class BankAccountForm(forms.ModelForm):
     bank_name = forms.ChoiceField(choices=[], required=True, label="Bank Name")
-    account_name = forms.CharField(required=False, label="Account Name (optional)")
+    account_name = forms.CharField(required=False, label="Business Name (optional)")
 
     class Meta:
         model = BankAccount
@@ -15,9 +15,8 @@ class BankAccountForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(BankAccountForm, self).__init__(*args, **kwargs)
 
-        # Detect selected country for bank list, default to NG (Nigeria)
-        country = self.initial.get('country') or self.data.get('country') or 'NG'
-        self.fields['bank_name'].choices = self.get_nigerian_banks(country)
+        # Only support Nigeria — hardcoded bank list fetch
+        self.fields['bank_name'].choices = self.get_nigerian_banks()
 
         # Style all fields
         for field in self.fields:
@@ -25,9 +24,9 @@ class BankAccountForm(forms.ModelForm):
 
     def get_nigerian_banks(self):
         """
-        Fetches bank list from Paystack.
+        Fetch bank list from Paystack — Nigeria only.
         """
-        url = "https://api.paystack.co/bank"
+        url = "https://api.paystack.co/bank?country=nigeria"
         headers = {
             "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
             "Content-Type": "application/json"
@@ -39,6 +38,6 @@ class BankAccountForm(forms.ModelForm):
                 banks = response.json().get("data", [])
                 return [(bank["code"], bank["name"]) for bank in banks]
         except Exception as e:
-            print("[Bank Fetch Error]", e)
+            print("[Paystack Bank Fetch Error]", e)
 
         return [('', 'No banks available')]
