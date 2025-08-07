@@ -1,42 +1,36 @@
 import requests
 from django.conf import settings
 
-
-# vendor/utils/paystack.py
+PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
 def create_paystack_subaccount(vendor):
-    from vendor.models import BankAccount
-
-    try:
-        bank = vendor.bankaccount
-    except BankAccount.DoesNotExist:
-        return None
-
+    """
+    Creates a Paystack subaccount for the vendor and returns the subaccount_code.
+    """
     url = "https://api.paystack.co/subaccount"
     headers = {
-        "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
         "Content-Type": "application/json",
     }
 
-    # Use custom name if provided, else vendor.store_name
-    business_name = bank.account_name
-
-    payload = {
-        "business_name": business_name,
-        "settlement_bank": bank.bank_name,  # bank name may need to be code (e.g., "058")
-        "account_number": bank.account_number,
-        "percentage_charge": 10  # platform cut
-    }
-
     try:
-        response = requests.post(url, json=payload, headers=headers)
-        data = response.json()
+        bank = vendor.bankaccount
+        business_name = bank.account_name or vendor.store_name  # fallback logic
+        payload = {
+            "business_name": business_name,
+            "settlement_bank": bank.bank_code,         # Must be actual bank code like "058"
+            "account_number": bank.account_number,
+            "percentage_charge": 10                    # Platform takes 10%
+        }
 
-        if response.status_code == 200 and data["status"] == True:
-            return data["data"]["subaccount_code"]
-        else:
-            print("[Paystack Error]", data.get("message"))
-            return None
+        response = requests.post(url, headers=headers, json=payload)
+        res_data = response.json()
+
+        if response.status_code != 200 or res_data.get("status") != True:
+            raise Exception(f"[Paystack Error] {res_data.get('message')} | Payload: {payload}")
+
+        return res_data["data"]["subaccount_code"]
+
     except Exception as e:
-        print("[Paystack Exception]", str(e))
+        print("[Subaccount Creation Failed]", e)
         return None
