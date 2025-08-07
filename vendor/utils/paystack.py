@@ -2,42 +2,41 @@ import requests
 from django.conf import settings
 
 
+# vendor/utils/paystack.py
+
 def create_paystack_subaccount(vendor):
-    """
-    Creates a Paystack subaccount for the given vendor.
-    Requires: bank_name (as bank_code), account_number, store_name, and vendor email.
-    Returns the subaccount_code if successful, else None.
-    """
+    from vendor.models import BankAccount
+
     try:
-        bank_account = vendor.bankaccount
-
-        url = "https://api.paystack.co/subaccount"
-        headers = {
-            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
-            "Content-Type": "application/json"
-        }
-
-        payload = {
-            "business_name": vendor.store_name,
-            "settlement_bank": bank_account.bank_name,
-            "account_number": bank_account.account_number,
-            "percentage_charge": 10.0,  # Platform takes 10%
-            "description": f"Subaccount for {vendor.store_name}",
-        }
-
-        # Optional but good practice: fallback to user's email
-        if vendor.user and vendor.user.email:
-            payload["primary_contact_email"] = vendor.user.email
-
-        response = requests.post(url, headers=headers, json=payload)
-        data = response.json()
-
-        if response.status_code == 200 and data.get("status") == True:
-            return data["data"]["subaccount_code"]
-
-        print("[Paystack Subaccount Error]", data.get("message"))
+        bank = vendor.bankaccount
+    except BankAccount.DoesNotExist:
         return None
 
+    url = "https://api.paystack.co/subaccount"
+    headers = {
+        "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    # Use custom name if provided, else vendor.store_name
+    business_name = bank.account_name
+
+    payload = {
+        "business_name": business_name,
+        "settlement_bank": bank.bank_name,  # bank name may need to be code (e.g., "058")
+        "account_number": bank.account_number,
+        "percentage_charge": 10  # platform cut
+    }
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        data = response.json()
+
+        if response.status_code == 200 and data["status"] == True:
+            return data["data"]["subaccount_code"]
+        else:
+            print("[Paystack Error]", data.get("message"))
+            return None
     except Exception as e:
-        print("[Paystack Subaccount Exception]", str(e))
+        print("[Paystack Exception]", str(e))
         return None

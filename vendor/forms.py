@@ -6,10 +6,11 @@ from django.conf import settings
 
 class BankAccountForm(forms.ModelForm):
     bank_name = forms.ChoiceField(choices=[], required=True, label="Bank Name")
+    account_name = forms.CharField(required=False, label="Account Name", help_text="Enter Bank Account Name")
 
     class Meta:
         model = BankAccount
-        fields = ['bank_name', 'account_number']
+        fields = ['bank_name', 'account_number', "account_name"]
 
     def __init__(self, *args, **kwargs):
         super(BankAccountForm, self).__init__(*args, **kwargs)

@@ -464,7 +464,7 @@ def create_bank_account(request):
     # Ensure the user is a vendor
     if not hasattr(user, 'vendor'):
         messages.error(request, "Only vendors can set up bank accounts.")
-        return redirect('dashboard')
+        return redirect('create_bank_account')
 
     vendor = user.vendor
 

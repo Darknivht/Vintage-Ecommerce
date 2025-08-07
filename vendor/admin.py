@@ -15,8 +15,8 @@ from .models import Vendor, BankAccount, Payout, Notifications
 
 
 class BankAccountAdmin(admin.ModelAdmin):
-    list_display = ['vendor', 'bank_name', 'account_number']
-    search_fields = ['vendor__store_name', 'bank_name', 'account_number']
+    list_display = ['vendor', 'bank_name', 'account_number', 'account_name']
+    search_fields = ['vendor__store_name', 'bank_name', 'account_number', 'account_name']
     list_filter = ['bank_name']
     readonly_fields = []
 

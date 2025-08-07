@@ -48,6 +48,7 @@ class BankAccount(models.Model):
     vendor = models.OneToOneField(Vendor, on_delete=models.CASCADE, related_name="bankaccount")
     bank_name = models.CharField(max_length=255)
     account_number = models.CharField(max_length=50)
+    account_name = models.CharField(max_length=255, null=True, blank=True, help_text="Custom business name (optional)")
 
     def __str__(self):
         return f"{self.bank_name} - {self.account_number}"
