@@ -471,7 +471,7 @@ def create_bank_account(request):
     # If bank account already exists, redirect to update view
     if hasattr(vendor, 'bankaccount'):
         messages.info(request, "You already added a bank account.")
-        return redirect('vendor:update_bank_account')
+        return redirect('vendor:create_bank_account')
 
     if request.method == 'POST':
         form = BankAccountForm(request.POST)
