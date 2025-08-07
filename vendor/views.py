@@ -11,6 +11,7 @@ import requests
 #from vendor.models import PAYOUT_METHOD
 from vendor.forms import BankAccountForm
 from vendor.models import BankAccount, Vendor
+from vendor.utils.paystack import create_paystack_subaccount
 
 from store.utils.flutterwave import create_flutterwave_subaccount  # ✅ import helper
 
@@ -461,17 +462,17 @@ def delete_product(request, product_id):
 def create_bank_account(request):
     user = request.user
 
-    # Ensure the user is a vendor
+    # Check if user is a vendor
     if not hasattr(user, 'vendor'):
         messages.error(request, "Only vendors can set up bank accounts.")
-        return redirect('create_bank_account')
+        return redirect('vendor:dashboard')
 
     vendor = user.vendor
 
-    # If bank account already exists, redirect to update view
+    # Prevent duplicate bank account creation
     if hasattr(vendor, 'bankaccount'):
         messages.info(request, "You already added a bank account.")
-        return redirect('vendor:create_bank_account')
+        return redirect('vendor:dashboard')
 
     if request.method == 'POST':
         form = BankAccountForm(request.POST)
@@ -479,7 +480,16 @@ def create_bank_account(request):
             bank_account = form.save(commit=False)
             bank_account.vendor = vendor
             bank_account.save()
-            messages.success(request, "Bank account added successfully. Subaccount creation will trigger automatically.")
+
+            # Attempt to create Paystack subaccount immediately
+            sub_code = create_paystack_subaccount(vendor)
+            if sub_code:
+                vendor.subaccount_code = sub_code
+                vendor.save()
+                messages.success(request, "Bank account and subaccount created successfully.")
+            else:
+                messages.warning(request, "Bank account saved, but subaccount creation failed. Please try again.")
+
             return redirect('dashboard')
         else:
             messages.error(request, "Please fix the errors below.")
@@ -487,6 +497,7 @@ def create_bank_account(request):
         form = BankAccountForm()
 
     return render(request, 'vendor/create_bank_account.html', {'form': form})
+
 
 
 
