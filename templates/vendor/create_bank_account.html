@@ -67,4 +67,23 @@
   </div>
 </div>
 
+<!-- Auto-fill hidden bank_code -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const bankSelect = document.getElementById("id_bank_name");
+    const bankCodeInput = document.getElementById("id_bank_code");
+
+    if (bankSelect && bankCodeInput) {
+        bankSelect.addEventListener("change", function () {
+            const selectedOption = bankSelect.options[bankSelect.selectedIndex];
+            bankCodeInput.value = selectedOption.value || "";
+        });
+
+        // Trigger once on page load in case of preselected value
+        const selectedOption = bankSelect.options[bankSelect.selectedIndex];
+        bankCodeInput.value = selectedOption.value || "";
+    }
+});
+</script>
+
 {% endblock %}
