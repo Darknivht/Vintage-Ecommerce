@@ -42,25 +42,15 @@ class Vendor(models.Model):
 
 
 class BankAccount(models.Model):
-    vendor = models.OneToOneField(
-        "vendor.Vendor",
-        on_delete=models.CASCADE,
-        related_name="bank_account"
-    )
-    account_name = models.CharField(max_length=255, blank=True, null=True)
-    account_number = models.CharField(max_length=20)
+    vendor = models.OneToOneField(Vendor, on_delete=models.CASCADE, related_name="bankaccount")
     bank_name = models.CharField(max_length=255)
-    bank_code = models.CharField(max_length=20)
-    subaccount_code = models.CharField(max_length=50, unique=True)  # Required & unique
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Bank Account"
-        verbose_name_plural = "Bank Accounts"
-        ordering = ["-created_at"]
+    bank_code = models.CharField(max_length=10, help_text="e.g. '058' for GTBank")
+    account_number = models.CharField(max_length=50)
+    account_name = models.CharField(max_length=255, null=True, blank=True)  # Optional
 
     def __str__(self):
-        return f"{self.vendor.store_name} - {self.bank_name} ({self.account_number})"
+        return f"{self.bank_name} - {self.account_number}"
+
 
 
 class Payout(models.Model):

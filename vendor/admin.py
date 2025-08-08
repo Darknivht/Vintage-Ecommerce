@@ -23,10 +23,9 @@ class VendorAdmin(admin.ModelAdmin):
 
 @admin.register(BankAccount)
 class BankAccountAdmin(admin.ModelAdmin):
-    list_display = ("vendor", "bank_name", "account_number", "subaccount_code", "created_at")
-    search_fields = ("vendor__store_name", "account_number", "subaccount_code")
-    list_filter = ("bank_name", "created_at")
-
+    list_display = ("vendor", "bank_name", "account_number")
+    search_fields = ("vendor__store_name", "account_number")
+    list_filter = ("bank_name",)
 
 
 @admin.register(Payout)
