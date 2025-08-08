@@ -476,14 +476,14 @@ def create_bank_account(request):
             bank_account = form.save(commit=False)
             bank_account.vendor = vendor
 
-            # Map selected bank_name (actually bank code from form choices)
+            # Bank code from Paystack API choice tuple
             bank_code = form.cleaned_data.get("bank_name")
             bank_account.bank_code = bank_code
 
-            # Determine account_name for Paystack
+            # Account name fallback
             account_name = form.cleaned_data.get("account_name") or vendor.store_name or user.get_full_name()
 
-            # Save bank account first
+            # Save bank account in DB
             bank_account.save()
 
             try:
@@ -510,6 +510,7 @@ def create_bank_account(request):
         form = BankAccountForm()
 
     return render(request, "vendor/create_bank_account.html", {"form": form})
+
 
 
 
