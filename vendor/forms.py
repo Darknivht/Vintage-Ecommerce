@@ -34,7 +34,7 @@ class BankAccountForm(forms.ModelForm):
         """
         Fetch Nigerian bank list from Paystack.
         """
-        url = "https://api.paystack.co/bank?country=ng"
+        url = "https://api.paystack.co/bank"  # No ?country=ng for compatibility
         headers = {
             "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
             "Content-Type": "application/json"
@@ -43,7 +43,12 @@ class BankAccountForm(forms.ModelForm):
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 banks = response.json().get("data", [])
-                return [(bank["code"], bank["name"]) for bank in banks]
+                # Filter for Nigerian banks
+                nigeria_banks = [
+                    (bank["code"], bank["name"])
+                    for bank in banks if bank.get("country") == "Nigeria"
+                ]
+                return nigeria_banks if nigeria_banks else [("", "No banks available")]
         except Exception as e:
             print("[Bank Fetch Error]", e)
         return [("", "No banks available")]
