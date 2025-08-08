@@ -459,45 +459,60 @@ def delete_product(request, product_id):
 
 
 @login_required
-def create_subaccount(request):
-    vendor = request.user.vendor
-    try:
-        bank_account = vendor.bankaccount
-    except BankAccount.DoesNotExist:
-        bank_account = None
+def create_bank_account(request):
+    user = request.user
+
+    # Ensure user is a vendor
+    if not hasattr(user, 'vendor'):
+        messages.error(request, "Only vendors can set up bank accounts.")
+        return redirect("dashboard")
+
+    vendor = user.vendor
 
     if request.method == "POST":
-        form = BankAccountForm(request.POST, instance=bank_account)
+        form = BankAccountForm(request.POST)
+
         if form.is_valid():
             bank_account = form.save(commit=False)
             bank_account.vendor = vendor
-            bank_account.bank_code = form.cleaned_data["bank_name"]
+
+            # Bank code from Paystack API choice tuple
+            bank_code = form.cleaned_data.get("bank_name")
+            bank_account.bank_code = bank_code
+
+            # Account name fallback
+            account_name = form.cleaned_data.get("account_name") or vendor.store_name or user.get_full_name()
+
+            # Save bank account in DB
             bank_account.save()
 
-            vendor_data = {
-                "business_name": vendor.store_name,
-                "settlement_bank": bank_account.bank_code,
-                "account_number": bank_account.account_number,
-                "percentage_charge": 10,
-                "description": f"Vendor subaccount for {vendor.store_name}",
-            }
-
             try:
-                subaccount_code = create_paystack_subaccount(vendor_data)
+                # Create Paystack subaccount
+                subaccount_code = create_paystack_subaccount(
+                    vendor=vendor,
+                    bank_code=bank_code,
+                    account_number=bank_account.account_number,
+                    account_name=account_name
+                )
+
                 if subaccount_code:
                     vendor.subaccount_code = subaccount_code
                     vendor.save()
+                    messages.success(request, "Bank account and Paystack subaccount created successfully.")
                     return redirect("dashboard")
                 else:
-                    # Handle subaccount creation failure
-                    pass
+                    messages.error(request, "Subaccount creation failed. Please verify your details.")
             except Exception as e:
-                # Handle exception
-                pass
+                messages.error(request, f"Error: {e}")
+        else:
+            messages.error(request, "Please correct the errors below.")
     else:
-        form = BankAccountForm(instance=bank_account)
+        form = BankAccountForm()
 
-    return render(request, "create_subaccount.html", {"form": form})
+    return render(request, "vendor/create_bank_account.html", {"form": form})
+
+
+
 
 
 @login_required
