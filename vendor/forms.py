@@ -1,7 +1,5 @@
-import requests
 from django import forms
-from django.conf import settings
-from vendor.models import BankAccount
+from .models import BankAccount
 
 class BankAccountForm(forms.ModelForm):
     bank_name = forms.ChoiceField(
@@ -10,32 +8,21 @@ class BankAccountForm(forms.ModelForm):
         label="Bank",
         widget=forms.Select(attrs={
             "class": "form-control",
-            "id": "id_bank_name",
-        })
-    )
-
-    account_name = forms.CharField(
-        required=False,
-        label="Account Name (Optional)",
-        widget=forms.TextInput(attrs={
-            "placeholder": "Optional – will use store name if empty",
-            "class": "form-control",
-            "id": "id_account_name",
         })
     )
 
     class Meta:
         model = BankAccount
-        fields = ["account_name", "account_number", "bank_name", "bank_code"]
+        fields = ["bank_name", "account_number", "account_name"]
         widgets = {
             "account_number": forms.TextInput(attrs={
                 "placeholder": "e.g., 0123456789",
                 "class": "form-control",
-                "id": "id_account_number",
             }),
-            "bank_code": forms.HiddenInput(attrs={
-                "id": "id_bank_code",
-            })
+            "account_name": forms.TextInput(attrs={
+                "placeholder": "Optional",
+                "class": "form-control",
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -52,7 +39,7 @@ class BankAccountForm(forms.ModelForm):
             response = requests.get(url, headers=headers)
             response.raise_for_status()
             banks = response.json().get("data", [])
-            return [(bank["code"], bank["name"]) for bank in banks]
+            return [(bank["code"], bank["name"]) for bank")
         except requests.RequestException as e:
             print("[Bank Fetch Error]", e)
             return [("", "No banks available")]
