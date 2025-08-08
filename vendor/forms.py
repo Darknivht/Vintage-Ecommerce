@@ -39,7 +39,7 @@ class BankAccountForm(forms.ModelForm):
             response = requests.get(url, headers=headers)
             response.raise_for_status()
             banks = response.json().get("data", [])
-            return [(bank["code"], bank["name"]) for bank")
+            return [(bank["code"], bank["name"]) for bank in banks]
         except requests.RequestException as e:
             print("[Bank Fetch Error]", e)
             return [("", "No banks available")]
