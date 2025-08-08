@@ -470,26 +470,29 @@ def create_bank_account(request):
     vendor = user.vendor
 
     if request.method == "POST":
-        form = BankAccountForm(request.POST, instance=vendor)
+        form = BankAccountForm(request.POST)
 
         if form.is_valid():
-            vendor = form.save(commit=False)
+            bank_account = form.save(commit=False)
+            bank_account.vendor = vendor
 
-            # Map selected bank_name to bank_code
-            selected_bank_code = form.cleaned_data.get("bank_name")
-            vendor.bank_code = selected_bank_code
+            # Map selected bank_name (actually bank code from form choices)
+            bank_code = form.cleaned_data.get("bank_name")
+            bank_account.bank_code = bank_code
 
-            # Set fallback business name
-            if not vendor.account_name:
-                vendor.account_name = vendor.store_name or user.get_full_name()
+            # Determine account_name for Paystack
+            account_name = form.cleaned_data.get("account_name") or vendor.store_name or user.get_full_name()
+
+            # Save bank account first
+            bank_account.save()
 
             try:
-                # Call Paystack subaccount API
+                # Create Paystack subaccount
                 subaccount_code = create_paystack_subaccount(
-                    business_name=vendor.account_name,
-                    account_number=vendor.account_number,
-                    bank_code=vendor.bank_code,
-                    vendor_email=user.email
+                    vendor=vendor,
+                    bank_code=bank_code,
+                    account_number=bank_account.account_number,
+                    account_name=account_name
                 )
 
                 if subaccount_code:
@@ -498,13 +501,13 @@ def create_bank_account(request):
                     messages.success(request, "Bank account and Paystack subaccount created successfully.")
                     return redirect("dashboard")
                 else:
-                    messages.error(request, "Subaccount creation failed. Please verify your details and try again.")
+                    messages.error(request, "Subaccount creation failed. Please verify your details.")
             except Exception as e:
                 messages.error(request, f"Error: {e}")
         else:
             messages.error(request, "Please correct the errors below.")
     else:
-        form = BankAccountForm(instance=vendor)
+        form = BankAccountForm()
 
     return render(request, "vendor/create_bank_account.html", {"form": form})
 
