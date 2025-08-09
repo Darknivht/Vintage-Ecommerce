@@ -24,7 +24,7 @@ def initialize_paystack_transaction(email, amount_in_kobo, split_data, callback_
     }
     
     # Only add split data if it exists and has subaccounts
-    if split_data and split_data.get("subaccounts"):
+    if split_data and split_data.get("subaccounts") and len(split_data.get("subaccounts", [])) > 0:
         data["split"] = split_data
     
     response = requests.post(url, headers=headers, json=data)
@@ -84,6 +84,7 @@ def calculate_marketplace_split(order):
         
         if subaccount_code:
             # Calculate vendor share (90% of their items total)
+            # The 10% platform fee is handled by Paystack based on subaccount configuration
             vendor_share = vendor_total * Decimal('0.90')
             platform_fee = vendor_total * Decimal('0.10')
             platform_fee_total += platform_fee
@@ -103,11 +104,14 @@ def calculate_marketplace_split(order):
     # Create split data
     split_data = None
     if subaccounts:
+        # For marketplace payments, we need to specify a bearer
+        # Using "account" means the main account (platform) bears transaction fees
         split_data = {
             "type": "flat",
             "currency": "NGN",
             "subaccounts": subaccounts,
-            "bearer_type": "subaccount"
+            "bearer_type": "account",
+            "main_account_share": 0
         }
     
     return {
@@ -129,12 +133,15 @@ def create_paystack_split_payment(order, callback_url):
     amount_in_kobo = int(Decimal(str(order.total)) * 100)
     reference = f"ORDER-{order.order_id}"
     
+    # Get split data
+    split_data = split_info["split_data"]
+    
     # Initialize transaction
     try:
         paystack_response = initialize_paystack_transaction(
             email=order.address.email,
             amount_in_kobo=amount_in_kobo,
-            split_data=split_info["split_data"],
+            split_data=split_data,
             callback_url=callback_url,
             reference=reference
         )
@@ -147,13 +154,17 @@ def create_paystack_split_payment(order, callback_url):
                 "split_info": split_info
             }
         else:
+            # Log the actual error for debugging
+            error_message = paystack_response.get("message", "Unknown error")
+            print(f"[Paystack Error] {error_message}")
             return {
                 "success": False,
-                "error": paystack_response.get("message", "Unknown error"),
+                "error": error_message,
                 "split_info": split_info
             }
             
     except Exception as e:
+        print(f"[Paystack Exception] {str(e)}")
         return {
             "success": False,
             "error": str(e),
