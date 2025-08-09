@@ -391,7 +391,6 @@ def checkout(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
     amount_in_kobo = int(order.total * 100)
     vendor_splits = []
-
     for item in order.order_items():
         vendor = item.vendor
         try:
@@ -399,10 +398,8 @@ def checkout(request, order_id):
             subaccount_code = bank_account.subaccount_code
             if not subaccount_code:
                 continue
-
             vendor_amount = float(item.sub_total)
             vendor_share = vendor_amount * 0.90  # 90% to vendor, 10% platform
-
             vendor_splits.append({
                 "subaccount": subaccount_code,
                 "share": round(vendor_share, 2),
@@ -416,11 +413,8 @@ def checkout(request, order_id):
         "type": "flat",
         "currency": "NGN",
         "subaccounts": [
-            {
-                "subaccount": s["subaccount"],
-                "share": s["share"]
-            } for s in vendor_splits
-        ]
+            {"subaccount": s["subaccount"], "share": s["share"]} for s in vendor_splits
+        ],
     }
 
     # Initialize Paystack payment
@@ -431,13 +425,23 @@ def checkout(request, order_id):
             split_data=paystack_split,
             callback_url=request.build_absolute_uri(
                 reverse("store:paystack_payment_verify", args=[order.order_id])
-            ) + "?payment_method=Paystack",
-            reference=f"ORDER-{order.order_id}"
+            )
+            + "?payment_method=Paystack",
+            reference=f"ORDER-{order.order_id}",
         )
         paystack_checkout_link = paystack_tx["authorization_url"]
     except Exception as e:
         paystack_checkout_link = None
         print("[Paystack Init Error]", e)
+
+    if paystack_checkout_link is None:
+        # Handle the case where paystack_checkout_link is None
+        # You can return an error message or redirect to an error page
+        context = {
+            "order": order,
+            "error": "Failed to initialize Paystack payment",
+        }
+        return render(request, "store/checkout.html", context)
 
     context = {
         "order": order,
