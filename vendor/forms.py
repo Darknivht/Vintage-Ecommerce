@@ -6,7 +6,7 @@ from vendor.models import BankAccount
 
 class BankAccountForm(forms.ModelForm):
     bank_name = forms.ChoiceField(
-        choices=[],
+        choices=[("", "Select Bank")],  # Default placeholder
         required=True,
         label="Bank",
         widget=forms.Select(attrs={
@@ -46,24 +46,25 @@ class BankAccountForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Populate bank list
-        self.fields["bank_name"].choices = self.get_nigerian_banks()
+        # Populate bank list from Paystack
+        banks = self.get_nigerian_banks()
+        if banks:
+            self.fields["bank_name"].choices += banks  # Append to placeholder
 
     def get_nigerian_banks(self):
         """
-        Fetch Nigerian bank list from Paystack.
+        Fetch Nigerian bank list from Paystack API.
         """
-        url = "https://api.paystack.co/bank"
+        url = "https://api.paystack.co/bankn"
         headers = {
             "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
             "Content-Type": "application/json"
         }
         try:
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 banks = response.json().get("data", [])
-                return [(bank["code"], bank["name"]) for bank in banks]
+                return [(bank["code"], bank["name"]) for bank in banks if bank.get("code") and bank.get("name")]
         except Exception as e:
             print("[Bank Fetch Error]", e)
-
-        return [("", "No banks available")]
+        return []

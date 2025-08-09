@@ -3,8 +3,6 @@ from shortuuid.django_fields import ShortUUIDField
 from userauths.models import User
 from django.utils.text import slugify
 from cloudinary.models import CloudinaryField
-from vendor.utils.paystack import create_paystack_subaccount
-
 
 NOTIFICATION_EVENT = (
     ("New Order", "New Order"),
@@ -21,12 +19,17 @@ class Vendor(models.Model):
     description = models.TextField(blank=True, null=True)
     country = models.CharField(max_length=100, default="NG")
 
-    # 🔐 Paystack Banking Info
+    # 🔐 Paystack Banking Info (legacy / quick access)
     bank_name = models.CharField(max_length=255, blank=True, null=True)
     bank_code = models.CharField(max_length=10, blank=True, null=True)
     account_number = models.CharField(max_length=20, blank=True, null=True)
     account_name = models.CharField(max_length=255, blank=True, null=True)
-    subaccount_code = models.CharField(max_length=255, blank=True, null=True, help_text="Generated from Paystack")
+    subaccount_code = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Generated from Paystack"
+    )
 
     vendor_id = ShortUUIDField(unique=True, length=6, max_length=20, alphabet="1234567890")
     date = models.DateTimeField(auto_now_add=True)
@@ -40,10 +43,9 @@ class Vendor(models.Model):
         return self.store_name
 
 
-
 class BankAccount(models.Model):
     vendor = models.OneToOneField(
-        "vendor.Vendor",
+        Vendor,
         on_delete=models.CASCADE,
         related_name="bank_account"
     )
@@ -51,7 +53,13 @@ class BankAccount(models.Model):
     account_number = models.CharField(max_length=20)
     bank_name = models.CharField(max_length=255)
     bank_code = models.CharField(max_length=20)
-    subaccount_code = models.CharField(max_length=50, unique=True)  # Required & unique
+    subaccount_code = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        unique=True,
+        help_text="Generated from Paystack"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
