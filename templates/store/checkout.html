@@ -105,14 +105,23 @@
 
         <!-- Payment -->
         <div class="w-100 mt-4">
-        <!-- Paystack -->
-        {% if paystack_checkout_link %}
-          <a href="{{ paystack_checkout_link }}" class="btn rounded bg-success text-white fw-bold w-100">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Paystack_Logo.png/800px-Paystack_Logo.png" style="height: 30px; margin-right: 10px;">
-            Pay with Paystack
-          </a>
-        {% endif %}
-
+          <!-- Paystack -->
+          {% if paystack_checkout_link %}
+            <a href="{{ paystack_checkout_link }}" class="btn rounded bg-success text-white fw-bold w-100">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Paystack_Logo.png/800px-Paystack_Logo.png" style="height: 30px; margin-right: 10px;">
+              Pay with Paystack
+            </a>
+          {% endif %}
+          
+          <!-- Display vendor-specific payment splits -->
+          <h4 class="fw-bold">Vendor Payment Splits:</h4>
+          <ul>
+            {% for vendor in order.vendors.all %}
+              <li>
+                {{ vendor.profile.full_name }}: ₦{{ vendor_share|floatformat:"2" }}
+              </li>
+            {% endfor %}
+          </ul>
         </div>
       </div>
     </div>
