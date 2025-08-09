@@ -103,54 +103,54 @@
           </form>
         </div>
 
-        {% if error %}
-            <p>{{ error }}</p>
-        {% else %}
-            <!-- Payment -->
-            <div class="w-100 mt-4">
-                <!-- Paystack -->
-                {% if paystack_checkout_link %}
-                    <a href="{{ paystack_checkout_link }}" class="btn rounded w-100" style="background-color: #005bea; color: #fff;">
-                        <img src="https://paystack.com/assets/img/paystack-logo.svg" style="height: 20px; margin-right: 10px;">
-                        Pay with Paystack
-                    </a>
-                {% endif %}
-            </div>
+        <!-- Marketplace Information -->
+        {% if split_info %}
+        <div class="shadow rounded p-3 mt-3">
+          <h4 class="fw-bold">Marketplace Info</h4>
+          <div class="small text-muted">
+            <p class="mb-1"><strong>Vendors:</strong> {{ vendor_count }}</p>
+            <p class="mb-1"><strong>Split Payment:</strong>
+              {% if vendors_with_subaccounts > 0 %}
+                <span class="text-success">✓ Enabled</span>
+              {% else %}
+                <span class="text-warning">⚠ No vendor subaccounts</span>
+              {% endif %}
+            </p>
+            {% if platform_fee_total %}
+              <p class="mb-0"><strong>Platform Fee:</strong> ₦{{ platform_fee_total|floatformat:2 }}</p>
+            {% endif %}
+          </div>
+        </div>
         {% endif %}
+
+        <!-- Payment -->
+        <div class="w-100 mt-4">
+            <!-- Paystack -->
+            {% if paystack_checkout_link %}
+                <a href="{{ paystack_checkout_link }}" class="btn rounded w-100" style="background-color: #005bea; color: #fff;">
+                    <img src="https://paystack.com/assets/img/paystack-logo.svg" style="height: 20px; margin-right: 10px;">
+                    Pay with Paystack
+                </a>
+                <small class="text-muted d-block mt-2 text-center">
+                  Secure payment powered by Paystack
+                  {% if split_info.vendors_with_subaccounts > 0 %}
+                    • Split payment enabled
+                  {% endif %}
+                </small>
+            {% else %}
+                <div class="alert alert-danger">
+                    <strong>Payment Error:</strong> Unable to initialize payment. Please try again or contact support.
+                </div>
+            {% endif %}
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Flutterwave JS -->
-<script src="https://checkout.flutterwave.com/v3.js"></script>
+<!-- Paystack Payment Script -->
 <script>
-  function payWithFlutterwave() {
-    const subaccounts = {{ flutterwave_subaccounts_json|safe }};
-    console.log("Sending to Flutterwave:", subaccounts);
-
-    FlutterwaveCheckout({
-      public_key: "{{ flutterwave_public_key }}",
-      tx_ref: "ORDER-{{ order.order_id }}",
-      amount: {{ order.total|floatformat:"2" }},
-      currency: "NGN",
-      payment_options: "card, banktransfer, ussd",
-      customer: {
-        email: "{{ order.address.email }}",
-        name: "{{ order.address.full_name }}",
-        phonenumber: "{{ order.address.mobile }}"
-      },
-      callback: function (data) {
-        window.location.href = "/flutterwave_payment_callback/{{ order.order_id }}/?payment_method=Flutterwave&tx_ref=" + data.tx_ref;
-      },
-      customizations: {
-        title: "Vintage Store",
-        description: "Payment for Order #{{ order.order_id }}",
-        logo: "https://your-logo-url.com/logo.png"
-      },
-      subaccounts: subaccounts
-    });
-  }
+  console.log("Paystack checkout initialized");
 </script>
 
 {% endblock content %}

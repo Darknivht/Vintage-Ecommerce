@@ -1,0 +1,26 @@
+New Order Notification
+
+Dear {{ item.vendor.profile.full_name|default:item.vendor.username }},
+
+You have received a new order!
+
+Order Details:
+- Order ID: {{ order.order_id }}
+- Customer: {{ order.address.full_name }}
+- Email: {{ order.address.email }}
+
+Your Item:
+- Product: {{ item.product.name }}
+- Quantity: {{ item.qty }}
+- Price: ₦{{ item.price }}
+- Total: ₦{{ item.total }}
+
+Shipping Address:
+{{ order.address.address }}
+{{ order.address.city }}, {{ order.address.state }}
+{{ order.address.country }}
+
+Please log in to your vendor dashboard to manage this order.
+
+Best regards,
+Vintage Ecommerce Team

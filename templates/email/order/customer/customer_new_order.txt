@@ -1,0 +1,28 @@
+Order Confirmation
+
+Dear {{ order.address.full_name }},
+
+Thank you for your order! We have received your payment and your order is being processed.
+
+Order Details:
+- Order ID: {{ order.order_id }}
+- Total Amount: ₦{{ order.total }}
+- Payment Method: {{ order.payment_method }}
+
+Items Ordered:
+{% for item in order_items %}
+- {{ item.product.name }} (Qty: {{ item.qty }}) - ₦{{ item.total }}
+  Vendor: {{ item.vendor.profile.full_name|default:item.vendor.username }}
+{% endfor %}
+
+Shipping Address:
+{{ order.address.address }}
+{{ order.address.city }}, {{ order.address.state }}
+{{ order.address.country }}
+
+You will receive updates on your order status via email.
+
+Thank you for shopping with us!
+
+Best regards,
+Vintage Ecommerce Team

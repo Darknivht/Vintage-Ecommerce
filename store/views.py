@@ -17,6 +17,9 @@ from store.models import Listing
 from store.models import Category
 from django.core.paginator import Paginator
 
+import json
+from store import models as store_models
+
 
 from decimal import Decimal
 import requests
@@ -385,72 +388,63 @@ def coupon_apply(request, order_id):
         return redirect("store:checkout", order.order_id)
 
 
+# store/views.py
+
+import json
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.urls import reverse
+from django.conf import settings
+
+from store import models as store_models
+from store.utils.paystack import create_paystack_split_payment
 
 @login_required
 def checkout(request, order_id):
-    order = store_models.Order.objects.get(order_id=order_id)
-    amount_in_kobo = int(order.total * 100)
-    vendor_splits = []
-    for item in order.order_items():
-        vendor = item.vendor
-        try:
-            bank_account = vendor.vendor.bankaccount
-            subaccount_code = bank_account.subaccount_code
-            if not subaccount_code:
-                continue
-            vendor_amount = float(item.sub_total)
-            vendor_share = vendor_amount * 0.90  # 90% to vendor, 10% platform
-            vendor_splits.append({
-                "subaccount": subaccount_code,
-                "share": round(vendor_share, 2),
-            })
-        except Exception as e:
-            print(f"[Split Error] Vendor: {vendor}, Reason: {e}")
-            continue
-
-    # Construct Paystack split object
-    paystack_split = {
-        "type": "flat",
-        "currency": "NGN",
-        "subaccounts": [
-            {"subaccount": s["subaccount"], "share": s["share"]} for s in vendor_splits
-        ],
-    }
-
-    # Initialize Paystack payment
-    try:
-        paystack_tx = initialize_paystack_transaction(
-            email=order.address.email,
-            amount_in_kobo=amount_in_kobo,
-            split_data=paystack_split,
-            callback_url=request.build_absolute_uri(
-                reverse("store:paystack_payment_verify", args=[order.order_id])
+    """
+    Enhanced marketplace checkout with proper split payment handling
+    """
+    # Fetch order
+    order = get_object_or_404(store_models.Order, order_id=order_id)
+    
+    # Build callback URL
+    callback_url = request.build_absolute_uri(
+        reverse("store:paystack_payment_verify", args=[order.order_id])
+    ) + "?payment_method=Paystack"
+    
+    # Create Paystack split payment
+    payment_result = create_paystack_split_payment(order, callback_url)
+    
+    if not payment_result["success"]:
+        error_msg = payment_result.get("error", "Failed to initialize payment")
+        messages.error(request, f"Payment initialization failed: {error_msg}")
+        
+        # Show split info for debugging
+        split_info = payment_result.get("split_info", {})
+        if split_info:
+            messages.info(request,
+                f"Order has {split_info['vendor_count']} vendor(s), "
+                f"{split_info['vendors_with_subaccounts']} with valid subaccounts"
             )
-            + "?payment_method=Paystack",
-            reference=f"ORDER-{order.order_id}",
-        )
-        paystack_checkout_link = paystack_tx["authorization_url"]
-    except Exception as e:
-        paystack_checkout_link = None
-        print("[Paystack Init Error]", e)
-
-    if paystack_checkout_link is None:
-        # Handle the case where paystack_checkout_link is None
-        # You can return an error message or redirect to an error page
-        context = {
-            "order": order,
-            "error": "Failed to initialize Paystack payment",
-        }
-        return render(request, "store/checkout.html", context)
-
+        
+        return redirect("store:cart")
+    
+    # Get split information for display
+    split_info = payment_result["split_info"]
+    
     context = {
         "order": order,
-        "amount_in_kobo": amount_in_kobo,
         "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
-        "paystack_split_data": json.dumps(paystack_split),
-        "paystack_checkout_link": paystack_checkout_link,
+        "paystack_checkout_link": payment_result["authorization_url"],
+        "split_info": split_info,
+        "vendor_count": split_info["vendor_count"],
+        "vendors_with_subaccounts": split_info["vendors_with_subaccounts"],
+        "platform_fee_total": split_info["platform_fee_total"],
     }
     return render(request, "store/checkout.html", context)
+
+
 
 
 
@@ -616,37 +610,115 @@ def razorpay_payment_verify(request, order_id):
     return redirect(f"/payment_status/{order.order_id}/?payment_status=failed")
 
 def paystack_payment_verify(request, order_id):
-    order = store_models.Order.objects.get(order_id=order_id)
+    """
+    Enhanced payment verification with marketplace split payment support
+    """
+    from store.utils.paystack import verify_paystack_transaction
+    from customer import models as customer_models
+    from vendor import models as vendor_models
+    from django.template.loader import render_to_string
+    from django.core.mail import EmailMultiAlternatives
+    
+    order = get_object_or_404(store_models.Order, order_id=order_id)
     reference = request.GET.get('reference', '')
 
-    if reference:
-        headers = {
-            "Authorization": f"Bearer {settings.PAYSTACK_PRIVATE_KEY}",
-            "Content-Type": "application/json"
-        }
-
-        # Verify the transaction
-        response = requests.get(f'https://api.paystack.co/transaction/verify/{reference}', headers=headers)
-        response_data = response.json()
-
-        if response_data['status']:
-            if response_data['data']['status'] == 'success':
-                if order.payment_status == "Processing":
-                    order.payment_status = "Paid"
-                    payment_method = request.GET.get("payment_method")
-                    order.payment_method = payment_method
-                    order.save()
-                    clear_cart_items(request)
-                    return redirect(f"/payment_status/{order.order_id}/?payment_status=paid")
-                else:
-                    return redirect(f"/payment_status/{order.order_id}/?payment_status=failed")
-            else:
-                # Payment failed
-                return redirect(f"/payment_status/{order.order_id}/?payment_status=failed")
-        else:
-            return redirect(f"/payment_status/{order.order_id}/?payment_status=failed")
-    else:
+    if not reference:
+        messages.error(request, "Invalid payment reference.")
         return redirect(f"/payment_status/{order.order_id}/?payment_status=failed")
+
+    # Verify transaction with Paystack
+    response_data = verify_paystack_transaction(reference)
+
+    # Check API response
+    if not response_data.get('status'):
+        error_msg = response_data.get('message', 'Payment verification failed')
+        messages.error(request, f"Payment verification failed: {error_msg}")
+        return redirect(f"/payment_status/{order.order_id}/?payment_status=failed")
+
+    tx_data = response_data.get("data", {})
+    tx_status = tx_data.get("status")
+    
+    if tx_status == "success":
+        if order.payment_status == "Processing":
+            # Mark as paid
+            order.payment_status = "Paid"
+            order.payment_method = request.GET.get("payment_method", "Paystack")
+            order.payment_id = reference
+            order.save()
+
+            # Update order items
+            store_models.OrderItem.objects.filter(order=order).update(order_status="Processing")
+
+            # Clear cart
+            clear_cart_items(request)
+
+            # Send notifications
+            try:
+                # Customer notification
+                customer_models.Notifications.objects.create(type="New Order", user=request.user)
+                
+                # Vendor notifications
+                for item in order.order_items():
+                    vendor_models.Notifications.objects.create(type="New Order", user=item.vendor)
+
+                # Send emails
+                send_order_confirmation_emails(order)
+                
+            except Exception as e:
+                print(f"[Email/Notification Error] {e}")
+
+            messages.success(request, "Payment successful! Your order has been confirmed.")
+            return redirect(f"/payment_status/{order.order_id}/?payment_status=paid")
+        else:
+            messages.warning(request, "Order was already paid.")
+            return redirect(f"/payment_status/{order.order_id}/?payment_status=paid")
+
+    # If payment failed
+    messages.error(request, f"Payment failed. Status: {tx_status}")
+    return redirect(f"/payment_status/{order.order_id}/?payment_status=failed")
+
+
+def send_order_confirmation_emails(order):
+    """
+    Send order confirmation emails to customer and vendors
+    """
+    try:
+        # Customer email
+        customer_merge_data = {
+            'order': order,
+            'order_items': order.order_items(),
+        }
+        subject = f"Order Confirmation - #{order.order_id}"
+        text_body = render_to_string("email/order/customer/customer_new_order.txt", customer_merge_data)
+        html_body = render_to_string("email/order/customer/customer_new_order.html", customer_merge_data)
+
+        msg = EmailMultiAlternatives(
+            subject=subject, from_email=settings.FROM_EMAIL,
+            to=[order.address.email], body=text_body
+        )
+        msg.attach_alternative(html_body, "text/html")
+        msg.send()
+
+        # Vendor emails
+        for item in order.order_items():
+            vendor_merge_data = {
+                'item': item,
+                'order': order,
+            }
+            subject = f"New Order - #{order.order_id}"
+            text_body = render_to_string("email/order/vendor/vendor_new_order.txt", vendor_merge_data)
+            html_body = render_to_string("email/order/vendor/vendor_new_order.html", vendor_merge_data)
+
+            msg = EmailMultiAlternatives(
+                subject=subject, from_email=settings.FROM_EMAIL,
+                to=[item.vendor.email], body=text_body
+            )
+            msg.attach_alternative(html_body, "text/html")
+            msg.send()
+            
+    except Exception as e:
+        print(f"[Email Send Error] {e}")
+
 
 def flutterwave_payment_callback(request, order_id):
     order = store_models.Order.objects.get(order_id=order_id)
