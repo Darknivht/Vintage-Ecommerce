@@ -473,43 +473,52 @@ def create_bank_account(request):
         form = BankAccountForm(request.POST)
 
         if form.is_valid():
-            bank_account = form.save(commit=False)
-            bank_account.vendor = vendor
-
-            # Bank code from Paystack API choice tuple
+            # Prepare data but don't save yet
             bank_code = form.cleaned_data.get("bank_name")
-            bank_account.bank_code = bank_code
-
-            # Account name fallback
-            account_name = form.cleaned_data.get("account_name") or vendor.store_name or user.get_full_name()
-
-            # Save bank account in DB
-            bank_account.save()
+            account_number = form.cleaned_data.get("account_number")
+            account_name = (
+                form.cleaned_data.get("account_name")
+                or vendor.store_name
+                or user.get_full_name()
+            )
 
             try:
-                # Create Paystack subaccount
+                # Create Paystack subaccount first
                 subaccount_code = create_paystack_subaccount(
                     vendor=vendor,
                     bank_code=bank_code,
-                    account_number=bank_account.account_number,
+                    account_number=account_number,
                     account_name=account_name
                 )
 
                 if subaccount_code:
+                    # Save bank account to DB
+                    bank_account = form.save(commit=False)
+                    bank_account.vendor = vendor
+                    bank_account.bank_code = bank_code
+                    bank_account.subaccount_code = subaccount_code
+                    bank_account.save()
+
+                    # Optionally also store subaccount_code in Vendor
                     vendor.subaccount_code = subaccount_code
                     vendor.save()
-                    messages.success(request, "Bank account and Paystack subaccount created successfully.")
+
+                    messages.success(
+                        request,
+                        "Bank account and Paystack subaccount created successfully."
+                    )
                     return redirect("dashboard")
                 else:
                     messages.error(request, "Subaccount creation failed. Please verify your details.")
             except Exception as e:
-                messages.error(request, f"Error: {e}")
+                messages.error(request, f"Error: {str(e)}")
         else:
             messages.error(request, "Please correct the errors below.")
     else:
         form = BankAccountForm()
 
     return render(request, "vendor/create_bank_account.html", {"form": form})
+
 
 
 
