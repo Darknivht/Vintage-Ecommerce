@@ -3,173 +3,375 @@
 {% load humanize %}
 {% block content %}
 
-<section class="p-0 pb-5 mb-5">
+<!-- Hero Section -->
+<section class="vintage-hero">
   <div class="container">
-    <div class="row d-flex justify-content-center align-items-center">
-      <div class="col-12 col-lg-7 p-4 rounded-3 bg-white">
-        <p class="text-secondary fs-4 mb-0 mt-5 mb-3">
-          20% OFF Today Only!
-          <img src="https://cdn-icons-png.flaticon.com/128/9004/9004955.png" width="30" alt="" />
-        </p>
-        <h1 class="display-4 fw-bold">
-          Welcome To,
-          <span class="text-success">
-            <br />
-            Vintage <br />
-            <span class="text-dark">- Smart. Simple. Delivered.</span>
-          </span>
-        </h1>
-        <p class="text-secondary fs-6 mt-4">
-          Welcome to Vintage, shop faster, easier, securely, with good deals, customer support, fast refunds and many more amazing features that await you!
-        </p>
-        <div class="d-flex align-items-center gap-2 mt-5">
-          <div class="d-flex align-items-center border rounded-3 bg-light w-75">
-            <input type="text" class="form-control shadow-none border-0 bg-transparent" placeholder="Search Item" />
+    <div class="row align-items-center">
+      <div class="col-lg-6 vintage-hero-content">
+        <div class="vintage-animate-fadeInLeft">
+          <div class="d-flex align-items-center mb-3">
+            <span class="vintage-badge vintage-badge-outline me-3">🔥 Flash Sale</span>
+            <span class="text-white-50">Up to 70% OFF Today!</span>
           </div>
-          <a href="{% url 'store:shop' %}" class="btn bg-primary text-white rounded">
-            <i class="fas fa-search text-white"></i>
-          </a>
-        </div>
-        <div class="d-flex justify-content-start gap-4 align-items-center mt-3">
-          <p class="text-secondary">Free Delivery Today Only! <b>Terms & Conditions</b> Apply</p>
-        </div>
-        <div class="d-flex align-items-center justify-content-start gap-5 fs-5 text-secondary mt-2">
-          <i class="fab text-success fa-shopify"></i>
-          <i class="fab fa-amazon"></i>
-          <i class="fab text-success fa-ebay"></i>
-          <i class="fab text-success fa-alipay"></i>
-          <i class="fab fa-google"></i>
-        </div>
-      </div>
-      <div class="col-12 col-lg-5">
-        <img class="img-fluid rounded-3 w-100" style="height: 500px; object-fit: contain" src="{% static 'assets/img/home-hero.jpg' %}" alt="Hero Image" />
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="middle mt-5">
-  <div class="container">
-    <div class="text-center mb-4">
-      <h1 class="ft-bold pt-3">
-        Trending Categories
-        <img src="https://cdn-icons-png.flaticon.com/128/7183/7183999.png" width="40" alt="" />
-      </h1>
-    </div>
-
-    <div class="category-slider-wrapper py-3">
-      <div class="category-scroll-wrapper" style="overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;">
-        <div class="d-flex gap-3 px-3" style="min-width: max-content;">
-          {% for c in categories %}
-          <div class="text-center" style="width: 110px; flex-shrink: 0;">
-            <div class="border rounded-circle mx-auto mb-2" style="width: 100px; height: 100px; overflow: hidden;">
-              {% if c.id %}
-              <a href="{% url 'store:category' c.id %}">
-              {% else %}
-              <a href="javascript:void(0);">
-              {% endif %}
-                {% if c.image %}
-                <img src="{{ c.image.url }}" alt="{{ c.title }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />
-                {% else %}
-                <img src="{% static 'assets/img/headphones.png' %}" alt="Fallback" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />
-                {% endif %}
-              </a>
+          <h1 class="vintage-hero-title">
+            Welcome to <span style="color: #FFD700;">Vintage</span>
+            <br>
+            <span style="font-size: 2rem; font-weight: 600;">Your Premium Marketplace</span>
+          </h1>
+          <p class="vintage-hero-subtitle">
+            Discover amazing products from trusted vendors worldwide. Shop smarter, faster, and more securely with our world-class platform.
+          </p>
+          
+          <!-- Enhanced Search Bar -->
+          <div class="vintage-search-bar mb-4">
+            <form method="GET" action="{% url 'store:shop' %}">
+              <input type="text" name="q" class="vintage-search-input" placeholder="Search for products, brands, categories..." />
+              <button type="submit" class="vintage-search-button">
+                <i class="fas fa-search"></i>
+              </button>
+            </form>
+          </div>
+          
+          <!-- Trust Indicators -->
+          <div class="d-flex align-items-center gap-4 text-white-50">
+            <div class="d-flex align-items-center gap-2">
+              <i class="fas fa-shield-alt"></i>
+              <span>Secure Payment</span>
             </div>
-            <h6 class="m-0 ft-medium fs-sm text-truncate" style="max-width: 100px;">
-              {% if c.id %}
-              <a href="{% url 'store:category' c.id %}" class="text-dark text-decoration-none">{{ c.title }}</a>
-              {% else %}
-              {{ c.title }}
-              {% endif %}
-            </h6>
+            <div class="d-flex align-items-center gap-2">
+              <i class="fas fa-truck"></i>
+              <span>Fast Delivery</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <i class="fas fa-undo"></i>
+              <span>Easy Returns</span>
+            </div>
           </div>
-          {% endfor %}
+        </div>
+      </div>
+      
+      <div class="col-lg-6">
+        <div class="vintage-animate-fadeInRight">
+          <div class="position-relative">
+            <img class="img-fluid rounded-3" style="height: 500px; width: 100%; object-fit: cover;" 
+                 src="{% static 'assets/img/home-hero.jpg' %}" alt="Vintage Marketplace" />
+            
+            <!-- Floating Stats Cards -->
+            <div class="position-absolute" style="top: 20px; right: 20px;">
+              <div class="vintage-card p-3 text-center" style="min-width: 120px;">
+                <h4 class="vintage-text-primary mb-1">10K+</h4>
+                <small class="text-muted">Happy Customers</small>
+              </div>
+            </div>
+            
+            <div class="position-absolute" style="bottom: 20px; left: 20px;">
+              <div class="vintage-card p-3 text-center" style="min-width: 120px;">
+                <h4 class="vintage-text-secondary mb-1">500+</h4>
+                <small class="text-muted">Trusted Vendors</small>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="middle mt-5">
-  <div class="container">
-    <div class="text-center mb-4">
-      <h1 class="ft-bold pt-3">
-        Popular Products
-        <img src="https://cdn-icons-png.flaticon.com/128/785/785116.png" width="40" alt="" />
-      </h1>
-    </div>
-
-<div class="row gx-3 gy-4 mt-3">
-  {% for p in products %}
-  <div class="col-6 col-md-4 col-lg-3">
-    <div class="product_grid card b-0 rounded-3 shadow p-2 d-flex flex-column">
-      <div class="shop_thumb position-relative">
-        <a class="card-img-top d-block overflow-hidden" href="{% url 'store:product_detail' p.slug %}">
-          <img class="card-img-top product-image" src="{{p.image.url}}" alt="{{ p.name }}" />
-        </a>
-        <div class="product-left-hover-overlay">
-          <ul class="left-over-buttons">
-            <li>
-              <a href="javascript:void(0);" class="d-inline-flex circle align-items-center justify-content-center snackbar-wishlist">
-                <i class="fas fa-heart position-absolute"></i>
-              </a>
-            </li>
-            <li>
-              <a href="javascript:void(0);" class="d-inline-flex circle align-items-center justify-content-center snackbar-addcart">
-                <i class="fas fa-shopping-cart position-absolute"></i>
-              </a>
-            </li>
-          </ul>
+<!-- Flash Sale Banner -->
+{% if flash_sales %}
+<section class="container my-5">
+  <div class="vintage-flash-sale">
+    <div class="vintage-flash-sale-content">
+      <div>
+        <h3 class="vintage-flash-sale-text mb-2">⚡ Flash Sale - Limited Time!</h3>
+        <p class="mb-0 opacity-75">Don't miss out on incredible deals</p>
+      </div>
+      <div class="vintage-flash-sale-timer">
+        <div class="vintage-timer-unit">
+          <span class="vintage-timer-number" id="hours">12</span>
+          <span class="vintage-timer-label">Hours</span>
+        </div>
+        <div class="vintage-timer-unit">
+          <span class="vintage-timer-number" id="minutes">34</span>
+          <span class="vintage-timer-label">Minutes</span>
+        </div>
+        <div class="vintage-timer-unit">
+          <span class="vintage-timer-number" id="seconds">56</span>
+          <span class="vintage-timer-label">Seconds</span>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+{% endif %}
 
-      <div class="card-body px-2 pt-3 d-flex flex-column justify-content-between flex-grow-1">
-        <div class="mb-2">
-          <span class="small text-muted">{{p.category.title}}</span>
-          <h6 class="fs-md text-truncate">
-            <a href="{% url 'store:product_detail' p.slug %}" class="text-dark text-decoration-none d-block">{{p.name}}</a>
-          </h6>
+<!-- Categories Section -->
+<section class="container my-5">
+  <div class="text-center mb-5">
+    <h2 class="vintage-animate-fadeInUp">
+      <span class="vintage-text-primary">Shop by</span> Categories
+    </h2>
+    <p class="text-muted">Discover products across all categories</p>
+  </div>
 
-          <div class="star-rating align-items-center d-flex justify-content-left mb-2 p-0 mt-1">
-            {% if not p.average_rating %}
-            <p>No Rating</p>
-            {% elif p.average_rating > 0 and p.average_rating < 2 %}
-            <i class="fas fa-star text-warning"></i>
-            {% elif p.average_rating > 1 and p.average_rating < 3 %}
-            <i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
-            {% elif p.average_rating > 2 and p.average_rating < 4 %}
-            <i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
-            {% elif p.average_rating > 3 and p.average_rating < 5 %}
-            <i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
-            {% elif p.average_rating > 4 %}
-            <i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i><i class="fas fa-star text-warning"></i>
+  <div class="vintage-category-grid vintage-animate-fadeInUp">
+    {% for c in categories %}
+    {% if c.is_featured %}
+    <a href="{% if c.id %}{% url 'store:category' c.id %}{% else %}javascript:void(0);{% endif %}" class="text-decoration-none">
+      <div class="vintage-category-card">
+        <div class="vintage-category-icon">
+          {% if c.title == "Electronics & Technology" %}
+            <i class="fas fa-laptop"></i>
+          {% elif c.title == "Fashion & Apparel" %}
+            <i class="fas fa-tshirt"></i>
+          {% elif c.title == "Home & Living" %}
+            <i class="fas fa-home"></i>
+          {% elif c.title == "Health & Beauty" %}
+            <i class="fas fa-heart"></i>
+          {% elif c.title == "Sports & Outdoors" %}
+            <i class="fas fa-running"></i>
+          {% elif c.title == "Baby & Kids" %}
+            <i class="fas fa-baby"></i>
+          {% elif c.title == "Professional Services" %}
+            <i class="fas fa-briefcase"></i>
+          {% elif c.title == "Real Estate" %}
+            <i class="fas fa-building"></i>
+          {% elif c.title == "Vehicles" %}
+            <i class="fas fa-car"></i>
+          {% else %}
+            <i class="fas fa-tag"></i>
+          {% endif %}
+        </div>
+        <h3 class="vintage-category-title">{{ c.title }}</h3>
+        <p class="vintage-category-count">{{ c.products.count|default:0 }} Products</p>
+      </div>
+    </a>
+    {% endif %}
+    {% endfor %}
+  </div>
+  
+  <!-- View All Categories Button -->
+  <div class="text-center mt-4">
+    <a href="{% url 'store:shop' %}" class="btn-vintage-secondary">
+      <i class="fas fa-th-large me-2"></i>View All Categories
+    </a>
+  </div>
+</section>
+
+<!-- Featured Products Section -->
+<section class="container my-5">
+  <div class="text-center mb-5">
+    <h2 class="vintage-animate-fadeInUp">
+      <span class="vintage-text-primary">Featured</span> Products
+    </h2>
+    <p class="text-muted">Handpicked products from our trusted vendors</p>
+  </div>
+
+  <div class="row g-4 vintage-animate-fadeInUp">
+    {% for p in products %}
+    <div class="col-6 col-md-4 col-lg-3">
+      <div class="product-card">
+        <!-- Product Badge -->
+        {% if p.featured %}
+        <div class="product-card-badge">Featured</div>
+        {% endif %}
+        
+        <!-- Product Image -->
+        <div class="product-card-image">
+          <a href="{% url 'store:product_detail' p.slug %}">
+            <img src="{{p.image.url}}" alt="{{ p.name }}" />
+          </a>
+          
+          <!-- Product Actions -->
+          <div class="product-card-actions">
+            <button class="product-card-action" title="Add to Wishlist" onclick="addToWishlist('{{p.id}}')">
+              <i class="fas fa-heart"></i>
+            </button>
+            <button class="product-card-action" title="Quick View" onclick="quickView('{{p.id}}')">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="product-card-action" title="Add to Compare" onclick="addToCompare('{{p.id}}')">
+              <i class="fas fa-balance-scale"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Product Content -->
+        <div class="product-card-content">
+          <div class="product-card-vendor">
+            <i class="fas fa-store me-1"></i>
+            {% if p.vendor %}{{ p.vendor.username }}{% else %}Vintage Store{% endif %}
+          </div>
+          
+          <h3 class="product-card-title">
+            <a href="{% url 'store:product_detail' p.slug %}">{{ p.name }}</a>
+          </h3>
+          
+          <!-- Rating -->
+          <div class="product-card-rating">
+            <div class="product-card-stars">
+              {% if p.average_rating %}
+                {% for i in "12345" %}
+                  {% if forloop.counter <= p.average_rating %}
+                    <i class="fas fa-star"></i>
+                  {% else %}
+                    <i class="far fa-star"></i>
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+                <span class="text-muted">No reviews yet</span>
+              {% endif %}
+            </div>
+            {% if p.reviews.count > 0 %}
+            <span class="product-card-rating-text">({{ p.reviews.count }})</span>
             {% endif %}
           </div>
-
-          <div class="elis_rty mb-2">
-            <span class="ft-bold text-dark fs-sm">₦{{p.price}}</span>
+          
+          <!-- Price -->
+          <div class="product-card-price">
+            <span class="product-card-price-current">₦{{ p.price|floatformat:0|intcomma }}</span>
+            {% if p.regular_price and p.regular_price > p.price %}
+            <span class="product-card-price-original">₦{{ p.regular_price|floatformat:0|intcomma }}</span>
+            {% endif %}
           </div>
-        </div>
-
-        <div class="d-flex align-items-center justify-content-between gap-2">
-          <button type="button" class="btn btn-sm bg-primary text-white rounded add_to_cart flex-grow-1" data-id="{{ p.id }}">
-            Add to cart <i class="fas fa-shopping-cart ms-2"></i>
+          
+          <!-- Add to Cart Button -->
+          <button class="btn-vintage-primary w-100" onclick="addToCart('{{p.id}}', '{{p.name}}', '{{p.price}}')">
+            <i class="fas fa-shopping-cart me-2"></i>Add to Cart
           </button>
-          <a href="#" class="text-danger add_to_wishlist" data-product_id="{{ p.id }}">
-            <i class="fas fa-heart fs-5" style="color: red;"></i>
-          </a>
         </div>
-        <input type="hidden" class="quantity" value="1" />
+      </div>
+    {% endfor %}
+  </div>
+  
+  <!-- View All Products Button -->
+  <div class="text-center mt-5">
+    <a href="{% url 'store:shop' %}" class="btn-vintage-primary btn-vintage-lg">
+      <i class="fas fa-shopping-bag me-2"></i>Explore All Products
+    </a>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="container my-5">
+  <div class="row g-4">
+    <div class="col-md-3 col-6">
+      <div class="vintage-card text-center p-4">
+        <div class="vintage-category-icon mb-3" style="background: var(--vintage-green-primary);">
+          <i class="fas fa-shipping-fast"></i>
+        </div>
+        <h5>Free Shipping</h5>
+        <p class="text-muted mb-0">On orders over ₦50,000</p>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="vintage-card text-center p-4">
+        <div class="vintage-category-icon mb-3" style="background: var(--vintage-orange-primary);">
+          <i class="fas fa-undo"></i>
+        </div>
+        <h5>Easy Returns</h5>
+        <p class="text-muted mb-0">30-day return policy</p>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="vintage-card text-center p-4">
+        <div class="vintage-category-icon mb-3" style="background: var(--vintage-green-primary);">
+          <i class="fas fa-headset"></i>
+        </div>
+        <h5>24/7 Support</h5>
+        <p class="text-muted mb-0">Customer service available</p>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="vintage-card text-center p-4">
+        <div class="vintage-category-icon mb-3" style="background: var(--vintage-orange-primary);">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <h5>Secure Payment</h5>
+        <p class="text-muted mb-0">100% secure transactions</p>
       </div>
     </div>
   </div>
-  {% endfor %}
-</div>
+</section>
 
-    <div class="text-center mt-5">
-      <a href="{% url 'store:shop' %}" class="btn bg-dark text-light rounded btn-sm">Shop Now <i class="fas fa-arrow-right ms-2"></i></a>
+<!-- Newsletter Section -->
+<section class="vintage-hero" style="padding: 3rem 0;">
+  <div class="container text-center">
+    <div class="row justify-content-center">
+      <div class="col-lg-6">
+        <h2 class="text-white mb-3">Stay Updated</h2>
+        <p class="text-white-50 mb-4">Subscribe to our newsletter and get exclusive deals, new product updates, and more!</p>
+        <div class="vintage-search-bar">
+          <form method="POST" action="#" class="d-flex">
+            {% csrf_token %}
+            <input type="email" name="email" class="vintage-search-input" placeholder="Enter your email address" required />
+            <button type="submit" class="vintage-search-button" style="width: auto; padding: 0 20px;">
+              Subscribe
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 </section>
+
+<!-- JavaScript for Enhanced Functionality -->
+<script>
+// Flash Sale Timer
+function updateTimer() {
+    const now = new Date().getTime();
+    const endTime = now + (12 * 60 * 60 * 1000) + (34 * 60 * 1000) + (56 * 1000); // 12:34:56 from now
+    
+    const timer = setInterval(function() {
+        const now = new Date().getTime();
+        const distance = endTime - now;
+        
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        document.getElementById("hours").innerHTML = hours.toString().padStart(2, '0');
+        document.getElementById("minutes").innerHTML = minutes.toString().padStart(2, '0');
+        document.getElementById("seconds").innerHTML = seconds.toString().padStart(2, '0');
+        
+        if (distance < 0) {
+            clearInterval(timer);
+            document.querySelector('.vintage-flash-sale').style.display = 'none';
+        }
+    }, 1000);
+}
+
+// Product Actions
+function addToWishlist(productId) {
+    // Add to wishlist functionality
+    console.log('Adding product to wishlist:', productId);
+    // You can implement AJAX call here
+}
+
+function quickView(productId) {
+    // Quick view functionality
+    console.log('Quick view for product:', productId);
+    // You can implement modal popup here
+}
+
+function addToCompare(productId) {
+    // Add to compare functionality
+    console.log('Adding product to compare:', productId);
+    // You can implement comparison functionality here
+}
+
+function addToCart(productId, productName, price) {
+    // Add to cart functionality
+    console.log('Adding to cart:', productId, productName, price);
+    // You can implement AJAX call here
+}
+
+// Initialize timer if flash sale exists
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('hours')) {
+        updateTimer();
+    }
+});
+</script>
 
 {% endblock content %}

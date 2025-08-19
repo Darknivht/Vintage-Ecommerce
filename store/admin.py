@@ -94,6 +94,104 @@ class ListingAdmin(admin.ModelAdmin):
         }),
     )
 
+# === Enhanced Model Admins ===
+
+# Brand Admin
+class BrandAdmin(admin.ModelAdmin):
+    list_display = ['name', 'is_featured', 'created_at']
+    list_filter = ['is_featured', 'created_at']
+    search_fields = ['name', 'description']
+    prepopulated_fields = {'slug': ('name',)}
+
+# Product Attribute Admin
+class ProductAttributeAdmin(admin.ModelAdmin):
+    list_display = ['name', 'display_name', 'attribute_type', 'is_required']
+    list_filter = ['attribute_type', 'is_required']
+    search_fields = ['name', 'display_name']
+
+class ProductAttributeValueAdmin(admin.ModelAdmin):
+    list_display = ['product', 'attribute', 'value']
+    list_filter = ['attribute']
+    search_fields = ['product__name', 'attribute__name', 'value']
+
+# Flash Sale Admin
+class FlashSaleItemInline(admin.TabularInline):
+    model = store_models.FlashSaleItem
+    extra = 1
+
+class FlashSaleAdmin(admin.ModelAdmin):
+    list_display = ['name', 'discount_percentage', 'start_date', 'end_date', 'is_active', 'is_live']
+    list_filter = ['is_active', 'start_date', 'end_date']
+    search_fields = ['name', 'description']
+    inlines = [FlashSaleItemInline]
+    
+    def is_live(self, obj):
+        return obj.is_live()
+    is_live.boolean = True
+    is_live.short_description = 'Currently Live'
+
+class FlashSaleItemAdmin(admin.ModelAdmin):
+    list_display = ['flash_sale', 'product', 'sale_price', 'quantity_limit', 'sold_quantity']
+    list_filter = ['flash_sale']
+    search_fields = ['flash_sale__name', 'product__name']
+
+# Bundle Admin
+class BundleItemInline(admin.TabularInline):
+    model = store_models.BundleItem
+    extra = 1
+
+class BundleAdmin(admin.ModelAdmin):
+    list_display = ['name', 'discount_percentage', 'is_active', 'created_at']
+    list_filter = ['is_active', 'created_at']
+    search_fields = ['name', 'description']
+    inlines = [BundleItemInline]
+
+# Loyalty Program Admin
+class LoyaltyProgramAdmin(admin.ModelAdmin):
+    list_display = ['name', 'points_per_dollar', 'min_points_to_redeem', 'point_value', 'is_active']
+    list_filter = ['is_active']
+
+class CustomerLoyaltyAccountAdmin(admin.ModelAdmin):
+    list_display = ['customer', 'total_points', 'lifetime_points', 'tier']
+    list_filter = ['tier']
+    search_fields = ['customer__username', 'customer__email']
+    readonly_fields = ['lifetime_points']
+
+class PointTransactionAdmin(admin.ModelAdmin):
+    list_display = ['account', 'transaction_type', 'points', 'description', 'created_at']
+    list_filter = ['transaction_type', 'created_at']
+    search_fields = ['account__customer__username', 'description']
+
+# Wishlist Admin
+class WishlistItemAdmin(admin.ModelAdmin):
+    list_display = ['user', 'product', 'added_at']
+    list_filter = ['added_at']
+    search_fields = ['user__username', 'product__name']
+
+# Recently Viewed Admin
+class RecentlyViewedAdmin(admin.ModelAdmin):
+    list_display = ['user', 'product', 'viewed_at']
+    list_filter = ['viewed_at']
+    search_fields = ['user__username', 'product__name']
+
+# Product Comparison Admin
+class ProductComparisonAdmin(admin.ModelAdmin):
+    list_display = ['user', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['user__username']
+    filter_horizontal = ['products']
+
+# Notification Admin
+class NotificationTypeAdmin(admin.ModelAdmin):
+    list_display = ['name', 'is_active']
+    list_filter = ['is_active']
+    search_fields = ['name', 'description']
+
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ['recipient', 'notification_type', 'title', 'is_read', 'created_at']
+    list_filter = ['notification_type', 'is_read', 'created_at']
+    search_fields = ['recipient__username', 'title', 'message']
+
 # === Register Everything ===
 admin.site.register(store_models.Category, CategoryAdmin)
 admin.site.register(store_models.CategorySchema)
@@ -107,3 +205,20 @@ admin.site.register(store_models.Order, OrderAdmin)
 admin.site.register(store_models.OrderItem, OrderItemAdmin)
 admin.site.register(store_models.Review, ReviewAdmin)
 admin.site.register(store_models.Listing, ListingAdmin)
+
+# Register new models
+admin.site.register(store_models.Brand, BrandAdmin)
+admin.site.register(store_models.ProductAttribute, ProductAttributeAdmin)
+admin.site.register(store_models.ProductAttributeValue, ProductAttributeValueAdmin)
+admin.site.register(store_models.FlashSale, FlashSaleAdmin)
+admin.site.register(store_models.FlashSaleItem, FlashSaleItemAdmin)
+admin.site.register(store_models.Bundle, BundleAdmin)
+admin.site.register(store_models.BundleItem)
+admin.site.register(store_models.LoyaltyProgram, LoyaltyProgramAdmin)
+admin.site.register(store_models.CustomerLoyaltyAccount, CustomerLoyaltyAccountAdmin)
+admin.site.register(store_models.PointTransaction, PointTransactionAdmin)
+admin.site.register(store_models.WishlistItem, WishlistItemAdmin)
+admin.site.register(store_models.RecentlyViewed, RecentlyViewedAdmin)
+admin.site.register(store_models.ProductComparison, ProductComparisonAdmin)
+admin.site.register(store_models.NotificationType, NotificationTypeAdmin)
+admin.site.register(store_models.Notification, NotificationAdmin)
