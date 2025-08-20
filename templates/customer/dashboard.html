@@ -1,148 +1,555 @@
-{% extends 'partials/base.html' %} {% load static %} {% load humanize %} {% block content %}
-<div class="gray py-3">
-    <div class="container">
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Customer Dashboard - Vintage Marketplace{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="container-fluid">
         <div class="row">
-            <div class="colxl-12 col-lg-12 col-md-12">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{% url 'store:index' %}">Home</a></li>
-                        <li class="breadcrumb-item"><a href="{% url 'customer:dashboard' %}">Customer</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
-                    </ol>
-                </nav>
+            <!-- Sidebar -->
+            <div class="col-lg-3 col-md-4">
+                {% include 'customer/sidebar.html' %}
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-9 col-md-8">
+                <div class="dashboard-content">
+                    <!-- Header -->
+                    <div class="dashboard-header">
+                        <div class="welcome-section">
+                            <h1 class="dashboard-title">Welcome back, {{ user.profile.full_name|default:user.username }}!</h1>
+                            <p class="dashboard-subtitle">Manage your orders, wishlist, and account settings</p>
+                        </div>
+                        <div class="header-actions">
+                            <a href="{% url 'store:shop' %}" class="btn btn-primary">
+                                <i class="fas fa-shopping-bag me-2"></i>Continue Shopping
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon orders">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 class="stat-number">{{ orders.count|default:0 }}</h3>
+                                <p class="stat-label">Total Orders</p>
+                                <span class="stat-change positive">
+                                    <i class="fas fa-arrow-up"></i>
+                                    Active orders: {{ active_orders_count|default:0 }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon spent">
+                                <i class="fas fa-naira-sign"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 class="stat-number">₦{{ total_spent|floatformat:0|intcomma|default:"0" }}</h3>
+                                <p class="stat-label">Total Spent</p>
+                                <span class="stat-change">
+                                    <i class="fas fa-chart-line"></i>
+                                    Lifetime value
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon wishlist">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 class="stat-number">{{ wishlist_count|default:0 }}</h3>
+                                <p class="stat-label">Wishlist Items</p>
+                                <span class="stat-change">
+                                    <i class="fas fa-bookmark"></i>
+                                    Saved for later
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon addresses">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 class="stat-number">{{ addresses.count|default:0 }}</h3>
+                                <p class="stat-label">Saved Addresses</p>
+                                <span class="stat-change">
+                                    <i class="fas fa-home"></i>
+                                    Delivery locations
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Orders -->
+                    <div class="dashboard-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Recent Orders</h2>
+                            <a href="{% url 'customer:orders' %}" class="section-link">View All Orders</a>
+                        </div>
+
+                        {% if recent_orders %}
+                        <div class="orders-list">
+                            {% for order in recent_orders %}
+                            <div class="order-card">
+                                <div class="order-header">
+                                    <div class="order-info">
+                                        <h4 class="order-id">#{{ order.order_id }}</h4>
+                                        <p class="order-date">{{ order.date|date:"M d, Y" }}</p>
+                                    </div>
+                                    <div class="order-status">
+                                        <span class="status-badge status-{{ order.order_status|lower }}">
+                                            {{ order.order_status }}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="order-items">
+                                    {% for item in order.orderitem_set.all|slice:":3" %}
+                                    <div class="order-item">
+                                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="item-image">
+                                        <div class="item-details">
+                                            <h5 class="item-name">{{ item.product.name }}</h5>
+                                            <p class="item-quantity">Qty: {{ item.quantity }}</p>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                    {% if order.orderitem_set.count > 3 %}
+                                    <div class="more-items">
+                                        +{{ order.orderitem_set.count|add:"-3" }} more items
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="order-footer">
+                                    <div class="order-total">
+                                        <strong>₦{{ order.total|floatformat:0|intcomma }}</strong>
+                                    </div>
+                                    <div class="order-actions">
+                                        <a href="{% url 'customer:order_detail' order.order_id %}" class="btn btn-sm btn-outline-primary">
+                                            View Details
+                                        </a>
+                                        {% if order.order_status == 'Delivered' %}
+                                        <button class="btn btn-sm btn-primary" onclick="reorderItems('{{ order.order_id }}')">
+                                            Reorder
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <h3>No orders yet</h3>
+                            <p>Start shopping to see your orders here</p>
+                            <a href="{% url 'store:shop' %}" class="btn btn-primary">
+                                <i class="fas fa-shopping-bag me-2"></i>Start Shopping
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="dashboard-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Quick Actions</h2>
+                        </div>
+
+                        <div class="quick-actions">
+                            <a href="{% url 'customer:wishlist' %}" class="action-card">
+                                <div class="action-icon">
+                                    <i class="fas fa-heart"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>My Wishlist</h4>
+                                    <p>{{ wishlist_count|default:0 }} items saved</p>
+                                </div>
+                                <i class="fas fa-chevron-right action-arrow"></i>
+                            </a>
+
+                            <a href="{% url 'customer:addresses' %}" class="action-card">
+                                <div class="action-icon">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>Addresses</h4>
+                                    <p>Manage delivery locations</p>
+                                </div>
+                                <i class="fas fa-chevron-right action-arrow"></i>
+                            </a>
+
+                            <a href="{% url 'customer:profile' %}" class="action-card">
+                                <div class="action-icon">
+                                    <i class="fas fa-user-cog"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>Account Settings</h4>
+                                    <p>Update your profile</p>
+                                </div>
+                                <i class="fas fa-chevron-right action-arrow"></i>
+                            </a>
+
+                            <a href="{% url 'customer:notifications' %}" class="action-card">
+                                <div class="action-icon">
+                                    <i class="fas fa-bell"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>Notifications</h4>
+                                    <p>{{ unread_notifications|default:0 }} unread</p>
+                                </div>
+                                <i class="fas fa-chevron-right action-arrow"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<section class="middle">
-    <div class="container">
-        <div class="row align-items-start justify-content-between">
-             {% include 'customer/sidebar.html' %}
+<style>
+.dashboard-container {
+    background: var(--gray-100);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
 
-            <div class="col-12 col-md-12 col-lg-8 col-xl-8">
-                <div class="row mb-4">
-                    <h4 class="mb-0 mb-4 fw-bold">Dashboard</h4>
+.dashboard-content {
+    padding: 0 1rem;
+}
 
-                    <div class="col-sm-6 col-lg-4 mb-3 mb-lg-0">
-                        <div class="d-flex justify-content-center align-items-center p-4 shadow-sm rounded">
-                            <span class="display-6 text-danger">
-                                <i class="fas fa-shopping-cart text-danger"></i>
-                            </span>
-                            <div class="ms-4">
-                                <div class="d-flex">
-                                    <h5 class="mb-0 fw-bold">{{orders.count}}</h5>
-                                </div>
-                                <p class="mb-0 h6 fw-semibold">Orders</p>
-                            </div>
-                        </div>
-                    </div>
+.dashboard-header {
+    background: white;
+    border-radius: var(--radius-2xl);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
 
-                    <div class="col-sm-6 col-lg-4 mb-3 mb-lg-0">
-                        <div class="d-flex justify-content-center align-items-center p-4 shadow-sm rounded">
-                            <span class="display-6 text-danger">
-                                <i class="fas fa-wallet text-warning"></i>
-                            </span>
-                            <div class="ms-4">
-                                <div class="d-flex">
-                                    <h5 class="mb-0 fw-bold">₦{{total_spent|floatformat:2|intcomma|default:"0.00"}}</h5>
-                                </div>
-                                <p class="mb-0 h6 fw-semibold">Total Spent</p>
-                            </div>
-                        </div>
-                    </div>
+.dashboard-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--gray-800);
+    margin-bottom: 0.5rem;
+}
 
-                    <div class="col-sm-6 col-lg-4 mb-3 mb-lg-0">
-                        <div class="d-flex justify-content-center align-items-center p-4 shadow-sm rounded">
-                            <span class="display-6 text-danger">
-                                <i class="fas fa-bell text-primary"></i>
-                            </span>
-                            <div class="ms-4">
-                                <div class="d-flex">
-                                    <h5 class="mb-0 fw-bold">{{notis.count}}</h5>
-                                </div>
-                                <p class="mb-0 h6 fw-semibold">Notifications</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+.dashboard-subtitle {
+    color: var(--gray-600);
+    margin: 0;
+}
 
-                
-                {% for order in orders %}
-                    <div class="ord_list_wrap border mb-4 mfliud">
-                        <div class="ord_list_head bg-light bg-opacity-10 d-flex align-items-center justify-content-between px-3 py-3">
-                            <div class="olh_flex">
-                                <p class="m-0 p-0"><span class="text-muted">Order Number</span></p>
-                                <h6 class="mb-0 ft-medium">#{{order.order_id}}</h6>
-                            </div>
-                            <div class="olh_flex">
-                                <a href="{% url 'customer:order_detail' order.order_id %}" class="btn btn-sm bg-primary rounded text-white">View Order <i class="fas fa-arrow-right ms-2"></i></a>
-                                
-                                {% if order.payment_status == "Failed" %}
-                                    <a href="{% url 'store:checkout' order.order_id %}" class="btn btn-sm bg-danger rounded text-white">Retry Payment <i class="fas fa-rotate ms-2"></i></a>
-                                {% endif %}
-                                    
-                            </div>
-                        </div>
-                        <div class="ord_list_body text-left">
-                            <!-- Single Item -->
-                            
-                            {% for item in order.order_items.all %}
-                                <div class="row align-items-center justify-content-center m-0 py-4 br-bottom">
-                                    <div class="col-xl-6 col-lg-5 col-md-5 col-12">
-                                        <div class="cart_single d-flex align-items-start mfliud-bot gap-3">
-                                            <div class="cart_selected_single_thumb">
-                                                <a href="{% url 'store:product_detail' item.product.slug %}"><img src="{{item.product.image.url}}" width="75" class="img-fluid rounded" alt="" /></a>
-                                            </div>
-                                            <div class="cart_single_caption pl-3">
-                                                <h4 class="product_title fs-sm ft-medium mb-1 lh-1"> <a href="{% url 'store:product_detail' item.product.slug %}">{{item.product.name}}</a></h4>
-                                                <p class="mb-2">
-                                                    <span class="text-dark medium">Vendor: {{item.product.vendor.profile.full_name}}</span> <br />
-                                                    
-                                                    {% if item.color %}
-                                                        <span class="text-dark medium">Color: {{item.color}}</span>
-                                                    {% endif %}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
 
-                                                    {% if item.size %}
-                                                        <span class="text-dark medium">Size: {{item.size}}</span>
-                                                    {% endif %}
-                                                        
-                                                </p>
-                                                <h4 class="fs-sm ft-bold mb-0 lh-1">₦{{item.price}}</h4>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-xl-2 col-lg-3 col-md-3 col-6">
-                                        <p class="mb-1 p-0"><span class="text-muted">Status</span></p>
-                                        <div class="delv_status"><span class="ft-medium small text-warning bg-light-warning rounded px-3 py-1">{{order.order_status}}</span></div>
-                                    </div>
-                                    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
-                                        <p class="mb-1 p-0"><span class="text-muted">Payment Status</span></p>
-                                        <h6 class="mb-0 ft-medium fs-sm">{{order.payment_status}}</h6>
-                                    </div>
-                                    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
-                                        <p class="mb-1 p-0"><span class="text-muted">Order Date/Time</span></p>
-                                        <h6 class="mb-0 ft-medium fs-sm">{{order.date}}</h6>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                                
-                        </div>
-                        <div class="ord_list_footer d-flex align-items-center justify-content-between br-top px-3">
-                            <div class="col-xl-12 pr-0 py-2 olf_flex d-flex align-items-center justify-content-between">
-                                <div class="olf_flex_inner hide_mob">
-                                    <p class="m-0 p-0"><span class="text-muted medium">Paid using {{order.payment_method}}</span></p>
-                                </div>
-                                <div class="float-end"><h5 class="mb-0 fs-sm ft-bold">Total: ₦{{order.total|floatformat:2|intcomma}}</h5></div>
-                            </div>
-                        </div>
-                    </div>
-                {% empty %}
-                <p>No orders yet</p>
-                {% endfor %}
-                    
-            </div>
-        </div>
-    </div>
-</section>
-{% endblock content %}
+.stat-card {
+    background: white;
+    border-radius: var(--radius-2xl);
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.stat-icon.orders { background: var(--primary-orange); }
+.stat-icon.spent { background: var(--primary-green); }
+.stat-icon.wishlist { background: #e91e63; }
+.stat-icon.addresses { background: #9c27b0; }
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    color: var(--gray-600);
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.stat-change {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+}
+
+.stat-change.positive {
+    color: var(--primary-green);
+}
+
+.dashboard-section {
+    background: white;
+    border-radius: var(--radius-2xl);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--gray-100);
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin: 0;
+}
+
+.section-link {
+    color: var(--primary-orange);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.section-link:hover {
+    text-decoration: underline;
+}
+
+.order-card {
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.order-card:hover {
+    border-color: var(--primary-orange);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.1);
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.order-id {
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+}
+
+.order-date {
+    color: var(--gray-600);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-pending { background: #fef3c7; color: #92400e; }
+.status-processing { background: #dbeafe; color: #1e40af; }
+.status-shipped { background: #d1fae5; color: #065f46; }
+.status-delivered { background: #dcfce7; color: #166534; }
+.status-cancelled { background: #fee2e2; color: #991b1b; }
+
+.order-items {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.order-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.item-image {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-lg);
+    object-fit: cover;
+}
+
+.item-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.item-quantity {
+    font-size: 0.8rem;
+    color: var(--gray-600);
+    margin: 0;
+}
+
+.order-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+.order-total {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.order-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.action-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-xl);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+}
+
+.action-card:hover {
+    border-color: var(--primary-orange);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.1);
+    color: inherit;
+    text-decoration: none;
+}
+
+.action-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-full);
+    background: var(--gradient-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.action-content h4 {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--gray-800);
+}
+
+.action-content p {
+    color: var(--gray-600);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.action-arrow {
+    margin-left: auto;
+    color: var(--gray-400);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: var(--gray-300);
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    color: var(--gray-700);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    color: var(--gray-600);
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .order-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .order-footer {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+}
+</style>
+
+<script>
+function reorderItems(orderId) {
+    // Add reorder functionality
+    console.log('Reordering items from order:', orderId);
+    // This would typically make an AJAX call to add items to cart
+}
+</script>
+{% endblock %}
