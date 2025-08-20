@@ -456,7 +456,7 @@ def vendor_dashboard(request):
     """
     if not hasattr(request.user, 'vendor_profile'):
         messages.error(request, "You need to complete vendor registration first.")
-        return redirect('vendor:register')
+        return redirect('userauths:sign-up')
     
     profile = request.user.vendor_profile
     
@@ -497,7 +497,7 @@ def vendor_commission_report(request):
     Vendor commission and earnings report
     """
     if not hasattr(request.user, 'vendor_profile'):
-        return redirect('vendor:register')
+        return redirect('userauths:sign-up')
     
     # Get commission data
     commissions = VendorCommission.objects.filter(vendor=request.user)

@@ -141,7 +141,7 @@
                                 <li><a class="dropdown-item" href="{% url 'userauths:sign-in' %}"><i class="fas fa-sign-in-alt me-2"></i>Login</a></li>
                                 <li><a class="dropdown-item" href="{% url 'userauths:sign-up' %}"><i class="fas fa-user-plus me-2"></i>Register</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'vendor:register' %}"><i class="fas fa-store me-2"></i>Become a Vendor</a></li>
+                                <li><a class="dropdown-item" href="{% url 'userauths:sign-up' %}"><i class="fas fa-store me-2"></i>Become a Vendor</a></li>
                             {% endif %}
                         </ul>
                     </div>
@@ -279,7 +279,7 @@
                     <h6>Account</h6>
                     <a href="{% url 'userauths:sign-in' %}" class="mobile-menu-link">Login</a>
                     <a href="{% url 'userauths:sign-up' %}" class="mobile-menu-link">Register</a>
-                    <a href="{% url 'vendor:register' %}" class="mobile-menu-link">Become a Vendor</a>
+                    <a href="{% url 'userauths:sign-up' %}" class="mobile-menu-link">Become a Vendor</a>
                 </div>
                 {% endif %}
             </div>
