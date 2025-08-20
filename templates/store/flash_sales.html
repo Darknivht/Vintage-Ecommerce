@@ -1,0 +1,270 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Flash Sales - Vintage Marketplace{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Page Header -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="flash-sale-header text-center p-5 rounded-4" style="background: linear-gradient(135deg, #FF6B35, #FF8C42);">
+                <div class="text-white">
+                    <h1 class="display-4 fw-bold mb-3">⚡ Flash Sales</h1>
+                    <p class="lead mb-4">Limited time offers with incredible discounts!</p>
+                    <div class="flash-sale-stats d-flex justify-content-center gap-4">
+                        <div class="stat-item">
+                            <div class="h3 mb-0">{{ flash_sales.count }}</div>
+                            <small>Active Sales</small>
+                        </div>
+                        <div class="stat-item">
+                            <div class="h3 mb-0">Up to 70%</div>
+                            <small>Discount</small>
+                        </div>
+                        <div class="stat-item">
+                            <div class="h3 mb-0">24/7</div>
+                            <small>New Deals</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Flash Sales -->
+    {% if flash_sales %}
+    <div class="row g-4">
+        {% for sale in flash_sales %}
+        <div class="col-lg-6 col-xl-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:100 }}">
+            <div class="flash-sale-card">
+                <div class="flash-sale-badge">
+                    <i class="fas fa-bolt"></i>
+                    Flash Sale
+                </div>
+                
+                <div class="flash-sale-header">
+                    <h3 class="flash-sale-title">{{ sale.title }}</h3>
+                    <p class="flash-sale-description">{{ sale.description|truncatewords:20 }}</p>
+                </div>
+                
+                <div class="flash-sale-timer" data-end-time="{{ sale.end_time|date:'c' }}">
+                    <div class="timer-label">Ends in:</div>
+                    <div class="timer-display">
+                        <div class="timer-unit">
+                            <span class="timer-number hours">00</span>
+                            <span class="timer-text">Hours</span>
+                        </div>
+                        <div class="timer-unit">
+                            <span class="timer-number minutes">00</span>
+                            <span class="timer-text">Minutes</span>
+                        </div>
+                        <div class="timer-unit">
+                            <span class="timer-number seconds">00</span>
+                            <span class="timer-text">Seconds</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flash-sale-stats">
+                    <div class="stat">
+                        <i class="fas fa-box text-primary"></i>
+                        <span>{{ sale.items.count }} Products</span>
+                    </div>
+                    <div class="stat">
+                        <i class="fas fa-percentage text-success"></i>
+                        <span>Up to {{ sale.discount_percentage }}% OFF</span>
+                    </div>
+                </div>
+                
+                <div class="flash-sale-actions">
+                    <a href="{% url 'store:flash_sale_detail' sale.id %}" class="btn btn-primary w-100">
+                        <i class="fas fa-shopping-bag me-2"></i>Shop Now
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- No Active Sales -->
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-bolt fa-4x text-muted"></i>
+                </div>
+                <h3>No Active Flash Sales</h3>
+                <p class="text-muted mb-4">Check back soon for amazing deals and discounts!</p>
+                <a href="{% url 'store:shop' %}" class="btn btn-primary">
+                    <i class="fas fa-shopping-bag me-2"></i>Browse Products
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.flash-sale-header {
+    position: relative;
+    overflow: hidden;
+}
+
+.flash-sale-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+    animation: sparkle 2s linear infinite;
+}
+
+@keyframes sparkle {
+    0% { transform: translateX(0) translateY(0); }
+    100% { transform: translateX(100px) translateY(100px); }
+}
+
+.flash-sale-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.flash-sale-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.flash-sale-badge {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #FF6B35, #FF8C42);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.flash-sale-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #2D3748;
+}
+
+.flash-sale-description {
+    color: #718096;
+    margin-bottom: 1.5rem;
+}
+
+.flash-sale-timer {
+    background: linear-gradient(135deg, #1B998B, #2DD4BF);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.timer-label {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    opacity: 0.9;
+}
+
+.timer-display {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.timer-unit {
+    text-align: center;
+}
+
+.timer-number {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.timer-text {
+    font-size: 0.7rem;
+    opacity: 0.8;
+    margin-top: 0.25rem;
+}
+
+.flash-sale-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #4A5568;
+}
+
+.flash-sale-stats .stat {
+    font-weight: 500;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-item .h3 {
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+}
+
+.stat-item small {
+    opacity: 0.8;
+}
+</style>
+
+<script>
+// Flash Sale Timer
+document.addEventListener('DOMContentLoaded', function() {
+    const timers = document.querySelectorAll('.flash-sale-timer');
+    
+    timers.forEach(timer => {
+        const endTime = new Date(timer.dataset.endTime).getTime();
+        
+        function updateTimer() {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+            
+            if (distance < 0) {
+                timer.innerHTML = '<div class="text-center"><h4>Sale Ended</h4></div>';
+                return;
+            }
+            
+            const hours = Math.floor(distance / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            
+            timer.querySelector('.hours').textContent = hours.toString().padStart(2, '0');
+            timer.querySelector('.minutes').textContent = minutes.toString().padStart(2, '0');
+            timer.querySelector('.seconds').textContent = seconds.toString().padStart(2, '0');
+        }
+        
+        updateTimer();
+        setInterval(updateTimer, 1000);
+    });
+});
+</script>
+{% endblock %}

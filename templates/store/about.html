@@ -1,0 +1,538 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+
+{% block title %}About Us - Vintage Marketplace{% endblock %}
+
+{% block content %}
+<div class="about-page">
+    <!-- Hero Section -->
+    <section class="about-hero">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <div class="hero-content" data-aos="fade-right">
+                        <h1 class="hero-title">
+                            About <span class="text-primary">Vintage</span>
+                        </h1>
+                        <p class="hero-subtitle">
+                            Nigeria's premier online marketplace connecting millions of customers with thousands of trusted vendors across the country.
+                        </p>
+                        <div class="hero-stats">
+                            <div class="stat-item">
+                                <div class="stat-number">50K+</div>
+                                <div class="stat-label">Happy Customers</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">2.5K+</div>
+                                <div class="stat-label">Trusted Vendors</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">100K+</div>
+                                <div class="stat-label">Products</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="hero-image" data-aos="fade-left">
+                        <img src="{% static 'assets/img/about-hero.jpg' %}" alt="About Vintage" class="img-fluid rounded-4">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mission Section -->
+    <section class="mission-section py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h2 class="section-title" data-aos="fade-up">Our Mission</h2>
+                    <p class="section-description" data-aos="fade-up" data-aos-delay="100">
+                        To empower Nigerian entrepreneurs and businesses by providing a world-class e-commerce platform that connects vendors with customers nationwide, fostering economic growth and digital transformation across Nigeria.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Values Section -->
+    <section class="values-section py-5 bg-light">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-12 text-center">
+                    <h2 class="section-title" data-aos="fade-up">Our Core Values</h2>
+                    <p class="section-subtitle" data-aos="fade-up" data-aos-delay="100">
+                        The principles that guide everything we do
+                    </p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
+                    <div class="value-card">
+                        <div class="value-icon">
+                            <i class="fas fa-shield-check"></i>
+                        </div>
+                        <h4 class="value-title">Trust & Security</h4>
+                        <p class="value-description">
+                            We prioritize the security of our platform and build trust through verified vendors, secure payments, and reliable customer service.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
+                    <div class="value-card">
+                        <div class="value-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <h4 class="value-title">Innovation</h4>
+                        <p class="value-description">
+                            We continuously innovate to provide cutting-edge features and technologies that enhance the shopping and selling experience.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
+                    <div class="value-card">
+                        <div class="value-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h4 class="value-title">Community</h4>
+                        <p class="value-description">
+                            We foster a vibrant community of buyers and sellers, supporting local businesses and promoting Nigerian entrepreneurship.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
+                    <div class="value-card">
+                        <div class="value-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h4 class="value-title">Excellence</h4>
+                        <p class="value-description">
+                            We strive for excellence in every aspect of our service, from user experience to customer support and platform reliability.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="500">
+                    <div class="value-card">
+                        <div class="value-icon">
+                            <i class="fas fa-handshake"></i>
+                        </div>
+                        <h4 class="value-title">Integrity</h4>
+                        <p class="value-description">
+                            We operate with transparency, honesty, and fairness in all our dealings with customers, vendors, and partners.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="600">
+                    <div class="value-card">
+                        <div class="value-icon">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <h4 class="value-title">Sustainability</h4>
+                        <p class="value-description">
+                            We promote sustainable business practices and support eco-friendly products and vendors committed to environmental responsibility.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Story Section -->
+    <section class="story-section py-5">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6" data-aos="fade-right">
+                    <div class="story-image">
+                        <img src="{% static 'assets/img/our-story.jpg' %}" alt="Our Story" class="img-fluid rounded-4">
+                    </div>
+                </div>
+                <div class="col-lg-6" data-aos="fade-left">
+                    <div class="story-content">
+                        <h2 class="section-title">Our Story</h2>
+                        <p class="story-text">
+                            Founded in 2024, Vintage Marketplace was born from a vision to revolutionize e-commerce in Nigeria. We recognized the need for a platform that could bridge the gap between talented Nigerian entrepreneurs and customers seeking quality products.
+                        </p>
+                        <p class="story-text">
+                            Starting as a small team of passionate developers and business enthusiasts, we've grown into Nigeria's most trusted online marketplace. Our platform now serves thousands of vendors and millions of customers across all 36 states.
+                        </p>
+                        <p class="story-text">
+                            Today, we continue to innovate and expand, introducing new features like flash sales, loyalty programs, and advanced analytics to help our vendors succeed and provide customers with the best shopping experience possible.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section class="team-section py-5 bg-light">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-12 text-center">
+                    <h2 class="section-title" data-aos="fade-up">Meet Our Team</h2>
+                    <p class="section-subtitle" data-aos="fade-up" data-aos-delay="100">
+                        The passionate people behind Vintage Marketplace
+                    </p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="100">
+                    <div class="team-card">
+                        <div class="team-image">
+                            <img src="{% static 'assets/img/team/ceo.jpg' %}" alt="CEO" class="img-fluid">
+                        </div>
+                        <div class="team-info">
+                            <h5 class="team-name">Adebayo Johnson</h5>
+                            <p class="team-role">Chief Executive Officer</p>
+                            <div class="team-social">
+                                <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                                <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="200">
+                    <div class="team-card">
+                        <div class="team-image">
+                            <img src="{% static 'assets/img/team/cto.jpg' %}" alt="CTO" class="img-fluid">
+                        </div>
+                        <div class="team-info">
+                            <h5 class="team-name">Fatima Abdullahi</h5>
+                            <p class="team-role">Chief Technology Officer</p>
+                            <div class="team-social">
+                                <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                                <a href="#" class="social-link"><i class="fab fa-github"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="300">
+                    <div class="team-card">
+                        <div class="team-image">
+                            <img src="{% static 'assets/img/team/cmo.jpg' %}" alt="CMO" class="img-fluid">
+                        </div>
+                        <div class="team-info">
+                            <h5 class="team-name">Chinedu Okafor</h5>
+                            <p class="team-role">Chief Marketing Officer</p>
+                            <div class="team-social">
+                                <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                                <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="400">
+                    <div class="team-card">
+                        <div class="team-image">
+                            <img src="{% static 'assets/img/team/coo.jpg' %}" alt="COO" class="img-fluid">
+                        </div>
+                        <div class="team-info">
+                            <h5 class="team-name">Aisha Mohammed</h5>
+                            <p class="team-role">Chief Operations Officer</p>
+                            <div class="team-social">
+                                <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                                <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h2 class="cta-title" data-aos="fade-up">Ready to Join Our Community?</h2>
+                    <p class="cta-description" data-aos="fade-up" data-aos-delay="100">
+                        Whether you're looking to shop for amazing products or start selling your own, Vintage Marketplace is here to support your journey.
+                    </p>
+                    <div class="cta-buttons" data-aos="fade-up" data-aos-delay="200">
+                        <a href="{% url 'store:shop' %}" class="btn btn-primary btn-lg me-3">
+                            <i class="fas fa-shopping-bag me-2"></i>Start Shopping
+                        </a>
+                        <a href="{% url 'vendor:register' %}" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-store me-2"></i>Become a Vendor
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+.about-page {
+    background: #F8FAFC;
+}
+
+.about-hero {
+    padding: 4rem 0;
+    background: linear-gradient(135deg, #FF6B35, #FF8C42);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.about-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+    animation: sparkle 3s linear infinite;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    line-height: 1.1;
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+    line-height: 1.6;
+}
+
+.hero-stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    display: block;
+    color: #FFD700;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.hero-image img {
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #2D3748;
+    margin-bottom: 1rem;
+}
+
+.section-subtitle {
+    font-size: 1.1rem;
+    color: #718096;
+    margin-bottom: 2rem;
+}
+
+.section-description {
+    font-size: 1.2rem;
+    color: #4A5568;
+    line-height: 1.8;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.value-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.value-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+
+.value-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #FF6B35, #FF8C42);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    color: white;
+    font-size: 2rem;
+}
+
+.value-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2D3748;
+    margin-bottom: 1rem;
+}
+
+.value-description {
+    color: #718096;
+    line-height: 1.6;
+}
+
+.story-content {
+    padding-left: 2rem;
+}
+
+.story-text {
+    font-size: 1.1rem;
+    color: #4A5568;
+    line-height: 1.8;
+    margin-bottom: 1.5rem;
+}
+
+.team-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.team-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+
+.team-image {
+    height: 250px;
+    overflow: hidden;
+}
+
+.team-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.team-card:hover .team-image img {
+    transform: scale(1.1);
+}
+
+.team-info {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.team-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #2D3748;
+    margin-bottom: 0.5rem;
+}
+
+.team-role {
+    color: #718096;
+    margin-bottom: 1rem;
+}
+
+.team-social {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.social-link {
+    width: 40px;
+    height: 40px;
+    background: #F7FAFC;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4A5568;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.social-link:hover {
+    background: var(--primary-orange);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.cta-section {
+    background: linear-gradient(135deg, #1B998B, #2DD4BF);
+    color: white;
+}
+
+.cta-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.cta-description {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.cta-buttons .btn {
+    padding: 1rem 2rem;
+    font-weight: 600;
+    border-radius: 15px;
+}
+
+@keyframes sparkle {
+    0% { transform: translateX(0) translateY(0); }
+    100% { transform: translateX(100px) translateY(100px); }
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-stats {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .story-content {
+        padding-left: 0;
+        margin-top: 2rem;
+    }
+    
+    .cta-buttons {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .cta-buttons .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

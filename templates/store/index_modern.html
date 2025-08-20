@@ -1,4 +1,4 @@
-{% extends 'partials/base.html' %}
+{% extends 'partials/base_new.html' %}
 {% load static %}
 {% load humanize %}
 
@@ -737,6 +737,7 @@
 </section>
 
 <!-- Flash Sale Banner -->
+{% if flash_sales %}
 <section class="container">
     <div class="flash-sale-banner" data-aos="zoom-in">
         <div class="flash-sale-content">
@@ -761,6 +762,7 @@
         </div>
     </div>
 </section>
+{% endif %}
 
 <!-- Categories Section -->
 <section class="categories-section">
@@ -775,7 +777,7 @@
         </div>
         
         <div class="categories-grid">
-            {% for category in category_ %}
+            {% for category in categories %}
             {% if category.is_featured %}
             <a href="{% url 'store:category' category.id %}" class="text-decoration-none" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:100 }}">
                 <div class="category-card">

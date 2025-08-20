@@ -1,0 +1,1047 @@
+{% extends 'partials/base_new.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Shop - Nigeria's Best Products | Vintage Marketplace{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Shop Page Styles */
+.shop-header {
+    background: linear-gradient(135deg, var(--primary-green), var(--primary-orange));
+    color: white;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+}
+
+.shop-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.shop-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.shop-content {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.shop-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+}
+
+.shop-main {
+    flex: 1;
+}
+
+.filter-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.filter-header {
+    padding: 1.25rem;
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+    font-weight: 700;
+    color: var(--gray-900);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.filter-body {
+    padding: 1.25rem;
+}
+
+.filter-toggle {
+    background: none;
+    border: none;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.filter-toggle:hover {
+    color: var(--primary-orange);
+}
+
+.filter-group {
+    margin-bottom: 1.5rem;
+}
+
+.filter-group:last-child {
+    margin-bottom: 0;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: 0.75rem;
+    display: block;
+}
+
+.filter-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.filter-option:hover {
+    color: var(--primary-orange);
+}
+
+.filter-option input[type="checkbox"],
+.filter-option input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-orange);
+}
+
+.price-range {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.price-input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+}
+
+.price-input:focus {
+    outline: none;
+    border-color: var(--primary-orange);
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.color-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.color-option {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid var(--gray-300);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    position: relative;
+}
+
+.color-option:hover,
+.color-option.active {
+    border-color: var(--primary-orange);
+    transform: scale(1.1);
+}
+
+.color-option.active::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+}
+
+.shop-toolbar {
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.results-info {
+    color: var(--gray-600);
+    font-size: 0.95rem;
+}
+
+.shop-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.view-toggle {
+    display: flex;
+    background: var(--gray-100);
+    border-radius: var(--radius-md);
+    padding: 0.25rem;
+}
+
+.view-btn {
+    background: none;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    color: var(--gray-600);
+}
+
+.view-btn.active {
+    background: white;
+    color: var(--primary-orange);
+    box-shadow: var(--shadow-sm);
+}
+
+.sort-select {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    background: white;
+    cursor: pointer;
+    min-width: 180px;
+}
+
+.sort-select:focus {
+    outline: none;
+    border-color: var(--primary-orange);
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+.products-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.product-card-list {
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    display: flex;
+    transition: var(--transition-normal);
+}
+
+.product-card-list:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.product-card-list .product-image {
+    width: 200px;
+    height: 200px;
+    flex-shrink: 0;
+}
+
+.product-card-list .product-info {
+    flex: 1;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.product-card-list .product-title {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.product-card-list .product-description {
+    color: var(--gray-600);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
+.product-card-list .product-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: auto;
+}
+
+.product-card-list .add-to-cart-btn {
+    width: auto;
+    padding: 0.75rem 1.5rem;
+}
+
+.pagination-wrapper {
+    margin-top: 3rem;
+    display: flex;
+    justify-content: center;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: white;
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.pagination a,
+.pagination span {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--gray-700);
+    transition: var(--transition-fast);
+    min-width: 45px;
+    text-align: center;
+}
+
+.pagination a:hover {
+    background: var(--primary-orange);
+    color: white;
+}
+
+.pagination .current {
+    background: var(--primary-orange);
+    color: white;
+    font-weight: 600;
+}
+
+.no-products {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.no-products-icon {
+    font-size: 4rem;
+    color: var(--gray-400);
+    margin-bottom: 1.5rem;
+}
+
+.no-products-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 1rem;
+}
+
+.no-products-text {
+    color: var(--gray-600);
+    margin-bottom: 2rem;
+}
+
+.mobile-filter-toggle {
+    display: none;
+    background: var(--primary-orange);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 1rem;
+}
+
+.mobile-filter-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: var(--z-modal);
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition-fast);
+}
+
+.mobile-filter-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.mobile-filter-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 320px;
+    height: 100%;
+    background: white;
+    transform: translateX(-100%);
+    transition: var(--transition-normal);
+    overflow-y: auto;
+    z-index: var(--z-modal);
+}
+
+.mobile-filter-overlay.active .mobile-filter-sidebar {
+    transform: translateX(0);
+}
+
+.mobile-filter-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mobile-filter-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+.mobile-filter-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--gray-600);
+    cursor: pointer;
+}
+
+.mobile-filter-content {
+    padding: 1.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 991.98px) {
+    .shop-content {
+        flex-direction: column;
+    }
+    
+    .shop-sidebar {
+        width: 100%;
+        display: none;
+    }
+    
+    .mobile-filter-toggle {
+        display: block;
+    }
+    
+    .shop-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .shop-controls {
+        justify-content: space-between;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .shop-title {
+        font-size: 2rem;
+    }
+    
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .product-card-list {
+        flex-direction: column;
+    }
+    
+    .product-card-list .product-image {
+        width: 100%;
+        height: 200px;
+    }
+    
+    .mobile-filter-sidebar {
+        width: 100%;
+    }
+    
+    .shop-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .view-toggle {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .shop-toolbar {
+        padding: 1rem;
+    }
+    
+    .price-range {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Shop Header -->
+<section class="shop-header">
+    <div class="container">
+        <div class="text-center">
+            <h1 class="shop-title">Shop Nigeria's Best Products</h1>
+            <p class="shop-subtitle">
+                Discover amazing products from verified vendors across Nigeria. Quality guaranteed, fast delivery nationwide.
+            </p>
+        </div>
+    </div>
+</section>
+
+<div class="container">
+    <!-- Mobile Filter Toggle -->
+    <button class="mobile-filter-toggle" id="mobileFilterToggle">
+        <i class="fas fa-filter me-2"></i>Filters & Categories
+    </button>
+    
+    <div class="shop-content">
+        <!-- Sidebar Filters -->
+        <aside class="shop-sidebar">
+            <!-- Categories Filter -->
+            <div class="filter-card">
+                <div class="filter-header">
+                    <span>Categories</span>
+                    <button class="filter-toggle" data-bs-toggle="collapse" data-bs-target="#categoriesFilter">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="filter-body collapse show" id="categoriesFilter">
+                    {% for category in categories %}
+                    <div class="filter-option">
+                        <input type="checkbox" id="cat_{{ category.id }}" name="category" value="{{ category.id }}" 
+                               {% if category.id|stringformat:"s" in request.GET.category %}checked{% endif %}>
+                        <label for="cat_{{ category.id }}">
+                            {{ category.title }} ({{ category.products.count }})
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Price Filter -->
+            <div class="filter-card">
+                <div class="filter-header">
+                    <span>Price Range</span>
+                    <button class="filter-toggle" data-bs-toggle="collapse" data-bs-target="#priceFilter">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="filter-body collapse show" id="priceFilter">
+                    <div class="price-range">
+                        <input type="number" class="price-input" placeholder="Min ₦" name="min_price" 
+                               value="{{ request.GET.min_price }}">
+                        <span>-</span>
+                        <input type="number" class="price-input" placeholder="Max ₦" name="max_price" 
+                               value="{{ request.GET.max_price }}">
+                    </div>
+                    <div class="mt-3">
+                        <div class="filter-option">
+                            <input type="radio" id="price_1" name="price_range" value="0-10000">
+                            <label for="price_1">Under ₦10,000</label>
+                        </div>
+                        <div class="filter-option">
+                            <input type="radio" id="price_2" name="price_range" value="10000-50000">
+                            <label for="price_2">₦10,000 - ₦50,000</label>
+                        </div>
+                        <div class="filter-option">
+                            <input type="radio" id="price_3" name="price_range" value="50000-100000">
+                            <label for="price_3">₦50,000 - ₦100,000</label>
+                        </div>
+                        <div class="filter-option">
+                            <input type="radio" id="price_4" name="price_range" value="100000-500000">
+                            <label for="price_4">₦100,000 - ₦500,000</label>
+                        </div>
+                        <div class="filter-option">
+                            <input type="radio" id="price_5" name="price_range" value="500000-">
+                            <label for="price_5">Above ₦500,000</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Brand Filter -->
+            {% if brands %}
+            <div class="filter-card">
+                <div class="filter-header">
+                    <span>Brands</span>
+                    <button class="filter-toggle" data-bs-toggle="collapse" data-bs-target="#brandFilter">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="filter-body collapse show" id="brandFilter">
+                    {% for brand in brands %}
+                    <div class="filter-option">
+                        <input type="checkbox" id="brand_{{ brand.id }}" name="brand" value="{{ brand.id }}">
+                        <label for="brand_{{ brand.id }}">{{ brand.name }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Rating Filter -->
+            <div class="filter-card">
+                <div class="filter-header">
+                    <span>Customer Rating</span>
+                    <button class="filter-toggle" data-bs-toggle="collapse" data-bs-target="#ratingFilter">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="filter-body collapse show" id="ratingFilter">
+                    <div class="filter-option">
+                        <input type="radio" id="rating_5" name="rating" value="5">
+                        <label for="rating_5">
+                            <span class="text-warning">★★★★★</span> 5 Stars
+                        </label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="radio" id="rating_4" name="rating" value="4">
+                        <label for="rating_4">
+                            <span class="text-warning">★★★★☆</span> 4 Stars & Up
+                        </label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="radio" id="rating_3" name="rating" value="3">
+                        <label for="rating_3">
+                            <span class="text-warning">★★★☆☆</span> 3 Stars & Up
+                        </label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="radio" id="rating_2" name="rating" value="2">
+                        <label for="rating_2">
+                            <span class="text-warning">★★☆☆☆</span> 2 Stars & Up
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Availability Filter -->
+            <div class="filter-card">
+                <div class="filter-header">
+                    <span>Availability</span>
+                    <button class="filter-toggle" data-bs-toggle="collapse" data-bs-target="#availabilityFilter">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="filter-body collapse show" id="availabilityFilter">
+                    <div class="filter-option">
+                        <input type="checkbox" id="in_stock" name="availability" value="in_stock">
+                        <label for="in_stock">In Stock</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="on_sale" name="availability" value="on_sale">
+                        <label for="on_sale">On Sale</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="featured" name="availability" value="featured">
+                        <label for="featured">Featured</label>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="shop-main">
+            <!-- Shop Toolbar -->
+            <div class="shop-toolbar">
+                <div class="results-info">
+                    Showing {{ products.start_index }}-{{ products.end_index }} of {{ products.paginator.count }} products
+                    {% if request.GET.q %}
+                    for "<strong>{{ request.GET.q }}</strong>"
+                    {% endif %}
+                </div>
+                
+                <div class="shop-controls">
+                    <div class="view-toggle">
+                        <button class="view-btn active" data-view="grid" title="Grid View">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button class="view-btn" data-view="list" title="List View">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                    
+                    <select class="sort-select" name="sort" onchange="applySort(this.value)">
+                        <option value="">Sort by Default</option>
+                        <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>Name A-Z</option>
+                        <option value="-name" {% if request.GET.sort == '-name' %}selected{% endif %}>Name Z-A</option>
+                        <option value="price" {% if request.GET.sort == 'price' %}selected{% endif %}>Price Low to High</option>
+                        <option value="-price" {% if request.GET.sort == '-price' %}selected{% endif %}>Price High to Low</option>
+                        <option value="-date" {% if request.GET.sort == '-date' %}selected{% endif %}>Newest First</option>
+                        <option value="date" {% if request.GET.sort == 'date' %}selected{% endif %}>Oldest First</option>
+                        <option value="-rating" {% if request.GET.sort == '-rating' %}selected{% endif %}>Highest Rated</option>
+                        <option value="-popularity" {% if request.GET.sort == '-popularity' %}selected{% endif %}>Most Popular</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Products Grid -->
+            {% if products %}
+            <div class="products-container">
+                <div class="products-grid" id="productsGrid">
+                    {% for product in products %}
+                    <div class="product-card" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:50 }}">
+                        {% if product.featured %}
+                        <div class="product-badge">Featured</div>
+                        {% endif %}
+                        
+                        <div class="product-image">
+                            <a href="{% url 'store:product_detail' product.slug %}">
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+                            </a>
+                            
+                            <div class="product-actions">
+                                <button class="product-action wishlist-btn" data-product-id="{{ product.id }}" title="Add to Wishlist">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="product-action" title="Quick View" onclick="quickView('{{ product.id }}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="product-action" title="Compare" onclick="addToCompare('{{ product.id }}')">
+                                    <i class="fas fa-balance-scale"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="product-info">
+                            <div class="product-vendor">
+                                <i class="fas fa-store"></i>
+                                {{ product.vendor.username|default:"Vintage Store" }}
+                            </div>
+                            
+                            <h3 class="product-title">
+                                <a href="{% url 'store:product_detail' product.slug %}">{{ product.name }}</a>
+                            </h3>
+                            
+                            <div class="product-rating">
+                                <div class="product-stars">
+                                    {% if product.average_rating %}
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= product.average_rating %}
+                                                <i class="fas fa-star"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">No reviews yet</span>
+                                    {% endif %}
+                                </div>
+                                {% if product.reviews.count > 0 %}
+                                <span class="product-rating-text">({{ product.reviews.count }})</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="product-price">
+                                <span class="product-price-current">₦{{ product.price|floatformat:0|intcomma }}</span>
+                                {% if product.regular_price and product.regular_price > product.price %}
+                                <span class="product-price-original">₦{{ product.regular_price|floatformat:0|intcomma }}</span>
+                                <span class="product-discount">
+                                    {% widthratio product.price product.regular_price 100 as discount %}
+                                    {{ discount|floatformat:0 }}% OFF
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            <button class="add-to-cart-btn" data-product-id="{{ product.id }}" onclick="addToCart('{{ product.id }}')">
+                                <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- List View (Hidden by default) -->
+                <div class="products-list" id="productsList" style="display: none;">
+                    {% for product in products %}
+                    <div class="product-card-list">
+                        <div class="product-image">
+                            <a href="{% url 'store:product_detail' product.slug %}">
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+                            </a>
+                        </div>
+                        
+                        <div class="product-info">
+                            <div class="product-vendor">
+                                <i class="fas fa-store me-1"></i>
+                                {{ product.vendor.username|default:"Vintage Store" }}
+                            </div>
+                            
+                            <h3 class="product-title">
+                                <a href="{% url 'store:product_detail' product.slug %}">{{ product.name }}</a>
+                            </h3>
+                            
+                            <div class="product-description">
+                                {{ product.description|truncatewords:20 }}
+                            </div>
+                            
+                            <div class="product-rating">
+                                <div class="product-stars">
+                                    {% if product.average_rating %}
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= product.average_rating %}
+                                                <i class="fas fa-star"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">No reviews yet</span>
+                                    {% endif %}
+                                </div>
+                                {% if product.reviews.count > 0 %}
+                                <span class="product-rating-text">({{ product.reviews.count }} reviews)</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="product-price">
+                                <span class="product-price-current">₦{{ product.price|floatformat:0|intcomma }}</span>
+                                {% if product.regular_price and product.regular_price > product.price %}
+                                <span class="product-price-original">₦{{ product.regular_price|floatformat:0|intcomma }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="product-actions">
+                                <button class="add-to-cart-btn" data-product-id="{{ product.id }}" onclick="addToCart('{{ product.id }}')">
+                                    <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                                </button>
+                                <button class="btn btn-secondary wishlist-btn" data-product-id="{{ product.id }}">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="btn btn-secondary" onclick="quickView('{{ product.id }}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Pagination -->
+            {% if products.has_other_pages %}
+            <div class="pagination-wrapper">
+                <div class="pagination">
+                    {% if products.has_previous %}
+                        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page=1" title="First">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ products.previous_page_number }}" title="Previous">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    {% endif %}
+                    
+                    {% for num in products.paginator.page_range %}
+                        {% if products.number == num %}
+                            <span class="current">{{ num }}</span>
+                        {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+                            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if products.has_next %}
+                        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ products.next_page_number }}" title="Next">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ products.paginator.num_pages }}" title="Last">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <!-- No Products Found -->
+            <div class="no-products">
+                <div class="no-products-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3 class="no-products-title">No Products Found</h3>
+                <p class="no-products-text">
+                    {% if request.GET.q %}
+                        Sorry, we couldn't find any products matching "<strong>{{ request.GET.q }}</strong>". 
+                        Try adjusting your search terms or browse our categories.
+                    {% else %}
+                        No products are currently available in this category. 
+                        Please check back later or explore other categories.
+                    {% endif %}
+                </p>
+                <a href="{% url 'store:shop' %}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Browse All Products
+                </a>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</div>
+
+<!-- Mobile Filter Overlay -->
+<div class="mobile-filter-overlay" id="mobileFilterOverlay">
+    <div class="mobile-filter-sidebar">
+        <div class="mobile-filter-header">
+            <h3 class="mobile-filter-title">Filters</h3>
+            <button class="mobile-filter-close" id="mobileFilterClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="mobile-filter-content">
+            <!-- Same filter content as sidebar -->
+            <!-- This would be populated by JavaScript or server-side -->
+        </div>
+    </div>
+</div>
+
+<script>
+// View Toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const viewBtns = document.querySelectorAll('.view-btn');
+    const productsGrid = document.getElementById('productsGrid');
+    const productsList = document.getElementById('productsList');
+    
+    viewBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const view = this.dataset.view;
+            
+            // Update active button
+            viewBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Toggle views
+            if (view === 'grid') {
+                productsGrid.style.display = 'grid';
+                productsList.style.display = 'none';
+            } else {
+                productsGrid.style.display = 'none';
+                productsList.style.display = 'flex';
+            }
+        });
+    });
+    
+    // Mobile Filter Toggle
+    const mobileFilterToggle = document.getElementById('mobileFilterToggle');
+    const mobileFilterOverlay = document.getElementById('mobileFilterOverlay');
+    const mobileFilterClose = document.getElementById('mobileFilterClose');
+    
+    if (mobileFilterToggle) {
+        mobileFilterToggle.addEventListener('click', function() {
+            mobileFilterOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+    }
+    
+    if (mobileFilterClose) {
+        mobileFilterClose.addEventListener('click', function() {
+            mobileFilterOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+    }
+    
+    if (mobileFilterOverlay) {
+        mobileFilterOverlay.addEventListener('click', function(e) {
+            if (e.target === mobileFilterOverlay) {
+                mobileFilterOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+    }
+});
+
+// Sort Function
+function applySort(sortValue) {
+    const url = new URL(window.location);
+    if (sortValue) {
+        url.searchParams.set('sort', sortValue);
+    } else {
+        url.searchParams.delete('sort');
+    }
+    window.location.href = url.toString();
+}
+
+// Filter Functions
+function applyFilters() {
+    const form = document.createElement('form');
+    form.method = 'GET';
+    
+    // Collect all filter values
+    const filters = document.querySelectorAll('input[type="checkbox"]:checked, input[type="radio"]:checked, .price-input');
+    
+    filters.forEach(filter => {
+        if (filter.value) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = filter.name;
+            input.value = filter.value;
+            form.appendChild(input);
+        }
+    });
+    
+    // Preserve search query
+    if (new URLSearchParams(window.location.search).get('q')) {
+        const searchInput = document.createElement('input');
+        searchInput.type = 'hidden';
+        searchInput.name = 'q';
+        searchInput.value = new URLSearchParams(window.location.search).get('q');
+        form.appendChild(searchInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Auto-apply filters on change
+document.addEventListener('change', function(e) {
+    if (e.target.matches('input[name="category"], input[name="brand"], input[name="rating"], input[name="availability"], input[name="price_range"]')) {
+        setTimeout(applyFilters, 300);
+    }
+});
+
+// Price range inputs
+document.addEventListener('input', function(e) {
+    if (e.target.matches('.price-input')) {
+        clearTimeout(window.priceTimeout);
+        window.priceTimeout = setTimeout(applyFilters, 1000);
+    }
+});
+
+// Quick View Function
+function quickView(productId) {
+    console.log('Quick view for product:', productId);
+    // Implement quick view modal
+}
+
+// Add to Compare Function
+function addToCompare(productId) {
+    console.log('Add to compare:', productId);
+    // Implement comparison functionality
+}
+</script>
+{% endblock %}

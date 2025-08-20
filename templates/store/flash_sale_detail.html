@@ -1,0 +1,394 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ flash_sale.title }} - Flash Sale - Vintage Marketplace{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Flash Sale Header -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="flash-sale-hero p-5 rounded-4" style="background: linear-gradient(135deg, #FF6B35, #FF8C42);">
+                <div class="text-white text-center">
+                    <div class="flash-sale-badge-large mb-3">
+                        <i class="fas fa-bolt"></i>
+                        FLASH SALE
+                    </div>
+                    <h1 class="display-4 fw-bold mb-3">{{ flash_sale.title }}</h1>
+                    <p class="lead mb-4">{{ flash_sale.description }}</p>
+                    
+                    <!-- Countdown Timer -->
+                    <div class="flash-sale-countdown" data-end-time="{{ flash_sale.end_time|date:'c' }}">
+                        <div class="countdown-label mb-3">
+                            <h4>⏰ Sale Ends In:</h4>
+                        </div>
+                        <div class="countdown-timer">
+                            <div class="countdown-unit">
+                                <div class="countdown-number days">00</div>
+                                <div class="countdown-label">Days</div>
+                            </div>
+                            <div class="countdown-separator">:</div>
+                            <div class="countdown-unit">
+                                <div class="countdown-number hours">00</div>
+                                <div class="countdown-label">Hours</div>
+                            </div>
+                            <div class="countdown-separator">:</div>
+                            <div class="countdown-unit">
+                                <div class="countdown-number minutes">00</div>
+                                <div class="countdown-label">Minutes</div>
+                            </div>
+                            <div class="countdown-separator">:</div>
+                            <div class="countdown-unit">
+                                <div class="countdown-number seconds">00</div>
+                                <div class="countdown-label">Seconds</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sale Statistics -->
+    <div class="row mb-5">
+        <div class="col-md-3 col-6">
+            <div class="stat-card text-center p-4">
+                <div class="stat-icon mb-3">
+                    <i class="fas fa-box text-primary"></i>
+                </div>
+                <div class="stat-number">{{ flash_sale_items.count }}</div>
+                <div class="stat-label">Products on Sale</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card text-center p-4">
+                <div class="stat-icon mb-3">
+                    <i class="fas fa-percentage text-success"></i>
+                </div>
+                <div class="stat-number">{{ flash_sale.discount_percentage }}%</div>
+                <div class="stat-label">Max Discount</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card text-center p-4">
+                <div class="stat-icon mb-3">
+                    <i class="fas fa-users text-info"></i>
+                </div>
+                <div class="stat-number">{{ flash_sale.total_orders|default:0 }}</div>
+                <div class="stat-label">Orders Placed</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card text-center p-4">
+                <div class="stat-icon mb-3">
+                    <i class="fas fa-clock text-warning"></i>
+                </div>
+                <div class="stat-number" id="timeLeft">--</div>
+                <div class="stat-label">Time Left</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Sale Products -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="section-title text-center mb-4">
+                🔥 Products on <span class="text-primary">Flash Sale</span>
+            </h2>
+        </div>
+    </div>
+
+    {% if flash_sale_items %}
+    <div class="row g-4">
+        {% for item in flash_sale_items %}
+        <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:100 }}">
+            <div class="product-card flash-sale-product">
+                <!-- Flash Sale Badge -->
+                <div class="flash-sale-product-badge">
+                    <i class="fas fa-bolt"></i>
+                    {{ item.discount_percentage }}% OFF
+                </div>
+                
+                <!-- Stock Progress -->
+                {% if item.quantity_limit %}
+                <div class="stock-progress">
+                    {% widthratio item.quantity_sold item.quantity_limit 100 as sold_percentage %}
+                    <div class="progress">
+                        <div class="progress-bar bg-danger" style="width: {{ sold_percentage }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ item.quantity_sold }}/{{ item.quantity_limit }} sold</small>
+                </div>
+                {% endif %}
+                
+                <div class="product-image">
+                    <a href="{% url 'store:product_detail' item.product.slug %}">
+                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" loading="lazy">
+                    </a>
+                    
+                    <div class="product-actions">
+                        <button class="product-action wishlist-btn" data-product-id="{{ item.product.id }}" title="Add to Wishlist">
+                            <i class="far fa-heart"></i>
+                        </button>
+                        <button class="product-action" title="Quick View" onclick="quickView('{{ item.product.id }}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="product-action" title="Compare" onclick="addToCompare('{{ item.product.id }}')">
+                            <i class="fas fa-balance-scale"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="product-info">
+                    <div class="product-vendor">
+                        <i class="fas fa-store"></i>
+                        {{ item.product.vendor.username|default:"Vintage Store" }}
+                    </div>
+                    
+                    <h3 class="product-title">
+                        <a href="{% url 'store:product_detail' item.product.slug %}">{{ item.product.name }}</a>
+                    </h3>
+                    
+                    <div class="product-rating">
+                        <div class="product-stars">
+                            {% if item.product.average_rating %}
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= item.product.average_rating %}
+                                        <i class="fas fa-star"></i>
+                                    {% else %}
+                                        <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">No reviews yet</span>
+                            {% endif %}
+                        </div>
+                        {% if item.product.reviews.count > 0 %}
+                        <span class="product-rating-text">({{ item.product.reviews.count }})</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="product-price">
+                        <span class="product-price-current">₦{{ item.sale_price|floatformat:0|intcomma }}</span>
+                        <span class="product-price-original">₦{{ item.product.price|floatformat:0|intcomma }}</span>
+                        <span class="product-discount">{{ item.discount_percentage }}% OFF</span>
+                    </div>
+                    
+                    {% if item.product.stock > 0 %}
+                    <button class="add-to-cart-btn flash-sale-btn" data-product-id="{{ item.product.id }}" onclick="addToCart('{{ item.product.id }}')">
+                        <i class="fas fa-bolt me-2"></i>Buy Now - Flash Sale
+                    </button>
+                    {% else %}
+                    <button class="add-to-cart-btn" disabled>
+                        <i class="fas fa-times me-2"></i>Out of Stock
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- No Products -->
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                <h4>No Products in This Flash Sale</h4>
+                <p class="text-muted">This flash sale doesn't have any products yet.</p>
+                <a href="{% url 'store:flash_sales' %}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Flash Sales
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.flash-sale-hero {
+    position: relative;
+    overflow: hidden;
+}
+
+.flash-sale-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+    animation: sparkle 3s linear infinite;
+}
+
+.flash-sale-badge-large {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 700;
+    backdrop-filter: blur(10px);
+}
+
+.countdown-timer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.countdown-unit {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 1.5rem 1rem;
+    min-width: 100px;
+    backdrop-filter: blur(10px);
+}
+
+.countdown-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.countdown-separator {
+    font-size: 2rem;
+    font-weight: 800;
+    opacity: 0.7;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.stat-icon i {
+    font-size: 2rem;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #2D3748;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #718096;
+    font-size: 0.9rem;
+}
+
+.flash-sale-product {
+    position: relative;
+}
+
+.flash-sale-product-badge {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: linear-gradient(135deg, #FF6B35, #FF8C42);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    z-index: 2;
+    box-shadow: 0 3px 10px rgba(255, 107, 53, 0.3);
+}
+
+.stock-progress {
+    position: absolute;
+    top: 60px;
+    left: 15px;
+    right: 15px;
+    z-index: 2;
+}
+
+.stock-progress .progress {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    margin-bottom: 0.25rem;
+}
+
+.stock-progress small {
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+}
+
+.flash-sale-btn {
+    background: linear-gradient(135deg, #FF6B35, #FF8C42) !important;
+    border: none !important;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 107, 53, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 107, 53, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 107, 53, 0); }
+}
+
+@keyframes sparkle {
+    0% { transform: translateX(0) translateY(0); }
+    100% { transform: translateX(100px) translateY(100px); }
+}
+</style>
+
+<script>
+// Flash Sale Countdown
+document.addEventListener('DOMContentLoaded', function() {
+    const countdown = document.querySelector('.flash-sale-countdown');
+    if (!countdown) return;
+    
+    const endTime = new Date(countdown.dataset.endTime).getTime();
+    
+    function updateCountdown() {
+        const now = new Date().getTime();
+        const distance = endTime - now;
+        
+        if (distance < 0) {
+            countdown.innerHTML = '<div class="text-center"><h3>🎉 Sale Ended</h3><p>Thank you for participating!</p></div>';
+            return;
+        }
+        
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        countdown.querySelector('.days').textContent = days.toString().padStart(2, '0');
+        countdown.querySelector('.hours').textContent = hours.toString().padStart(2, '0');
+        countdown.querySelector('.minutes').textContent = minutes.toString().padStart(2, '0');
+        countdown.querySelector('.seconds').textContent = seconds.toString().padStart(2, '0');
+        
+        // Update time left stat
+        const timeLeftElement = document.getElementById('timeLeft');
+        if (timeLeftElement) {
+            if (days > 0) {
+                timeLeftElement.textContent = `${days}d ${hours}h`;
+            } else if (hours > 0) {
+                timeLeftElement.textContent = `${hours}h ${minutes}m`;
+            } else {
+                timeLeftElement.textContent = `${minutes}m ${seconds}s`;
+            }
+        }
+    }
+    
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+});
+</script>
+{% endblock %}

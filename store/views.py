@@ -67,20 +67,167 @@ def clear_cart_items(request):
     return
 
 def index(request):
-    products = store_models.Product.objects.filter(status="Published")
+    # Featured products
+    products = store_models.Product.objects.filter(status="Published", featured=True)[:12]
+    
+    # All products for fallback
+    if not products:
+        products = store_models.Product.objects.filter(status="Published")[:12]
+    
+    # Categories for navigation and display
     categories = store_models.Category.objects.filter(type="product", parent=None)
+    category_ = categories  # For template compatibility
+    
+    # Featured categories
+    featured_categories = categories.filter(is_featured=True)[:8]
+    
+    # Brands
+    brands = store_models.Brand.objects.filter(is_featured=True)[:10]
+    
+    # Flash sales
+    flash_sales = store_models.FlashSale.objects.filter(is_active=True)
+    
+    # Get cart and wishlist counts
+    cart_count = 0
+    wishlist_count = 0
+    
+    if request.user.is_authenticated:
+        try:
+            cart_count = store_models.Cart.objects.filter(user=request.user).count()
+        except:
+            pass
+        
+        try:
+            wishlist_count = store_models.WishlistItem.objects.filter(user=request.user).count()
+        except:
+            pass
+    else:
+        # For anonymous users, use session
+        cart_id = request.session.get('cart_id')
+        if cart_id:
+            cart_count = store_models.Cart.objects.filter(cart_id=cart_id).count()
+    
+    # User type for navigation
+    user_type = None
+    if request.user.is_authenticated:
+        if hasattr(request.user, 'vendor_profile'):
+            user_type = "Vendor"
+        else:
+            user_type = "Customer"
     
     context = {
         "products": products,
         "categories": categories,
+        "category_": category_,
+        "featured_categories": featured_categories,
+        "brands": brands,
+        "flash_sales": flash_sales,
+        "total_cart_items": cart_count,
+        "wishlist_count": {"count": wishlist_count},
+        "user_type": user_type,
     }
     return render(request, "store/index.html", context)
 
 
 def shop(request):
     products_list = store_models.Product.objects.filter(status="Published")
+    
+    # Categories for navigation and filtering
     categories = store_models.Category.objects.filter(type="product", parent=None)
-
+    category_ = categories  # For template compatibility
+    
+    # Brands for filtering
+    brands = store_models.Brand.objects.all()
+    
+    # Apply filters
+    query = request.GET.get('q')
+    category_filter = request.GET.getlist('category')
+    brand_filter = request.GET.getlist('brand')
+    min_price = request.GET.get('min_price')
+    max_price = request.GET.get('max_price')
+    price_range = request.GET.get('price_range')
+    rating_filter = request.GET.get('rating')
+    availability_filter = request.GET.getlist('availability')
+    sort_by = request.GET.get('sort')
+    
+    # Search filter
+    if query:
+        products_list = products_list.filter(
+            models.Q(name__icontains=query) |
+            models.Q(description__icontains=query) |
+            models.Q(tags__icontains=query)
+        )
+    
+    # Category filter
+    if category_filter:
+        products_list = products_list.filter(category__id__in=category_filter)
+    
+    # Brand filter
+    if brand_filter:
+        products_list = products_list.filter(brand__id__in=brand_filter)
+    
+    # Price filters
+    if min_price:
+        try:
+            products_list = products_list.filter(price__gte=Decimal(min_price))
+        except:
+            pass
+    
+    if max_price:
+        try:
+            products_list = products_list.filter(price__lte=Decimal(max_price))
+        except:
+            pass
+    
+    # Price range filter
+    if price_range:
+        if price_range == '0-10000':
+            products_list = products_list.filter(price__lt=10000)
+        elif price_range == '10000-50000':
+            products_list = products_list.filter(price__gte=10000, price__lt=50000)
+        elif price_range == '50000-100000':
+            products_list = products_list.filter(price__gte=50000, price__lt=100000)
+        elif price_range == '100000-500000':
+            products_list = products_list.filter(price__gte=100000, price__lt=500000)
+        elif price_range == '500000-':
+            products_list = products_list.filter(price__gte=500000)
+    
+    # Rating filter
+    if rating_filter:
+        try:
+            rating_value = int(rating_filter)
+            # This would need a custom annotation for average rating
+            # For now, we'll skip this complex filter
+        except:
+            pass
+    
+    # Availability filters
+    if availability_filter:
+        if 'in_stock' in availability_filter:
+            products_list = products_list.filter(stock__gt=0)
+        if 'on_sale' in availability_filter:
+            products_list = products_list.filter(regular_price__gt=models.F('price'))
+        if 'featured' in availability_filter:
+            products_list = products_list.filter(featured=True)
+    
+    # Sorting
+    if sort_by:
+        if sort_by == 'name':
+            products_list = products_list.order_by('name')
+        elif sort_by == '-name':
+            products_list = products_list.order_by('-name')
+        elif sort_by == 'price':
+            products_list = products_list.order_by('price')
+        elif sort_by == '-price':
+            products_list = products_list.order_by('-price')
+        elif sort_by == '-date':
+            products_list = products_list.order_by('-date')
+        elif sort_by == 'date':
+            products_list = products_list.order_by('date')
+        elif sort_by == '-popularity':
+            products_list = products_list.order_by('-view_count')
+    
+    # Variant data for filters
     colors = store_models.VariantItem.objects.filter(variant__name='Color').values('title', 'content').distinct()
     sizes = store_models.VariantItem.objects.filter(variant__name='Size').values('title', 'content').distinct()
 
@@ -106,17 +253,51 @@ def shop(request):
         {"id": "highest", "value": "Lowest to Highest"},
     ]
 
-    products = paginate_queryset(request, products_list, 10)
+    # Pagination
+    products = paginate_queryset(request, products_list, 12)
+    
+    # Get cart and wishlist counts
+    cart_count = 0
+    wishlist_count = 0
+    
+    if request.user.is_authenticated:
+        try:
+            cart_count = store_models.Cart.objects.filter(user=request.user).count()
+        except:
+            pass
+        
+        try:
+            wishlist_count = store_models.WishlistItem.objects.filter(user=request.user).count()
+        except:
+            pass
+    else:
+        # For anonymous users, use session
+        cart_id = request.session.get('cart_id')
+        if cart_id:
+            cart_count = store_models.Cart.objects.filter(cart_id=cart_id).count()
+    
+    # User type for navigation
+    user_type = None
+    if request.user.is_authenticated:
+        if hasattr(request.user, 'vendor_profile'):
+            user_type = "Vendor"
+        else:
+            user_type = "Customer"
 
     context = {
         "products": products,
         "products_list": products_list,
         "categories": categories,
+        "category_": category_,
+        "brands": brands,
         "colors": colors,
         "sizes": sizes,
         "item_display": item_display,
         "ratings": ratings,
         "prices": prices,
+        "total_cart_items": cart_count,
+        "wishlist_count": {"count": wishlist_count},
+        "user_type": user_type,
     }
     return render(request, "store/shop.html", context)
 
@@ -917,3 +1098,357 @@ def listing_detail(request, slug):
 def vendor_listings(request):
     listings = Listing.objects.filter(vendor=request.user).order_by('-created_at')
     return render(request, 'vendor/listings.html', {'listings': listings})
+
+
+# ===== MODERN AJAX VIEWS =====
+
+@csrf_exempt
+def add_to_cart_ajax(request):
+    """Modern AJAX add to cart functionality"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            product_id = data.get('product_id')
+            quantity = int(data.get('quantity', 1))
+            
+            product = get_object_or_404(store_models.Product, id=product_id, status="Published")
+            
+            # Check stock
+            if product.stock < quantity:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Only {product.stock} items available in stock'
+                })
+            
+            # Get or create cart
+            if request.user.is_authenticated:
+                cart_item, created = store_models.Cart.objects.get_or_create(
+                    user=request.user,
+                    product=product,
+                    defaults={'quantity': quantity}
+                )
+                if not created:
+                    cart_item.quantity += quantity
+                    cart_item.save()
+                
+                cart_count = store_models.Cart.objects.filter(user=request.user).count()
+            else:
+                # Handle anonymous users
+                cart_id = request.session.get('cart_id')
+                if not cart_id:
+                    import uuid
+                    cart_id = str(uuid.uuid4())
+                    request.session['cart_id'] = cart_id
+                
+                cart_item, created = store_models.Cart.objects.get_or_create(
+                    cart_id=cart_id,
+                    product=product,
+                    defaults={'quantity': quantity}
+                )
+                if not created:
+                    cart_item.quantity += quantity
+                    cart_item.save()
+                
+                cart_count = store_models.Cart.objects.filter(cart_id=cart_id).count()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Product added to cart successfully!',
+                'cart_count': cart_count
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
+    
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+
+@csrf_exempt
+def update_cart_ajax(request):
+    """Update cart item quantity via AJAX"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            product_id = data.get('product_id')
+            quantity = int(data.get('quantity', 1))
+            
+            if request.user.is_authenticated:
+                cart_item = get_object_or_404(store_models.Cart, user=request.user, product_id=product_id)
+            else:
+                cart_id = request.session.get('cart_id')
+                cart_item = get_object_or_404(store_models.Cart, cart_id=cart_id, product_id=product_id)
+            
+            if quantity <= 0:
+                cart_item.delete()
+            else:
+                cart_item.quantity = quantity
+                cart_item.save()
+            
+            # Calculate totals
+            if request.user.is_authenticated:
+                cart_items = store_models.Cart.objects.filter(user=request.user)
+            else:
+                cart_id = request.session.get('cart_id')
+                cart_items = store_models.Cart.objects.filter(cart_id=cart_id)
+            
+            subtotal = sum(item.product.price * item.quantity for item in cart_items)
+            total = subtotal  # Add tax/shipping calculation here if needed
+            
+            return JsonResponse({
+                'success': True,
+                'subtotal': f'₦{subtotal:,.2f}',
+                'total': f'₦{total:,.2f}'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
+    
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+
+@login_required
+@csrf_exempt
+def toggle_wishlist_ajax(request):
+    """Toggle product in wishlist via AJAX"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            product_id = data.get('product_id')
+            
+            product = get_object_or_404(store_models.Product, id=product_id)
+            
+            wishlist_item, created = store_models.WishlistItem.objects.get_or_create(
+                user=request.user,
+                product=product
+            )
+            
+            if created:
+                added = True
+                message = 'Product added to wishlist!'
+            else:
+                wishlist_item.delete()
+                added = False
+                message = 'Product removed from wishlist!'
+            
+            wishlist_count = store_models.WishlistItem.objects.filter(user=request.user).count()
+            
+            return JsonResponse({
+                'success': True,
+                'added': added,
+                'message': message,
+                'wishlist_count': wishlist_count
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
+    
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+
+def product_quick_view(request, product_id):
+    """Quick view product details via AJAX"""
+    try:
+        product = get_object_or_404(store_models.Product, id=product_id, status="Published")
+        
+        # Render product quick view template
+        html = render_to_string('store/partials/product_quick_view.html', {
+            'product': product
+        }, request=request)
+        
+        return JsonResponse({
+            'success': True,
+            'html': html
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        })
+
+
+def search_suggestions(request):
+    """Get search suggestions via AJAX"""
+    query = request.GET.get('q', '').strip()
+    
+    if len(query) < 2:
+        return JsonResponse({'suggestions': []})
+    
+    # Get product suggestions
+    products = store_models.Product.objects.filter(
+        status="Published",
+        name__icontains=query
+    )[:5]
+    
+    # Get category suggestions
+    categories = store_models.Category.objects.filter(
+        title__icontains=query
+    )[:3]
+    
+    suggestions = []
+    
+    # Add product suggestions
+    for product in products:
+        suggestions.append({
+            'type': 'product',
+            'title': product.name,
+            'url': f'/product/{product.slug}/',
+            'image': product.image.url if product.image else None,
+            'price': f'₦{product.price:,.2f}'
+        })
+    
+    # Add category suggestions
+    for category in categories:
+        suggestions.append({
+            'type': 'category',
+            'title': category.title,
+            'url': f'/category/{category.id}/',
+            'count': category.products.count()
+        })
+    
+    return JsonResponse({'suggestions': suggestions})
+
+
+# ===== BRAND VIEWS =====
+
+def brands_list(request):
+    """List all brands"""
+    brands = store_models.Brand.objects.all().order_by('name')
+    
+    context = {
+        'brands': brands,
+        'categories': store_models.Category.objects.filter(type="product", parent=None),
+        'category_': store_models.Category.objects.filter(type="product", parent=None),
+    }
+    return render(request, 'store/brands.html', context)
+
+
+def brand_products(request, slug):
+    """Show products from a specific brand"""
+    brand = get_object_or_404(store_models.Brand, slug=slug)
+    products_list = store_models.Product.objects.filter(brand=brand, status="Published")
+    
+    # Apply search filter
+    query = request.GET.get('q')
+    if query:
+        products_list = products_list.filter(name__icontains=query)
+    
+    products = paginate_queryset(request, products_list, 12)
+    
+    context = {
+        'brand': brand,
+        'products': products,
+        'categories': store_models.Category.objects.filter(type="product", parent=None),
+        'category_': store_models.Category.objects.filter(type="product", parent=None),
+    }
+    return render(request, 'store/brand_products.html', context)
+
+
+# ===== FLASH SALE VIEWS =====
+
+def flash_sales(request):
+    """List all active flash sales"""
+    flash_sales = store_models.FlashSale.objects.filter(is_active=True)
+    
+    context = {
+        'flash_sales': flash_sales,
+        'categories': store_models.Category.objects.filter(type="product", parent=None),
+        'category_': store_models.Category.objects.filter(type="product", parent=None),
+    }
+    return render(request, 'store/flash_sales.html', context)
+
+
+def flash_sale_detail(request, id):
+    """Show flash sale details and products"""
+    flash_sale = get_object_or_404(store_models.FlashSale, id=id, is_active=True)
+    
+    if not flash_sale.is_live():
+        messages.warning(request, 'This flash sale is not currently active.')
+        return redirect('store:flash_sales')
+    
+    flash_sale_items = flash_sale.items.all()
+    
+    context = {
+        'flash_sale': flash_sale,
+        'flash_sale_items': flash_sale_items,
+        'categories': store_models.Category.objects.filter(type="product", parent=None),
+        'category_': store_models.Category.objects.filter(type="product", parent=None),
+    }
+    return render(request, 'store/flash_sale_detail.html', context)
+
+
+# ===== UTILITY VIEWS =====
+
+def about(request):
+    """About page"""
+    context = {
+        'categories': store_models.Category.objects.filter(type="product", parent=None),
+        'category_': store_models.Category.objects.filter(type="product", parent=None),
+    }
+    return render(request, 'store/about.html', context)
+
+
+def contact(request):
+    """Contact page"""
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+        
+        # Send email (implement your email logic here)
+        try:
+            send_mail(
+                f'Contact Form: {subject}',
+                f'From: {name} ({email})\n\n{message}',
+                settings.DEFAULT_FROM_EMAIL,
+                [settings.CONTACT_EMAIL],
+                fail_silently=False,
+            )
+            messages.success(request, 'Your message has been sent successfully!')
+        except:
+            messages.error(request, 'There was an error sending your message. Please try again.')
+        
+        return redirect('store:contact')
+    
+    context = {
+        'categories': store_models.Category.objects.filter(type="product", parent=None),
+        'category_': store_models.Category.objects.filter(type="product", parent=None),
+    }
+    return render(request, 'store/contact.html', context)
+
+
+def faqs(request):
+    """FAQs page"""
+    context = {
+        'categories': store_models.Category.objects.filter(type="product", parent=None),
+        'category_': store_models.Category.objects.filter(type="product", parent=None),
+    }
+    return render(request, 'store/faqs.html', context)
+
+
+def terms_conditions(request):
+    """Terms and Conditions page"""
+    context = {
+        'categories': store_models.Category.objects.filter(type="product", parent=None),
+        'category_': store_models.Category.objects.filter(type="product", parent=None),
+    }
+    return render(request, 'store/terms_conditions.html', context)
+
+
+def privacy_policy(request):
+    """Privacy Policy page"""
+    context = {
+        'categories': store_models.Category.objects.filter(type="product", parent=None),
+        'category_': store_models.Category.objects.filter(type="product", parent=None),
+    }
+    return render(request, 'store/privacy_policy.html', context)

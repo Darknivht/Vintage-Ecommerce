@@ -104,7 +104,7 @@
                         <div class="search-input-group">
                             <select class="search-category" name="category">
                                 <option value="">All Categories</option>
-                                {% for category in category_ %}
+                                {% for category in categories %}
                                 <option value="{{ category.id }}">{{ category.title }}</option>
                                 {% endfor %}
                             </select>
@@ -132,16 +132,9 @@
                         </a>
                         <ul class="dropdown-menu">
                             {% if user.is_authenticated %}
-                                {% if user_type == "Customer" %}
-                                    <li><a class="dropdown-item" href="{% url 'customer:dashboard' %}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'customer:orders' %}"><i class="fas fa-shopping-bag me-2"></i>My Orders</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'customer:profile' %}"><i class="fas fa-user-edit me-2"></i>Profile</a></li>
-                                {% elif user_type == "Vendor" %}
-                                    <li><a class="dropdown-item" href="{% url 'vendor:dashboard' %}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'vendor:products' %}"><i class="fas fa-box me-2"></i>My Products</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'vendor:orders' %}"><i class="fas fa-shopping-bag me-2"></i>Orders</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'vendor:profile' %}"><i class="fas fa-user-edit me-2"></i>Profile</a></li>
-                                {% endif %}
+                                <li><a class="dropdown-item" href="{% url 'customer:dashboard' %}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                                <li><a class="dropdown-item" href="{% url 'customer:orders' %}"><i class="fas fa-shopping-bag me-2"></i>My Orders</a></li>
+                                <li><a class="dropdown-item" href="{% url 'customer:profile' %}"><i class="fas fa-user-edit me-2"></i>Profile</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'userauths:sign-out' %}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                             {% else %}
@@ -158,7 +151,7 @@
                         <a href="{% url 'customer:wishlist' %}" class="navbar-link">
                             <div class="navbar-icon-wrapper">
                                 <i class="fas fa-heart"></i>
-                                <span class="navbar-badge" id="wishlistCount">{{ wishlist_count.count|default:0 }}</span>
+                                <span class="navbar-badge" id="wishlistCount">{{ wishlist_count|default:0 }}</span>
                             </div>
                             <span class="navbar-text">Wishlist</span>
                         </a>
@@ -169,7 +162,7 @@
                         <a href="{% url 'store:cart' %}" class="navbar-link">
                             <div class="navbar-icon-wrapper">
                                 <i class="fas fa-shopping-cart"></i>
-                                <span class="navbar-badge" id="cartCount">{{ total_cart_items|default:0 }}</span>
+                                <span class="navbar-badge" id="cartCount">{{ cart_count|default:0 }}</span>
                             </div>
                             <span class="navbar-text">Cart</span>
                         </a>
@@ -198,7 +191,7 @@
                             <i class="fas fa-chevron-down ms-auto"></i>
                         </button>
                         <div class="category-menu" id="categoryMenu">
-                            {% for category in category_ %}
+                            {% for category in categories %}
                             <a href="{% url 'store:category' category.id %}" class="category-item">
                                 <div class="category-icon">
                                     {% if category.title == "Electronics & Technology" %}
@@ -229,9 +222,9 @@
                     <div class="main-nav-links">
                         <a href="{% url 'store:index' %}" class="nav-link">Home</a>
                         <a href="{% url 'store:shop' %}" class="nav-link">Shop</a>
-                        <a href="{% url 'store:brands_list' %}" class="nav-link">Brands</a>
                         <a href="{% url 'store:flash_sales' %}" class="nav-link">Flash Sales</a>
-                        <a href="{% url 'store:browse_listings' %}" class="nav-link">Browse</a>
+                        <a href="{% url 'store:bundles' %}" class="nav-link">Bundles</a>
+                        <a href="{% url 'blog:blog_list' %}" class="nav-link">Blog</a>
                         <a href="{% url 'store:contact' %}" class="nav-link">Contact</a>
                     </div>
 
@@ -260,14 +253,15 @@
                     <h6>Navigation</h6>
                     <a href="{% url 'store:index' %}" class="mobile-menu-link">Home</a>
                     <a href="{% url 'store:shop' %}" class="mobile-menu-link">Shop</a>
-                    <a href="{% url 'store:browse_listings' %}" class="mobile-menu-link">Browse</a>
+                    <a href="{% url 'store:flash_sales' %}" class="mobile-menu-link">Flash Sales</a>
+                    <a href="{% url 'store:bundles' %}" class="mobile-menu-link">Bundles</a>
                     <a href="{% url 'blog:blog_list' %}" class="mobile-menu-link">Blog</a>
                     <a href="{% url 'store:contact' %}" class="mobile-menu-link">Contact</a>
                 </div>
                 
                 <div class="mobile-menu-section">
                     <h6>Categories</h6>
-                    {% for category in category_ %}
+                    {% for category in categories %}
                     <a href="{% url 'store:category' category.id %}" class="mobile-menu-link">{{ category.title }}</a>
                     {% endfor %}
                 </div>
@@ -275,16 +269,9 @@
                 {% if user.is_authenticated %}
                 <div class="mobile-menu-section">
                     <h6>Account</h6>
-                    {% if user_type == "Customer" %}
-                        <a href="{% url 'customer:dashboard' %}" class="mobile-menu-link">Dashboard</a>
-                        <a href="{% url 'customer:orders' %}" class="mobile-menu-link">My Orders</a>
-                        <a href="{% url 'customer:profile' %}" class="mobile-menu-link">Profile</a>
-                    {% elif user_type == "Vendor" %}
-                        <a href="{% url 'vendor:dashboard' %}" class="mobile-menu-link">Dashboard</a>
-                        <a href="{% url 'vendor:products' %}" class="mobile-menu-link">My Products</a>
-                        <a href="{% url 'vendor:orders' %}" class="mobile-menu-link">Orders</a>
-                        <a href="{% url 'vendor:profile' %}" class="mobile-menu-link">Profile</a>
-                    {% endif %}
+                    <a href="{% url 'customer:dashboard' %}" class="mobile-menu-link">Dashboard</a>
+                    <a href="{% url 'customer:orders' %}" class="mobile-menu-link">My Orders</a>
+                    <a href="{% url 'customer:profile' %}" class="mobile-menu-link">Profile</a>
                     <a href="{% url 'userauths:sign-out' %}" class="mobile-menu-link">Logout</a>
                 </div>
                 {% else %}
@@ -371,7 +358,7 @@
                         <div class="footer-widget">
                             <h5 class="footer-title">Categories</h5>
                             <ul class="footer-links">
-                                {% for category in category_|slice:":5" %}
+                                {% for category in categories|slice:":5" %}
                                 <li><a href="{% url 'store:category' category.id %}">{{ category.title }}</a></li>
                                 {% endfor %}
                             </ul>
