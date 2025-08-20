@@ -40,13 +40,20 @@
         --accent-gold: #FFD700;
         --white: #FFFFFF;
         --gray-100: #F3F4F6;
+        --gray-300: #D1D5DB;
+        --gray-500: #6B7280;
+        --gray-600: #4B5563;
+        --gray-700: #374151;
         --gray-800: #1F2937;
+        --error: #EF4444;
         --gradient-primary: linear-gradient(135deg, #008751, #FF6B35);
         --gradient-hero: linear-gradient(135deg, #008751 0%, #FF6B35 100%);
         --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        --radius-md: 0.375rem;
         --radius-lg: 0.5rem;
         --radius-xl: 0.75rem;
         --radius-2xl: 1rem;
+        --radius-full: 9999px;
     }
 
     /* Base Styles */
@@ -878,7 +885,7 @@
                                 <option value="{{ category.id }}">{{ category.title }}</option>
                                 {% endfor %}
                             </select>
-                            <input type="text" name="q" class="search-input" placeholder="Search for products, brands, or vendors..." value="{{ request.GET.q }}">
+                            <input type="text" name="q" class="search-input" placeholder="Search products, brands, categories, vendors..." value="{{ request.GET.q }}">
                             <button type="submit" class="search-btn">
                                 <i class="fas fa-search"></i>
                             </button>
@@ -999,9 +1006,9 @@
                     <div class="main-nav-links">
                         <a href="{% url 'store:index' %}" class="nav-link">Home</a>
                         <a href="{% url 'store:shop' %}" class="nav-link">Shop</a>
+                        <a href="{% url 'store:browse_listings' %}" class="nav-link">Listings</a>
                         <a href="{% url 'store:brands_list' %}" class="nav-link">Brands</a>
                         <a href="{% url 'store:flash_sales' %}" class="nav-link">Flash Sales</a>
-                        <a href="{% url 'store:browse_listings' %}" class="nav-link">Browse</a>
                         <a href="{% url 'store:contact' %}" class="nav-link">Contact</a>
                     </div>
 
@@ -1030,8 +1037,9 @@
                     <h6>Navigation</h6>
                     <a href="{% url 'store:index' %}" class="mobile-menu-link">Home</a>
                     <a href="{% url 'store:shop' %}" class="mobile-menu-link">Shop</a>
-                    <a href="{% url 'store:browse_listings' %}" class="mobile-menu-link">Browse</a>
-                    <a href="{% url 'blog:blog_list' %}" class="mobile-menu-link">Blog</a>
+                    <a href="{% url 'store:browse_listings' %}" class="mobile-menu-link">Listings</a>
+                    <a href="{% url 'store:brands_list' %}" class="mobile-menu-link">Brands</a>
+                    <a href="{% url 'store:flash_sales' %}" class="mobile-menu-link">Flash Sales</a>
                     <a href="{% url 'store:contact' %}" class="mobile-menu-link">Contact</a>
                 </div>
                 

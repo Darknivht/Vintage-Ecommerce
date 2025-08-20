@@ -150,13 +150,16 @@ def shop(request):
     availability_filter = request.GET.getlist('availability')
     sort_by = request.GET.get('sort')
     
-    # Search filter
+    # Enhanced search filter
     if query:
         products_list = products_list.filter(
             models.Q(name__icontains=query) |
             models.Q(description__icontains=query) |
-            models.Q(tags__icontains=query)
-        )
+            models.Q(tags__icontains=query) |
+            models.Q(category__title__icontains=query) |
+            models.Q(brand__name__icontains=query) |
+            models.Q(vendor__username__icontains=query)
+        ).distinct()
     
     # Category filter
     if category_filter:

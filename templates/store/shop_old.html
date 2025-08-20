@@ -28,22 +28,13 @@
 .filters-sidebar {
     background: white;
     border-radius: var(--radius-2xl);
-    padding: 1.5rem;
+    padding: 2rem;
     box-shadow: var(--shadow-lg);
     margin-bottom: 2rem;
     position: sticky;
     top: 100px;
     max-height: calc(100vh - 120px);
     overflow-y: auto;
-    border: 1px solid var(--gray-200);
-}
-
-@media (max-width: 991px) {
-    .filters-sidebar {
-        position: static;
-        max-height: none;
-        overflow-y: visible;
-    }
 }
 
 .filters-header {
@@ -201,23 +192,15 @@
 .products-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.products-list {
+    display: flex;
+    flex-direction: column;
     gap: 1.5rem;
     margin-top: 2rem;
-    padding: 0;
-}
-
-@media (max-width: 768px) {
-    .products-grid {
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 1rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .products-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
 }
 
 .product-card {
@@ -378,6 +361,15 @@
     font-size: 1rem;
     color: var(--gray-500);
     text-decoration: line-through;
+}
+
+.discount-badge {
+    background: #EF4444;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-md);
+    font-size: 0.7rem;
+    font-weight: 600;
 }
 
 .product-footer {
@@ -677,6 +669,44 @@
                         </div>
                     </div>
 
+                    <!-- Rating Filter -->
+                    <div class="filter-section">
+                        <h6 class="filter-title">Customer Rating</h6>
+                        <div class="filter-options">
+                            {% for rating in ratings %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="rating" value="{{ rating.id }}" 
+                                       id="rating{{ rating.id }}" {% if request.GET.rating == rating.id %}checked{% endif %}>
+                                <label class="form-check-label" for="rating{{ rating.id }}">
+                                    {{ rating.value }} & Up
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Availability Filter -->
+                    <div class="filter-section">
+                        <h6 class="filter-title">Availability</h6>
+                        <div class="filter-options">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="availability" value="in_stock" 
+                                       id="inStock" {% if "in_stock" in request.GET.availability %}checked{% endif %}>
+                                <label class="form-check-label" for="inStock">In Stock</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="availability" value="on_sale" 
+                                       id="onSale" {% if "on_sale" in request.GET.availability %}checked{% endif %}>
+                                <label class="form-check-label" for="onSale">On Sale</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="availability" value="featured" 
+                                       id="featured" {% if "featured" in request.GET.availability %}checked{% endif %}>
+                                <label class="form-check-label" for="featured">Featured</label>
+                            </div>
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn btn-primary w-100 mt-3">
                         <i class="fas fa-filter me-2"></i>Apply Filters
                     </button>
@@ -720,6 +750,39 @@
                         </select>
                     </div>
                 </div>
+
+            <!-- Active Filters -->
+            {% if request.GET.q or request.GET.category or request.GET.brand or request.GET.price_range or request.GET.rating or request.GET.availability %}
+            <div class="active-filters mb-4">
+                <h6 class="mb-2">Active Filters:</h6>
+                <div class="filter-tags">
+                    {% if request.GET.q %}
+                    <span class="filter-tag">
+                        Search: "{{ request.GET.q }}"
+                        <button type="button" class="btn-close btn-close-sm ms-1" onclick="removeFilter('q')"></button>
+                    </span>
+                    {% endif %}
+                    
+                    {% for cat_id in request.GET.category %}
+                        {% for category in categories %}
+                            {% if category.id|stringformat:"s" == cat_id %}
+                            <span class="filter-tag">
+                                {{ category.title }}
+                                <button type="button" class="btn-close btn-close-sm ms-1" onclick="removeFilter('category', '{{ cat_id }}')"></button>
+                            </span>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                    
+                    {% if request.GET.price_range %}
+                    <span class="filter-tag">
+                        Price: {{ request.GET.price_range }}
+                        <button type="button" class="btn-close btn-close-sm ms-1" onclick="removeFilter('price_range')"></button>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
 
                 <!-- Products Grid -->
                 {% if products %}
@@ -853,8 +916,6 @@
     </div>
 </div>
 
-{% endblock %}
-
 {% block extra_js %}
 <script>
 // Shop page functionality
@@ -912,6 +973,192 @@ function quickView(productId) {
     // Implement quick view modal
     console.log('Quick view for product:', productId);
     showMessage('Quick view feature coming soon!', 'info');
+}
+</script>
+{% endblock %}
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.shop-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.view-toggle {
+    display: inline-flex;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.view-toggle .btn {
+    border-radius: 0;
+}
+
+.view-toggle .btn.active {
+    background: var(--primary-orange);
+    border-color: var(--primary-orange);
+    color: white;
+}
+
+.active-filters {
+    background: #F7FAFC;
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-tag {
+    background: var(--primary-orange);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+}
+
+.filter-tag .btn-close {
+    font-size: 0.6rem;
+    opacity: 0.8;
+}
+
+.product-discount-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: var(--error);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    z-index: 2;
+}
+
+.product-brand {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.product-brand a {
+    text-decoration: none;
+}
+
+.product-brand a:hover {
+    color: var(--primary-orange) !important;
+}
+
+.mobile-filter-toggle {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+}
+
+.no-products {
+    background: white;
+    border-radius: 15px;
+    margin: 2rem 0;
+}
+
+@media (max-width: 768px) {
+    .filters-sidebar {
+        display: none;
+    }
+    
+    .shop-controls {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .view-toggle {
+        justify-content: center;
+    }
+}
+</style>
+
+<script>
+// Filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form on filter change
+    const filterForm = document.getElementById('filterForm');
+    const filterInputs = filterForm.querySelectorAll('input[type="checkbox"], input[type="radio"], select');
+    
+    filterInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    });
+    
+    // Sort functionality
+    const sortSelect = document.getElementById('sortSelect');
+    sortSelect.addEventListener('change', function() {
+        const url = new URL(window.location);
+        if (this.value) {
+            url.searchParams.set('sort', this.value);
+        } else {
+            url.searchParams.delete('sort');
+        }
+        window.location = url;
+    });
+    
+    // View toggle
+    const gridView = document.getElementById('gridView');
+    const listView = document.getElementById('listView');
+    const productsGrid = document.getElementById('productsGrid');
+    
+    gridView.addEventListener('click', function() {
+        gridView.classList.add('active');
+        listView.classList.remove('active');
+        productsGrid.className = 'row g-4';
+        document.querySelectorAll('.product-item').forEach(item => {
+            item.className = 'col-lg-4 col-md-6 col-sm-6 product-item';
+        });
+    });
+    
+    listView.addEventListener('click', function() {
+        listView.classList.add('active');
+        gridView.classList.remove('active');
+        productsGrid.className = 'row g-3';
+        document.querySelectorAll('.product-item').forEach(item => {
+            item.className = 'col-12 product-item';
+        });
+    });
+    
+    // Clear filters
+    document.getElementById('clearFilters').addEventListener('click', function() {
+        clearAllFilters();
+    });
+});
+
+function removeFilter(filterName, value = null) {
+    const url = new URL(window.location);
+    if (value) {
+        const values = url.searchParams.getAll(filterName);
+        url.searchParams.delete(filterName);
+        values.forEach(v => {
+            if (v !== value) {
+                url.searchParams.append(filterName, v);
+            }
+        });
+    } else {
+        url.searchParams.delete(filterName);
+    }
+    window.location = url;
+}
+
+function clearAllFilters() {
+    window.location = window.location.pathname;
 }
 </script>
 {% endblock %}
