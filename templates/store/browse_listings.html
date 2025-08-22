@@ -1,160 +1,815 @@
 {% extends 'partials/base.html' %}
 {% load static %}
 {% load humanize %}
+
+{% block title %}Browse Listings - Vintage Marketplace{% endblock %}
+
 {% block content %}
-
-<section class="middle">
-  <div class="container">
-    <h2 class="fw-bold mb-4">All Listings (<span class="product_count">{{ listings.paginator.count }}</span>)</h2>
-
-    <div class="row">
-      <!-- Filters Sidebar -->
-      <div class="col-lg-3 mb-4 mb-lg-0">
-        <button class="btn btn-outline-primary w-100 d-lg-none mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#filterSidebar">
-          <i class="fas fa-filter me-2"></i> Filters
-        </button>
-
-        <div class="collapse d-lg-block" id="filterSidebar">
-          <div class="border rounded p-3">
-            <h4>Categories</h4>
-            <div id="category-filter-container">
-            {% for c in categories %}
-                {% if not c.parent %}
-                <div class="mb-1">
-                    <div class="form-check d-flex justify-content-between align-items-center">
-                    <input type="radio" class="form-check-input category-filter parent-category" name="category" value="{{ c.id }}" id="category{{ c.id }}">
-                    <label class="form-check-label fs-6 fw-bold w-100 cursor-pointer category-toggle" data-target="#sub{{ c.id }}" for="category{{ c.id }}">
-                        {{ c.title }}
-                    </label>
+<div class="listings-page">
+    <!-- Hero Section -->
+    <div class="listings-hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Browse Listings</h1>
+                <p class="hero-subtitle">Discover unique items from verified sellers across Nigeria</p>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ listings.paginator.count|default:0 }}</span>
+                        <span class="stat-label">Active Listings</span>
                     </div>
-                    {% if c.subcategories.all %}
-                    <div class="ms-3 mt-1 subcategory-dropdown d-none" id="sub{{ c.id }}">
-                        {% for sub in c.subcategories.all %}
-                        <div class="form-check mb-1">
-                            <input type="checkbox" class="form-check-input subcategory-filter" value="{{ sub.id }}" id="subcategory{{ sub.id }}">
-                            <label class="form-check-label small text-muted" for="subcategory{{ sub.id }}">{{ sub.title }}</label>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ categories.count|default:0 }}</span>
+                        <span class="stat-label">Categories</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <!-- Filters Sidebar -->
+            <div class="col-lg-3 col-md-4">
+                <div class="filters-sidebar">
+                    <div class="filters-header">
+                        <h4><i class="fas fa-filter me-2"></i>Filters</h4>
+                        <button class="clear-filters-btn" onclick="clearAllFilters()">
+                            <i class="fas fa-times"></i> Clear All
+                        </button>
+                    </div>
+
+                    <!-- Category Filter -->
+                    <div class="filter-section">
+                        <h6 class="filter-title">
+                            <i class="fas fa-tags"></i>
+                            Categories
+                        </h6>
+                        <div class="filter-options">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="category" value="" 
+                                       id="allCategories" {% if not selected_category %}checked{% endif %}>
+                                <label class="form-check-label" for="allCategories">
+                                    <span>All Categories</span>
+                                    <span class="text-muted">({{ listings.paginator.count }})</span>
+                                </label>
+                            </div>
+                            {% for category in categories %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="category" value="{{ category.id }}" 
+                                       id="category{{ category.id }}" {% if selected_category == category.id %}checked{% endif %}>
+                                <label class="form-check-label" for="category{{ category.id }}">
+                                    <span>{{ category.title }}</span>
+                                    <span class="text-muted">({{ category.listing_set.count }})</span>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Location Filter -->
+                    <div class="filter-section">
+                        <h6 class="filter-title">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Location
+                        </h6>
+                        <div class="filter-options">
+                            <select class="form-select" name="location" id="locationFilter">
+                                <option value="">All Locations</option>
+                                <option value="Lagos">Lagos</option>
+                                <option value="Abuja">Abuja</option>
+                                <option value="Port Harcourt">Port Harcourt</option>
+                                <option value="Kano">Kano</option>
+                                <option value="Ibadan">Ibadan</option>
+                                <option value="Kaduna">Kaduna</option>
+                                <option value="Jos">Jos</option>
+                                <option value="Benin City">Benin City</option>
+                                <option value="Enugu">Enugu</option>
+                                <option value="Calabar">Calabar</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Sort Options -->
+                    <div class="filter-section">
+                        <h6 class="filter-title">
+                            <i class="fas fa-sort"></i>
+                            Sort By
+                        </h6>
+                        <div class="filter-options">
+                            <select class="form-select" name="sort" id="sortFilter">
+                                <option value="-created_at">Newest First</option>
+                                <option value="created_at">Oldest First</option>
+                                <option value="title">Title A-Z</option>
+                                <option value="-title">Title Z-A</option>
+                                <option value="price">Price Low-High</option>
+                                <option value="-price">Price High-Low</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-primary w-100 mt-3" onclick="applyFilters()">
+                        <i class="fas fa-filter me-2"></i>Apply Filters
+                    </button>
+                </div>
+            </div>
+
+            <!-- Listings Grid -->
+            <div class="col-lg-9 col-md-8">
+                <div class="listings-section">
+                    <!-- Listings Header -->
+                    <div class="listings-header">
+                        <div class="listings-count">
+                            {% if listings %}
+                                Showing <strong>{{ listings.start_index }}-{{ listings.end_index }}</strong> of <strong>{{ listings.paginator.count }}</strong> listings
+                            {% else %}
+                                <strong>0</strong> listings found
+                            {% endif %}
+                        </div>
+                        
+                        <div class="view-controls">
+                            <div class="view-toggle">
+                                <button class="active" id="gridView" title="Grid View">
+                                    <i class="fas fa-th"></i>
+                                </button>
+                                <button id="listView" title="List View">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Listings Grid -->
+                    {% if listings %}
+                    <div class="listings-grid" id="listingsGrid">
+                        {% for listing in listings %}
+                        <div class="listing-card" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:100 }}">
+                            <!-- Listing Badge -->
+                            {% if listing.is_featured %}
+                            <div class="listing-badge">Featured</div>
+                            {% elif listing.is_urgent %}
+                            <div class="listing-badge urgent-badge">Urgent</div>
+                            {% endif %}
+                            
+                            <!-- Listing Actions -->
+                            <div class="listing-actions">
+                                <button class="listing-action-btn" onclick="toggleWishlist('{{ listing.id }}')" title="Add to Wishlist">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="listing-action-btn" onclick="shareListing('{{ listing.id }}')" title="Share">
+                                    <i class="fas fa-share-alt"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Listing Image -->
+                            <div class="listing-image">
+                                <a href="{% url 'store:listing_detail' listing.slug %}">
+                                    {% if listing.image %}
+                                    <img src="{{ listing.image.url }}" alt="{{ listing.title }}" loading="lazy">
+                                    {% else %}
+                                    <img src="{% static 'assets/img/placeholder-listing.jpg' %}" alt="{{ listing.title }}" loading="lazy">
+                                    {% endif %}
+                                </a>
+                            </div>
+                            
+                            <!-- Listing Info -->
+                            <div class="listing-info">
+                                <div class="listing-category">
+                                    {{ listing.category.title|default:"General" }}
+                                </div>
+                                
+                                <h3 class="listing-title">
+                                    <a href="{% url 'store:listing_detail' listing.slug %}">{{ listing.title }}</a>
+                                </h3>
+                                
+                                <p class="listing-description">
+                                    {{ listing.description|truncatewords:15 }}
+                                </p>
+                                
+                                <div class="listing-price">
+                                    <span class="current-price">₦{{ listing.price|floatformat:0|intcomma }}</span>
+                                    {% if listing.negotiable %}
+                                    <span class="negotiable-tag">Negotiable</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="listing-meta">
+                                    <div class="listing-location">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        {{ listing.location|default:"Nigeria" }}
+                                    </div>
+                                    <div class="listing-date">
+                                        <i class="fas fa-clock"></i>
+                                        {{ listing.created_at|timesince }} ago
+                                    </div>
+                                </div>
+                                
+                                <div class="listing-footer">
+                                    <div class="vendor-info">
+                                        <div class="vendor-avatar">
+                                            {% if listing.vendor.profile.image %}
+                                            <img src="{{ listing.vendor.profile.image.url }}" alt="{{ listing.vendor.username }}">
+                                            {% else %}
+                                            <div class="avatar-placeholder">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="vendor-details">
+                                            <span class="vendor-name">{{ listing.vendor.username }}</span>
+                                            <div class="vendor-rating">
+                                                {% for i in "12345" %}
+                                                    {% if forloop.counter <= listing.vendor.average_rating|default:0 %}
+                                                        <i class="fas fa-star"></i>
+                                                    {% else %}
+                                                        <i class="far fa-star"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="listing-actions-footer">
+                                        <a href="{% url 'store:listing_detail' listing.slug %}" class="btn btn-primary btn-sm">
+                                            View Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         {% endfor %}
                     </div>
+                    
+                    <!-- Pagination -->
+                    {% if listings.has_other_pages %}
+                    <div class="pagination-wrapper">
+                        <nav class="pagination">
+                            {% if listings.has_previous %}
+                                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ listings.previous_page_number }}" class="page-link">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            {% endif %}
+                            
+                            {% for num in listings.paginator.page_range %}
+                                {% if listings.number == num %}
+                                    <span class="page-link active">{{ num }}</span>
+                                {% elif num > listings.number|add:'-3' and num < listings.number|add:'3' %}
+                                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" class="page-link">{{ num }}</a>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if listings.has_next %}
+                                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ listings.next_page_number }}" class="page-link">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h3>No listings found</h3>
+                        <p>Try adjusting your filters or search criteria</p>
+                        <a href="{% url 'store:browse_listings' %}" class="btn btn-primary">
+                            <i class="fas fa-refresh me-2"></i>View All Listings
+                        </a>
+                    </div>
                     {% endif %}
                 </div>
-                {% endif %}
-            {% endfor %}
             </div>
-
-
-            <hr>
-            <h4>Location</h4>
-            {% for l in locations %}
-              <div class="form-check mb-1">
-                <input type="checkbox" class="form-check-input location-filter" value="{{ l }}" id="loc{{ forloop.counter }}">
-                <label class="form-check-label small" for="loc{{ forloop.counter }}">{{ l }}</label>
-              </div>
-            {% endfor %}
-
-            <hr>
-            <h4>Price Range</h4>
-            <div class="input-group mb-2">
-              <input type="number" class="form-control price-min" placeholder="Min">
-              <input type="number" class="form-control price-max" placeholder="Max">
-            </div>
-
-            <button class="btn bg-primary btn-sm rounded w-100 text-white apply-filter">Apply Filters</button>
-            <button class="btn btn-link btn-sm reset-filter w-100 text-danger mt-2">Reset</button>
-          </div>
         </div>
-      </div>
-
-      <!-- Listings -->
-      <div class="col-lg-9">
-        <div class="row align-items-start" id="listing-results">
-          {% for listing in listings %}
-            <div class="col-md-6 col-lg-4 listing-card" data-category="{{ listing.category.id }}" data-location="{{ listing.location }}" data-price="{{ listing.price }}">
-              <div class="product_grid card rounded-3 shadow-sm m-2 p-2">
-                <div class="card-body p-0">
-                  <div class="shop_thumb">
-                    <a href="{% url 'store:listing_detail' listing.slug %}">
-                      {% if listing.image %}
-                        <img class="card-img-top" style="height:230px; object-fit:cover;" src="{{ listing.image.url }}" alt="{{ listing.title }}">
-                      {% else %}
-                        <div class="bg-light d-flex align-items-center justify-content-center" style="height:230px;">No Image</div>
-                      {% endif %}
-                    </a>
-                  </div>
-                </div>
-                <div class="card-footer bg-white p-2">
-                  <small class="text-muted">{{ listing.category.title }}</small>
-                  <h6 class="fw-bold mb-0"><a href="{% url 'store:listing_detail' listing.slug %}" class="text-dark">{{ listing.title|truncatechars:45 }}</a></h6>
-                  {% if listing.location %}
-                    <p class="text-muted small mb-0"><i class="fas fa-map-marker-alt me-1"></i> {{ listing.location }}</p>
-                  {% endif %}
-                  {% if listing.price %}
-                    <div class="text-dark fw-bold small">₦{{ listing.price|intcomma }}</div>
-                  {% endif %}
-                  <small class="text-muted">Listed {{ listing.created_at|naturaltime }}</small>
-                </div>
-              </div>
-            </div>
-          {% empty %}
-            <div class="col-12 text-center">
-              <p class="text-muted">No listings found.</p>
-            </div>
-          {% endfor %}
-        </div>
-      </div>
     </div>
-  </div>
-</section>
+</div>
 
-<!-- JS Filter Logic -->
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const listings = document.querySelectorAll(".listing-card");
-  const applyBtn = document.querySelector(".apply-filter");
-  const resetBtn = document.querySelector(".reset-filter");
+<style>
+.listings-page {
+    background: var(--gray-100);
+    min-height: 100vh;
+}
 
-  // Subcategory toggle
-// Subcategory toggle when label is clicked
-document.querySelectorAll(".category-toggle").forEach(label => {
-  label.addEventListener("click", (e) => {
-    const targetId = label.dataset.target;
-    const target = document.querySelector(targetId);
-    if (target) {
-      target.classList.toggle("d-none");
+.listings-hero {
+    background: var(--gradient-primary);
+    color: white;
+    padding: 4rem 0 2rem;
+    margin-bottom: 2rem;
+}
+
+.hero-content {
+    text-align: center;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+}
+
+.hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.filters-sidebar {
+    background: white;
+    border-radius: var(--radius-2xl);
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+    position: sticky;
+    top: 100px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    border: 1px solid var(--gray-200);
+}
+
+.filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--gray-100);
+}
+
+.filters-header h4 {
+    color: var(--gray-800);
+    font-weight: 700;
+    margin: 0;
+}
+
+.clear-filters-btn {
+    background: none;
+    border: none;
+    color: var(--primary-orange);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-md);
+    transition: all 0.3s ease;
+}
+
+.clear-filters-btn:hover {
+    background: rgba(255, 107, 53, 0.1);
+}
+
+.filter-section {
+    margin-bottom: 2rem;
+}
+
+.filter-title {
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-options {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.form-check {
+    margin-bottom: 0.75rem;
+}
+
+.form-check-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+.listings-section {
+    background: white;
+    border-radius: var(--radius-2xl);
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.listings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--gray-100);
+}
+
+.listings-count {
+    color: var(--gray-600);
+    font-size: 0.95rem;
+}
+
+.view-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.view-toggle {
+    display: flex;
+    background: var(--gray-100);
+    border-radius: var(--radius-lg);
+    padding: 0.25rem;
+}
+
+.view-toggle button {
+    background: none;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.view-toggle button.active,
+.view-toggle button:hover {
+    background: white;
+    color: var(--primary-orange);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.listings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.listing-card {
+    background: white;
+    border-radius: var(--radius-2xl);
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.listing-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-orange);
+}
+
+.listing-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: var(--primary-orange);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 600;
+    z-index: 2;
+}
+
+.listing-badge.urgent-badge {
+    background: var(--error);
+}
+
+.listing-actions {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    z-index: 2;
+}
+
+.listing-action-btn {
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.listing-action-btn:hover {
+    background: var(--primary-orange);
+    color: white;
+    transform: scale(1.1);
+}
+
+.listing-image {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+}
+
+.listing-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.listing-card:hover .listing-image img {
+    transform: scale(1.05);
+}
+
+.listing-info {
+    padding: 1.5rem;
+}
+
+.listing-category {
+    color: var(--primary-orange);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.listing-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
+}
+
+.listing-title a {
+    color: var(--gray-800);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.listing-title a:hover {
+    color: var(--primary-orange);
+}
+
+.listing-description {
+    color: var(--gray-600);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
+.listing-price {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.current-price {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-orange);
+}
+
+.negotiable-tag {
+    background: var(--gray-100);
+    color: var(--gray-600);
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.listing-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: var(--gray-500);
+}
+
+.listing-location,
+.listing-date {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.listing-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+.vendor-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.vendor-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.vendor-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 32px;
+    height: 32px;
+    background: var(--gray-300);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-600);
+    font-size: 0.8rem;
+}
+
+.vendor-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--gray-700);
+}
+
+.vendor-rating {
+    color: #fbbf24;
+    font-size: 0.75rem;
+}
+
+.pagination-wrapper {
+    margin-top: 3rem;
+    display: flex;
+    justify-content: center;
+}
+
+.pagination {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.page-link {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    color: var(--gray-600);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.page-link:hover,
+.page-link.active {
+    background: var(--primary-orange);
+    color: white;
+    border-color: var(--primary-orange);
+    text-decoration: none;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: var(--gray-300);
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    color: var(--gray-700);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    color: var(--gray-600);
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 991px) {
+    .filters-sidebar {
+        position: static;
+        max-height: none;
+        overflow-y: visible;
     }
-  });
+    
+    .hero-stats {
+        gap: 2rem;
+    }
+    
+    .listings-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-stats {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .listings-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .listing-footer {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+}
+</style>
+
+<script>
+function applyFilters() {
+    const category = document.querySelector('input[name="category"]:checked')?.value || '';
+    const location = document.getElementById('locationFilter').value;
+    const sort = document.getElementById('sortFilter').value;
+    
+    const params = new URLSearchParams();
+    if (category) params.append('category', category);
+    if (location) params.append('location', location);
+    if (sort) params.append('sort', sort);
+    
+    window.location.href = `{% url 'store:browse_listings' %}?${params.toString()}`;
+}
+
+function clearAllFilters() {
+    window.location.href = '{% url 'store:browse_listings' %}';
+}
+
+function toggleWishlist(listingId) {
+    // Add wishlist functionality
+    console.log('Toggle wishlist for listing:', listingId);
+}
+
+function shareListing(listingId) {
+    // Add share functionality
+    if (navigator.share) {
+        navigator.share({
+            title: 'Check out this listing',
+            url: window.location.href
+        });
+    } else {
+        // Fallback to copy URL
+        navigator.clipboard.writeText(window.location.href);
+        alert('Link copied to clipboard!');
+    }
+}
+
+// View toggle functionality
+document.getElementById('gridView').addEventListener('click', function() {
+    document.getElementById('listingsGrid').className = 'listings-grid';
+    this.classList.add('active');
+    document.getElementById('listView').classList.remove('active');
 });
 
-
-  applyBtn.addEventListener("click", () => {
-    const selectedCategory = document.querySelector('input[name="category"]:checked');
-    const selectedSubcategories = [...document.querySelectorAll(".subcategory-filter:checked")].map(cb => cb.value);
-    const selectedLocations = [...document.querySelectorAll(".location-filter:checked")].map(cb => cb.value.toLowerCase());
-    const minPrice = parseFloat(document.querySelector(".price-min").value) || 0;
-    const maxPrice = parseFloat(document.querySelector(".price-max").value) || Infinity;
-
-    listings.forEach(listing => {
-      const cat = listing.dataset.category;
-      const loc = listing.dataset.location.toLowerCase();
-      const price = parseFloat(listing.dataset.price);
-
-      let visible = true;
-
-      if (selectedCategory && cat !== selectedCategory.value) visible = false;
-      if (selectedSubcategories.length && !selectedSubcategories.includes(cat)) visible = false;
-      if (selectedLocations.length && !selectedLocations.includes(loc)) visible = false;
-      if (price < minPrice || price > maxPrice) visible = false;
-
-      listing.style.display = visible ? "block" : "none";
-    });
-  });
-
-  resetBtn.addEventListener("click", () => {
-    document.querySelectorAll("input[type='checkbox'], input[type='radio'], input[type='number']").forEach(el => el.checked = false);
-    document.querySelectorAll(".price-min, .price-max").forEach(el => el.value = '');
-    listings.forEach(listing => listing.style.display = "block");
-  });
+document.getElementById('listView').addEventListener('click', function() {
+    document.getElementById('listingsGrid').className = 'listings-list';
+    this.classList.add('active');
+    document.getElementById('gridView').classList.remove('active');
 });
 </script>
-
-{% endblock content %}
+{% endblock %}
