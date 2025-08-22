@@ -14,11 +14,13 @@ def dashboard(request):
     orders = store_models.Order.objects.filter(customer=request.user)
     total_spent = store_models.Order.objects.filter(customer=request.user).aggregate(total = models.Sum("total"))['total']
     notis = customer_models.Notifications.objects.filter(user=request.user, seen=False)
+    unread_notifications = notis.count()
 
     context = {
         "orders": orders,
         "total_spent": total_spent,
         "notis": notis,
+        "unread_notifications": unread_notifications,
     }
 
     return render(request, "customer/dashboard.html", context)
