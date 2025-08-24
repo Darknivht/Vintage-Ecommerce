@@ -1,9 +1,14 @@
-{% extends 'vendor/base.html' %} {% load static %} {% load humanize %} {% block content %}
+{% extends 'partials/base.html' %} {% load static %} {% load humanize %} {% block content %}
 <section class="middle">
     <div class="container-fluid">
         <div class="row align-items-start justify-content-between">
-            {% include 'vendor/sidebar.html' %}
-            <div class="col-12 col-md-12 col-lg-9 col-xl-10">
+            <!-- Sidebar -->
+            <div class="col-12 col-md-3 col-lg-3 col-xl-2">
+                {% include 'vendor/sidebar.html' %}
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-12 col-md-9 col-lg-9 col-xl-10">
                 <h4 class="mb-0 mb-4 fw-bold">Orders ({{orders_list.count}})</h4>
 
                 {% for order in orders %}

@@ -1,0 +1,63 @@
+{% extends "emails/base_email.html" %}
+
+{% block content %}
+<h2>Order Confirmation</h2>
+
+<p>Hi {{ user.get_full_name|default:user.username }},</p>
+
+<p>Thank you for your order! We're excited to confirm that we've received your order and it's now being processed.</p>
+
+<div class="order-summary">
+    <h3>Order Details</h3>
+    <p><strong>Order Number:</strong> #{{ order.oid }}</p>
+    <p><strong>Order Date:</strong> {{ order.date|date:"F d, Y" }}</p>
+    <p><strong>Payment Status:</strong> 
+        <span style="color: {% if order.payment_status == 'paid' %}green{% else %}orange{% endif %};">
+            {{ order.payment_status|title }}
+        </span>
+    </p>
+</div>
+
+<div class="order-summary">
+    <h3>Items Ordered</h3>
+    {% for item in order_items %}
+    <div class="order-item">
+        <p><strong>{{ item.product.name }}</strong></p>
+        <p>Quantity: {{ item.quantity }} × ₦{{ item.price|floatformat:2 }} = ₦{{ item.total|floatformat:2 }}</p>
+        {% if item.size %}<p>Size: {{ item.size }}</p>{% endif %}
+        {% if item.color %}<p>Color: {{ item.color }}</p>{% endif %}
+    </div>
+    {% endfor %}
+    
+    <div class="order-total">
+        <p>Subtotal: ₦{{ order.sub_total|floatformat:2 }}</p>
+        {% if order.shipping %}
+        <p>Shipping: ₦{{ order.shipping|floatformat:2 }}</p>
+        {% endif %}
+        {% if order.tax %}
+        <p>Tax: ₦{{ order.tax|floatformat:2 }}</p>
+        {% endif %}
+        <p><strong>Total: ₦{{ order.total|floatformat:2 }}</strong></p>
+    </div>
+</div>
+
+<div class="order-summary">
+    <h3>Shipping Address</h3>
+    <p>{{ order.full_name }}</p>
+    <p>{{ order.address }}</p>
+    <p>{{ order.city }}, {{ order.state }} {{ order.zip_code }}</p>
+    <p>{{ order.country }}</p>
+</div>
+
+<p>We'll send you another email when your order has been shipped. You can track your order status anytime by clicking the button below.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ order_url }}" class="button">Track Your Order</a>
+</div>
+
+<p>If you have any questions about your order, please don't hesitate to contact us.</p>
+
+<p>Thank you for shopping with us!</p>
+
+<p>Best regards,<br>The {{ site_name }} Team</p>
+{% endblock %}

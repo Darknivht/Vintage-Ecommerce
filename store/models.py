@@ -1,6 +1,7 @@
 # models.py
 
 from django.db import models
+from django.urls import reverse
 from shortuuid.django_fields import ShortUUIDField
 from django.utils import timezone
 from django.utils.text import slugify
@@ -151,28 +152,195 @@ class Product(models.Model):
         return OrderItem.objects.filter(product=self, vendor=self.vendor)
 
 
-# NEW: Flexible listing model for services, vehicles, lands, etc.
+# NEW: Enhanced flexible listing model for services, vehicles, lands, etc.
+LISTING_STATUS_CHOICES = [
+    ('draft', 'Draft'),
+    ('published', 'Published'),
+    ('sold', 'Sold'),
+    ('expired', 'Expired'),
+    ('suspended', 'Suspended')
+]
+
+LISTING_TYPE_CHOICES = [
+    ('service', 'Service'),
+    ('product', 'Product'),
+    ('rental', 'Rental'),
+    ('real_estate', 'Real Estate'),
+    ('vehicle', 'Vehicle'),
+    ('job', 'Job'),
+    ('event', 'Event'),
+    ('other', 'Other')
+]
+
 class Listing(models.Model):
+    # Basic Information
     title = models.CharField(max_length=255)
     vendor = models.ForeignKey(user_models.User, on_delete=models.CASCADE, related_name='listings')
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='listings')
+    subcategory = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='subcategory_listings')
+    listing_type = models.CharField(max_length=20, choices=LISTING_TYPE_CHOICES, default='service')
+    
+    # Content
     description = CKEditor5Field('Text', config_name='extends')
+    short_description = models.TextField(max_length=500, blank=True, help_text="Brief summary for search results")
+    
+    # Pricing and Availability
     price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    price_type = models.CharField(max_length=20, choices=[
+        ('fixed', 'Fixed Price'),
+        ('hourly', 'Per Hour'),
+        ('daily', 'Per Day'),
+        ('monthly', 'Per Month'),
+        ('yearly', 'Per Year'),
+        ('negotiable', 'Negotiable')
+    ], default='fixed')
+    available_from = models.DateTimeField(null=True, blank=True)
+    available_until = models.DateTimeField(null=True, blank=True)
+    
+    # Location and Contact
     location = models.CharField(max_length=255, blank=True, null=True)
+    address = models.TextField(blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    contact_phone = models.CharField(max_length=20, blank=True)
+    contact_email = models.EmailField(blank=True)
+    
+    # Media
     image = CloudinaryField(folder="listings", null=True, blank=True)
-    extra_data = models.JSONField(default=dict, blank=True)
+    gallery_images = models.JSONField(default=list, blank=True, help_text="Array of image URLs")
+    video_url = models.URLField(blank=True, help_text="YouTube or Vimeo URL")
+    
+    # SEO and Metadata
+    meta_title = models.CharField(max_length=150, blank=True)
+    meta_description = models.TextField(max_length=320, blank=True)
+    tags = models.CharField(max_length=500, blank=True, help_text="Comma-separated tags")
+    
+    # Status and Visibility
+    status = models.CharField(max_length=20, choices=LISTING_STATUS_CHOICES, default='published')
     is_active = models.BooleanField(default=True)
     featured = models.BooleanField(default=False)
+    promoted = models.BooleanField(default=False)
+    urgent = models.BooleanField(default=False)
+    
+    # Analytics and Engagement
+    views_count = models.PositiveIntegerField(default=0)
+    contact_count = models.PositiveIntegerField(default=0)
+    favorites_count = models.PositiveIntegerField(default=0)
+    
+    # Flexible Data
+    extra_data = models.JSONField(default=dict, blank=True)
+    custom_fields = models.JSONField(default=dict, blank=True, help_text="Category-specific fields")
+    
+    # System Fields
     slug = models.SlugField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['vendor', '-created_at']),
+            models.Index(fields=['category', 'status']),
+            models.Index(fields=['location', 'status']),
+            models.Index(fields=['-views_count']),
+        ]
 
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.title) + "-" + shortuuid.uuid()[:6]
+        if not self.short_description and self.description:
+            # Auto-generate short description from full description
+            self.short_description = self.description[:300] + '...' if len(self.description) > 300 else self.description
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
+    
+    @property
+    def is_expired(self):
+        if self.expires_at:
+            return timezone.now() > self.expires_at
+        return False
+    
+    @property
+    def is_available(self):
+        now = timezone.now()
+        if self.available_from and now < self.available_from:
+            return False
+        if self.available_until and now > self.available_until:
+            return False
+        return True
+    
+    @property
+    def formatted_price(self):
+        if not self.price:
+            return "Price on Request"
+        price_str = f"₦{self.price:,.2f}"
+        if self.price_type != 'fixed':
+            price_str += f" {self.get_price_type_display()}"
+        return price_str
+    
+    def get_absolute_url(self):
+        return reverse('store:listing_detail', kwargs={'slug': self.slug})
+    
+    def increment_views(self):
+        self.views_count += 1
+        self.save(update_fields=['views_count'])
+    
+    def get_gallery_images(self):
+        return self.gallery_images if isinstance(self.gallery_images, list) else []
+    
+    def get_tags_list(self):
+        return [tag.strip() for tag in self.tags.split(',') if tag.strip()] if self.tags else []
+
+
+# Listing Images Gallery
+class ListingImage(models.Model):
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='images')
+    image = CloudinaryField(folder="listing_gallery")
+    caption = models.CharField(max_length=255, blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_main = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['order', 'created_at']
+    
+    def __str__(self):
+        return f"{self.listing.title} - Image {self.order}"
+
+
+# Listing Favorites/Watchlist
+class ListingFavorite(models.Model):
+    user = models.ForeignKey(user_models.User, on_delete=models.CASCADE)
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='favorites')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('user', 'listing')
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.listing.title}"
+
+
+# Listing Contact/Inquiry tracking
+class ListingInquiry(models.Model):
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='inquiries')
+    inquirer_name = models.CharField(max_length=100)
+    inquirer_email = models.EmailField()
+    inquirer_phone = models.CharField(max_length=20, blank=True)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    vendor_response = models.TextField(blank=True)
+    response_date = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Inquiry for {self.listing.title} from {self.inquirer_name}"
 
 
 # === ENHANCED MODELS ===

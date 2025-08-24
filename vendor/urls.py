@@ -30,4 +30,7 @@ urlpatterns = [
     path("delete_variants_items/<variant_id>/<item_id>/", views.delete_variants_items, name="delete_variants_items"),
     path("delete_product_image/<product_id>/<image_id>/", views.delete_product_image, name="delete_product_image"),
     path("delete_product/<product_id>/", views.delete_product, name="delete_product"),
+    path("inventory/", views.products, name="inventory"),  # Use products view for inventory
+    path("commission_report/", views.dashboard, name="commission_report"),  # Temporary redirect
+    path("analytics/", views.dashboard, name="analytics"),  # Temporary redirect
 ]

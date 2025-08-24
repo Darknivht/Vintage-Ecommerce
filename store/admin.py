@@ -78,21 +78,126 @@ class ReviewAdmin(admin.ModelAdmin):
     list_filter = ['active', 'rating']
 
 
-# === Listing Admin ===
+# === Enhanced Listing Admin ===
+class ListingImageInline(admin.TabularInline):
+    model = store_models.ListingImage
+    extra = 1
+    fields = ['image', 'caption', 'order', 'is_main']
+
+
 class ListingAdmin(admin.ModelAdmin):
-    form = ListingForm
-    list_display = ['title', 'category', 'vendor', 'price', 'location', 'featured', 'is_active', 'created_at', 'slug']
-    search_fields = ['title', 'category__title', 'vendor__username', 'location']
-    list_filter = ['category', 'is_active', 'featured']
-    readonly_fields = ['created_at', 'slug']
+    inlines = [ListingImageInline]
+    list_display = [
+        'title', 'vendor', 'category', 'listing_type', 'status', 
+        'price', 'location', 'views_count', 'contact_count', 
+        'featured', 'urgent', 'created_at'
+    ]
+    list_filter = [
+        'status', 'listing_type', 'category', 'featured', 
+        'urgent', 'promoted', 'created_at'
+    ]
+    search_fields = [
+        'title', 'vendor__username', 'location', 'tags',
+        'short_description', 'description'
+    ]
+    readonly_fields = [
+        'slug', 'created_at', 'updated_at', 'views_count', 
+        'contact_count', 'favorites_count'
+    ]
+    date_hierarchy = 'created_at'
+    list_per_page = 25
+    
     fieldsets = (
-        (None, {
-            'fields': ('title', 'vendor', 'category', 'price', 'location', 'image', 'description', 'extra_data')
+        ('Basic Information', {
+            'fields': (
+                'title', 'vendor', 'category', 'subcategory', 'listing_type'
+            )
         }),
-        ('Status', {
-            'fields': ('featured', 'is_active', 'created_at')
+        ('Content', {
+            'fields': (
+                'short_description', 'description', 'tags'
+            )
         }),
+        ('Pricing & Availability', {
+            'fields': (
+                'price', 'price_type', 'available_from', 'available_until'
+            )
+        }),
+        ('Location & Contact', {
+            'fields': (
+                'location', 'address', 'latitude', 'longitude',
+                'contact_phone', 'contact_email'
+            )
+        }),
+        ('Media', {
+            'fields': (
+                'image', 'gallery_images', 'video_url'
+            )
+        }),
+        ('SEO', {
+            'fields': (
+                'meta_title', 'meta_description'
+            ),
+            'classes': ['collapse']
+        }),
+        ('Status & Visibility', {
+            'fields': (
+                'status', 'featured', 'promoted', 'urgent',
+                'expires_at'
+            )
+        }),
+        ('Analytics', {
+            'fields': (
+                'views_count', 'contact_count', 'favorites_count'
+            ),
+            'classes': ['collapse']
+        }),
+        ('System', {
+            'fields': (
+                'slug', 'created_at', 'updated_at', 'custom_fields', 'extra_data'
+            ),
+            'classes': ['collapse']
+        })
     )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            'vendor', 'category', 'subcategory'
+        )
+
+
+class ListingInquiryAdmin(admin.ModelAdmin):
+    list_display = [
+        'listing', 'inquirer_name', 'inquirer_email', 
+        'is_read', 'created_at'
+    ]
+    list_filter = ['is_read', 'created_at', 'listing__category']
+    search_fields = [
+        'inquirer_name', 'inquirer_email', 'listing__title', 'message'
+    ]
+    readonly_fields = ['created_at', 'response_date']
+    date_hierarchy = 'created_at'
+    
+    fieldsets = (
+        ('Inquiry Details', {
+            'fields': (
+                'listing', 'inquirer_name', 'inquirer_email', 
+                'inquirer_phone', 'message', 'created_at'
+            )
+        }),
+        ('Response', {
+            'fields': (
+                'is_read', 'vendor_response', 'response_date'
+            )
+        })
+    )
+
+
+class ListingFavoriteAdmin(admin.ModelAdmin):
+    list_display = ['user', 'listing', 'created_at']
+    list_filter = ['created_at', 'listing__category']
+    search_fields = ['user__username', 'listing__title']
+    date_hierarchy = 'created_at'
 
 # === Enhanced Model Admins ===
 
@@ -204,7 +309,12 @@ admin.site.register(store_models.Coupon, CouponAdmin)
 admin.site.register(store_models.Order, OrderAdmin)
 admin.site.register(store_models.OrderItem, OrderItemAdmin)
 admin.site.register(store_models.Review, ReviewAdmin)
+
+# Enhanced Listing Models
 admin.site.register(store_models.Listing, ListingAdmin)
+admin.site.register(store_models.ListingImage)
+admin.site.register(store_models.ListingFavorite, ListingFavoriteAdmin)
+admin.site.register(store_models.ListingInquiry, ListingInquiryAdmin)
 
 # Register new models
 admin.site.register(store_models.Brand, BrandAdmin)

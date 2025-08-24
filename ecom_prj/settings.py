@@ -34,7 +34,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'JyXJjzbZbSvltmqVL0_jwjLAxJAJJh4GtBzxj7PIeDyZFBCg99HsauSkbQgz6_ppzBk'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'https://*.ngrok-free.app', 'https://vintage-ecommerce.onrender.com/']
@@ -195,15 +195,35 @@ RAZORPAY_KEY_SECRET=env("RAZORPAY_KEY_SECRET")
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-FROM_EMAIL=env("FROM_EMAIL")
-EMAIL_BACKEND=env("EMAIL_BACKEND")
-DEFAULT_FROM_EMAIL=env("DEFAULT_FROM_EMAIL")
-SERVER_EMAIL=env("SERVER_EMAIL")
+# Email Configuration
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+FROM_EMAIL = env("FROM_EMAIL", default="noreply@vintage-ecommerce.com")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Vintage Ecommerce <noreply@vintage-ecommerce.com>")
+SERVER_EMAIL = env("SERVER_EMAIL", default="server@vintage-ecommerce.com")
 
-ANYMAIL = {
-    "MAILGUN_API_KEY": os.environ.get("MAILGUN_API_KEY"),
-    "MAILGUN_SENDER_DOMAIN": os.environ.get("MAILGUN_SENDER_DOMAIN"),
-}
+# Email Provider Configuration (Multiple providers supported)
+ANYMAIL = {}
+
+# Mailgun Configuration (Primary)
+if env("MAILGUN_API_KEY", default=None) and env("MAILGUN_SENDER_DOMAIN", default=None):
+    ANYMAIL["MAILGUN_API_KEY"] = env("MAILGUN_API_KEY")
+    ANYMAIL["MAILGUN_SENDER_DOMAIN"] = env("MAILGUN_SENDER_DOMAIN")
+    if EMAIL_BACKEND == "anymail.backends.mailgun.EmailBackend":
+        pass  # Already set
+
+# SendGrid Configuration (Alternative)
+if env("SENDGRID_API_KEY", default=None):
+    ANYMAIL["SENDGRID_API_KEY"] = env("SENDGRID_API_KEY")
+    if EMAIL_BACKEND == "anymail.backends.sendgrid.EmailBackend":
+        pass  # Already set
+
+# Gmail SMTP Configuration (Alternative)
+if env("EMAIL_HOST_USER", default=None):
+    EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
+    EMAIL_PORT = env("EMAIL_PORT", default=587)
+    EMAIL_USE_TLS = env("EMAIL_USE_TLS", default=True)
+    EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+    EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 
 MESSAGE_TAGS = {
     messages.ERROR: 'danger',

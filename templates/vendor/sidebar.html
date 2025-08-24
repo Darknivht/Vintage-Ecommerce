@@ -1,42 +1,462 @@
-<div class="col-12 col-md-12 col-lg-3 col-xl-2 miliods">
-    <div class="d-block border rounded header-dark">
-        <div class="dashboard_author">
-            <ul class="dahs_navbar">
-                <li>
-                    <a href="{% url 'vendor:dashboard' %}" class="{% if '/vendor/dashboard/' in request.path %} active {% endif %}"><i class="bi bi-grid-fill me-2"></i>Dashboard</a>
-                </li>
-                <li>
-                    <a href="{% url 'vendor:products' %}"  class="{% if '/vendor/products/' in request.path %} active {% endif %}"><i class="bi bi-grid-1x2-fill me-2"></i>Products</a>
-                </li>
-                <li>
-                    <a href="{% url 'vendor:create_product' %}"><i class="fas fa-plus-circle me-2"></i>Create Product</a>
-                </li>
-                <li><a href="{% url 'store:vendor_listings' %}"><i class="fas fa-clipboard-list me-2"></i> My Listings</a>
-                </li>
-                <li>
-                    <a href="{% url 'vendor:orders' %}" class="{% if '/vendor/orders/' in request.path or '/vendor/order_detail/' in request.path %} active {% endif %}"><i class="fas fa-shopping-cart me-2"></i>Orders</a>
-                </li>
-                <li>
-                    <a href="{% url 'vendor:coupons' %}" class="{% if '/vendor/coupons/' in request.path %} active {% endif %}"><i class="fas fa-tag me-2"></i>Coupons</a>
-                </li>
-                <li>
-                    <a href="{% url 'vendor:reviews' %}" class="{% if '/vendor/reviews/' in request.path %} active {% endif %}"><i class="fas fa-star me-2"></i>Reviews</a>
-                </li>
-                <li>
-                    <a href="{% url 'vendor:notis' %}" class="{% if '/vendor/notis/' in request.path %} active {% endif %}"><i class="fas fa-bell me-2"></i>Notifications</a>
-                </li>
-                <li>
-                    <a href="{% url 'vendor:profile' %}" class="{% if '/vendor/profile/' in request.path %} active {% endif %}"><i class="fas fa-user me-2"></i>Profile</a>
-                </li>
-                <li>
-                    <a href="{% url 'vendor:create_bank_account' %}" class="{% if '/vendor/bank-account/create/' in request.path %}active{% endif %}">
-                        <i class="fas fa-university me-2"></i> Bank Account
+{% load static %}
+
+<div class="vendor-sidebar">
+    <div class="sidebar-card">
+        <!-- Profile Section -->
+        <div class="profile-section">
+            <div class="profile-avatar">
+                {% if request.user.profile.image %}
+                <img src="{{ request.user.profile.image.url }}" alt="{{ request.user.profile.full_name }}" class="avatar-img">
+                {% else %}
+                <div class="avatar-placeholder">
+                    <i class="fas fa-store"></i>
+                </div>
+                {% endif %}
+                <div class="status-indicator online"></div>
+            </div>
+            <div class="profile-info">
+                <h3 class="profile-name">{{ request.user.profile.business_name|default:request.user.profile.full_name|default:request.user.username }}</h3>
+                <p class="profile-id">Vendor ID: #{{ request.user.id }}</p>
+                <span class="profile-badge">{{ request.user.profile.user_type|default:"Vendor" }}</span>
+            </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <div class="sidebar-nav">
+            <h4 class="nav-title">Store Management</h4>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="{% url 'vendor:dashboard' %}" class="nav-link {% if '/vendor/dashboard/' in request.path %}active{% endif %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <span class="nav-text">Dashboard</span>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
                     </a>
                 </li>
-                <li>
-                    <a href="{% url 'userauths:sign-out' %}"><i class="fas fa-power-off me-2"></i>Logout</a>
+                
+                <li class="nav-item">
+                    <a href="{% url 'vendor:products' %}" class="nav-link {% if '/vendor/products/' in request.path %}active{% endif %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-box-open"></i>
+                        </div>
+                        <span class="nav-text">Products</span>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="{% url 'vendor:create_product' %}" class="nav-link {% if '/vendor/create_product/' in request.path %}active{% endif %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-plus-circle"></i>
+                        </div>
+                        <span class="nav-text">Create Product</span>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="{% url 'store:vendor_listings' %}" class="nav-link {% if '/vendor/listings/' in request.path %}active{% endif %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <span class="nav-text">My Listings</span>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="{% url 'vendor:orders' %}" class="nav-link {% if '/vendor/orders/' in request.path or '/vendor/order_detail/' in request.path %}active{% endif %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <span class="nav-text">Orders</span>
+                        {% comment %}
+                        {% if pending_orders_count %}
+                        <span class="nav-badge">{{ pending_orders_count }}</span>
+                        {% endif %}
+                        {% endcomment %}
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="{% url 'vendor:coupons' %}" class="nav-link {% if '/vendor/coupons/' in request.path %}active{% endif %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-tag"></i>
+                        </div>
+                        <span class="nav-text">Coupons</span>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="{% url 'vendor:reviews' %}" class="nav-link {% if '/vendor/reviews/' in request.path %}active{% endif %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <span class="nav-text">Reviews</span>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="{% url 'vendor:notis' %}" class="nav-link {% if '/vendor/notis/' in request.path %}active{% endif %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <span class="nav-text">Notifications</span>
+                        {% comment %}
+                        {% if unread_notifications %}
+                        <span class="nav-badge">{{ unread_notifications }}</span>
+                        {% endif %}
+                        {% endcomment %}
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </a>
                 </li>
             </ul>
+
+            <h4 class="nav-title">Account Settings</h4>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="{% url 'vendor:profile' %}" class="nav-link {% if '/vendor/profile/' in request.path %}active{% endif %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-user-cog"></i>
+                        </div>
+                        <span class="nav-text">Profile Settings</span>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="{% url 'vendor:create_bank_account' %}" class="nav-link {% if '/vendor/bank-account/create/' in request.path %}active{% endif %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-university"></i>
+                        </div>
+                        <span class="nav-text">Bank Account</span>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="{% url 'vendor:change_password' %}" class="nav-link {% if '/vendor/change_password/' in request.path %}active{% endif %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <span class="nav-text">Change Password</span>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h4 class="nav-title">Quick Actions</h4>
+                <div class="action-buttons">
+                    <a href="{% url 'vendor:create_product' %}" class="action-btn primary">
+                        <i class="fas fa-plus"></i>
+                        Add Product
+                    </a>
+                    <a href="{% url 'vendor:dashboard' %}" class="action-btn secondary">
+                        <i class="fas fa-chart-line"></i>
+                        View Analytics
+                    </a>
+                </div>
+            </div>
+
+            <!-- Logout -->
+            <div class="sidebar-footer">
+                <a href="{% url 'userauths:sign-out' %}" class="logout-btn" onclick="return confirm('Are you sure you want to logout?')">
+                    <div class="nav-icon">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </div>
+                    <span class="nav-text">Logout</span>
+                </a>
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+.vendor-sidebar {
+    position: sticky;
+    top: 2rem;
+    height: fit-content;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Mobile-first responsive adjustments */
+@media (max-width: 767.98px) {
+    .vendor-sidebar {
+        position: relative;
+        top: 0;
+        margin-bottom: 2rem;
+    }
+}
+
+.sidebar-card {
+    background: white;
+    border-radius: var(--radius-2xl);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    border: 1px solid var(--gray-200);
+}
+
+.profile-section {
+    padding: 2rem;
+    text-align: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    position: relative;
+}
+
+.profile-avatar {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 1rem;
+}
+
+.avatar-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid rgba(255, 255, 255, 0.2);
+}
+
+.avatar-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    border: 4px solid rgba(255, 255, 255, 0.2);
+}
+
+.status-indicator {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 3px solid white;
+}
+
+.status-indicator.online {
+    background: #10b981;
+}
+
+.profile-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.profile-id {
+    opacity: 0.8;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.profile-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.sidebar-nav {
+    padding: 1.5rem 0;
+}
+
+.nav-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 1.5rem 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.nav-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem;
+}
+
+.nav-item {
+    margin-bottom: 0.25rem;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    color: var(--gray-700);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.nav-link:hover {
+    background: var(--gray-100);
+    color: #667eea;
+    text-decoration: none;
+}
+
+.nav-link.active {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    border-right: 3px solid #667eea;
+}
+
+.nav-icon {
+    width: 20px;
+    text-align: center;
+    margin-right: 0.75rem;
+    font-size: 1rem;
+}
+
+.nav-text {
+    flex: 1;
+    font-weight: 500;
+}
+
+.nav-badge {
+    background: #667eea;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-full);
+    margin-right: 0.5rem;
+}
+
+.nav-arrow {
+    font-size: 0.75rem;
+    color: var(--gray-400);
+    transition: transform 0.3s ease;
+}
+
+.nav-link:hover .nav-arrow {
+    transform: translateX(2px);
+}
+
+.quick-actions {
+    margin-top: 1.5rem;
+    padding: 0 1.5rem;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.action-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    color: white;
+    text-decoration: none;
+}
+
+.action-btn.secondary {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-300);
+}
+
+.action-btn.secondary:hover {
+    background: var(--gray-200);
+    color: var(--gray-800);
+    text-decoration: none;
+}
+
+.sidebar-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--gray-200);
+    background: var(--gray-50);
+}
+
+.logout-btn {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.75rem;
+    color: var(--error);
+    text-decoration: none;
+    border-radius: var(--radius-lg);
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.logout-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+    text-decoration: none;
+}
+
+@media (max-width: 991px) {
+    .vendor-sidebar {
+        position: static;
+        margin-bottom: 2rem;
+    }
+    
+    .profile-section {
+        padding: 1.5rem;
+    }
+    
+    .sidebar-nav {
+        padding: 1rem 0;
+    }
+    
+    .nav-title {
+        margin: 0 1rem 0.75rem;
+    }
+    
+    .nav-link {
+        padding: 0.5rem 1rem;
+    }
+    
+    .quick-actions {
+        padding: 0 1rem;
+    }
+    
+    .action-buttons {
+        flex-direction: row;
+    }
+}
+
+@media (max-width: 576px) {
+    .action-buttons {
+        flex-direction: column;
+    }
+}
+</style>

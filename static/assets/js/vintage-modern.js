@@ -236,8 +236,8 @@ class VintageModern {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Adding...';
             btn.disabled = true;
 
-            // Simulate API call
-            fetch('/store/add-to-cart/', {
+            // AJAX API call
+            fetch('/ajax/add-to-cart/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -294,7 +294,7 @@ class VintageModern {
     }
 
     updateCartItem(productId, quantity) {
-        fetch('/store/update-cart/', {
+        fetch('/ajax/update-cart/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -573,7 +573,7 @@ class VintageModern {
         bsModal.show();
         
         // Load product data
-        fetch(`/store/product-quick-view/${productId}/`)
+        fetch(`/ajax/product-quick-view/${productId}/`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -760,6 +760,9 @@ window.addToCart = (productId) => vintageApp.addToCart(productId);
 window.toggleWishlist = (productId, btn) => vintageApp.toggleWishlist(productId, btn);
 window.quickView = (productId) => vintageApp.showQuickView(productId);
 window.addToCompare = (productId) => vintageApp.addToCompare(productId);
+
+// Make the app available globally as VintageMarketplace for template compatibility
+window.VintageMarketplace = vintageApp;
 
 // Export for module usage
 if (typeof module !== 'undefined' && module.exports) {

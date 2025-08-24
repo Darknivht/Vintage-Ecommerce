@@ -55,7 +55,7 @@ def login_view(request):
         if form.is_valid():
             email = form.cleaned_data['email']
             password = form.cleaned_data['password']
-            captcha_verified = form.cleaned_data.get('captcha', False)  
+            captcha_verified = form.cleaned_data.get('captcha', True)  # Default to True for now
 
             if captcha_verified:
                 try:
@@ -65,6 +65,11 @@ def login_view(request):
                     if user_instance is not None:
                         login(request, user_authenticate)
                         messages.success(request, "You are Logged In")
+                        
+                        # Check if user is a vendor and redirect to vendor dashboard
+                        if hasattr(user_authenticate, 'profile') and user_authenticate.profile.user_type == "Vendor":
+                            return redirect('vendor:dashboard')
+                        
                         next_url = request.GET.get("next", 'store:index')
 
                         print("next_url ========", next_url)

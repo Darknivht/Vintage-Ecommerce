@@ -272,6 +272,85 @@
     color: white;
 }
 
+/* Review Section Styles */
+.reviews-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.review-summary {
+    background: #F8FAFC;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
+
+.rating-overview .rating-number {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.rating-overview .rating-stars {
+    color: #FFD700;
+    font-size: 1.2rem;
+}
+
+.review-item {
+    border-bottom: 1px solid #eee;
+    padding: 1.5rem 0;
+}
+
+.review-item:last-child {
+    border-bottom: none;
+}
+
+.review-stars {
+    color: #FFD700;
+}
+
+.vendor-reply {
+    background: #e8f4f8;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-green);
+}
+
+.star-rating {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.star {
+    font-size: 1.5rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.star.active,
+.star:hover {
+    color: #FFD700;
+}
+
+.btn-review {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    text-decoration: none;
+    transition: transform 0.2s ease;
+}
+
+.btn-review:hover {
+    transform: translateY(-2px);
+    color: white;
+    text-decoration: none;
+}
+
 @media (max-width: 768px) {
     .product-gallery {
         position: static;
@@ -448,7 +527,7 @@
                     <!-- Product Actions -->
                     <div class="product-actions">
                         {% if product.stock > 0 %}
-                        <button class="btn-add-cart" onclick="addToCart('{{ product.id }}')">
+                        <button class="btn-add-cart" data-product-id="{{ product.id }}" onclick="addToCart('{{ product.id }}')">
                             <i class="fas fa-shopping-cart me-2"></i>Add to Cart
                         </button>
                         {% else %}
@@ -488,6 +567,132 @@
                             </div>
                             <div class="feature-text">24/7 customer support</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reviews Section -->
+        <div class="reviews-section mt-5">
+            <div class="row">
+                <div class="col-12">
+                    <div class="section-header d-flex justify-content-between align-items-center mb-4">
+                        <h2>Customer Reviews</h2>
+                        <div class="review-actions">
+                            {% if user.is_authenticated %}
+                                {% comment %} Check if user has purchased and not reviewed {% endcomment %}
+                                {% if user not in product.reviewers.all %}
+                                    <a href="{% url 'store:submit_review' product.slug %}" class="btn btn-review">
+                                        <i class="fas fa-star me-2"></i>Write Review
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                            <a href="{% url 'store:product_reviews' product.slug %}" class="btn btn-outline-secondary">
+                                View All Reviews
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Review Summary -->
+                    <div class="review-summary">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <div class="rating-overview text-center">
+                                    <div class="rating-number">{{ product.average_rating|default:0|floatformat:1 }}</div>
+                                    <div class="rating-stars mb-2">
+                                        {% if product.average_rating %}
+                                            {% for i in "12345" %}
+                                                {% if i|add:0 <= product.average_rating %}
+                                                    <i class="fas fa-star"></i>
+                                                {% else %}
+                                                    <i class="far fa-star"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                            {% for i in "12345" %}
+                                                <i class="far fa-star"></i>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                    <div class="review-count">{{ product.reviews.count }} reviews</div>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="quick-review-form" id="quickReviewForm" style="display: none;">
+                                    <form method="post" action="{% url 'store:ajax_submit_review' %}" id="ajaxReviewForm">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Your Rating:</label>
+                                            <div class="star-rating" id="quickStarRating">
+                                                <span class="star" data-rating="1">★</span>
+                                                <span class="star" data-rating="2">★</span>
+                                                <span class="star" data-rating="3">★</span>
+                                                <span class="star" data-rating="4">★</span>
+                                                <span class="star" data-rating="5">★</span>
+                                            </div>
+                                            <input type="hidden" name="rating" id="quickRatingInput">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <textarea name="review" class="form-control" placeholder="Share your experience..." rows="3" required></textarea>
+                                        </div>
+                                        
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" class="btn btn-primary">Submit Review</button>
+                                            <button type="button" class="btn btn-secondary" onclick="toggleQuickReview()">Cancel</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                
+                                {% if user.is_authenticated %}
+                                    <button class="btn btn-outline-primary" onclick="toggleQuickReview()" id="quickReviewBtn">
+                                        <i class="fas fa-plus me-2"></i>Quick Review
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Reviews -->
+                    <div class="recent-reviews mt-4">
+                        {% with recent_reviews=product.reviews.all|slice:":3" %}
+                            {% if recent_reviews %}
+                                <h4>Recent Reviews</h4>
+                                {% for review in recent_reviews %}
+                                <div class="review-item">
+                                    <div class="review-header d-flex justify-content-between align-items-start">
+                                        <div class="reviewer-info">
+                                            <div class="reviewer-name fw-bold">{{ review.user.username }}</div>
+                                            <div class="review-stars">
+                                                {% for i in "12345" %}
+                                                    {% if i|add:0 <= review.rating %}
+                                                        <i class="fas fa-star"></i>
+                                                    {% else %}
+                                                        <i class="far fa-star"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="review-date text-muted">{{ review.date|date:"M d, Y" }}</div>
+                                    </div>
+                                    <div class="review-text mt-2">{{ review.review|truncatewords:50 }}</div>
+                                    
+                                    {% if review.reply %}
+                                    <div class="vendor-reply mt-2">
+                                        <strong>Vendor Reply:</strong> {{ review.reply|truncatewords:30 }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="no-reviews text-center py-4">
+                                    <i class="fas fa-star text-muted mb-2" style="font-size: 2rem;"></i>
+                                    <p class="text-muted">No reviews yet. Be the first to review!</p>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
                     </div>
                 </div>
             </div>
@@ -624,6 +829,101 @@ function toggleWishlist(productId) {
         alert('An error occurred. Please try again.');
     });
 }
+
+// Review Functionality
+function toggleQuickReview() {
+    const form = document.getElementById('quickReviewForm');
+    const btn = document.getElementById('quickReviewBtn');
+    
+    if (form.style.display === 'none' || form.style.display === '') {
+        form.style.display = 'block';
+        btn.style.display = 'none';
+    } else {
+        form.style.display = 'none';
+        btn.style.display = 'block';
+    }
+}
+
+// Quick Review Star Rating
+document.addEventListener('DOMContentLoaded', function() {
+    const quickStars = document.querySelectorAll('#quickStarRating .star');
+    const quickRatingInput = document.getElementById('quickRatingInput');
+    
+    if (quickStars.length > 0) {
+        quickStars.forEach((star, index) => {
+            star.addEventListener('click', function() {
+                const rating = this.dataset.rating;
+                quickRatingInput.value = rating;
+                
+                // Update star display
+                quickStars.forEach((s, i) => {
+                    if (i < rating) {
+                        s.classList.add('active');
+                    } else {
+                        s.classList.remove('active');
+                    }
+                });
+            });
+            
+            star.addEventListener('mouseover', function() {
+                const rating = this.dataset.rating;
+                
+                quickStars.forEach((s, i) => {
+                    if (i < rating) {
+                        s.classList.add('active');
+                    } else {
+                        s.classList.remove('active');
+                    }
+                });
+            });
+        });
+        
+        // Reset to selected rating on mouse leave
+        document.getElementById('quickStarRating').addEventListener('mouseleave', function() {
+            const selectedRating = quickRatingInput.value;
+            
+            quickStars.forEach((s, i) => {
+                if (i < selectedRating) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+        });
+    }
+    
+    // AJAX Review Submission
+    const ajaxReviewForm = document.getElementById('ajaxReviewForm');
+    if (ajaxReviewForm) {
+        ajaxReviewForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    // Refresh the page to show new review
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        });
+    }
+});
 </script>
 
 <!-- CSRF Token -->

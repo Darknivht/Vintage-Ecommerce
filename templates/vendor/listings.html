@@ -6,56 +6,303 @@
 <section class="middle">
   <div class="container-fluid">
     <div class="row align-items-start justify-content-between">
-      {% include 'vendor/sidebar.html' %}
+      <!-- Sidebar -->
+      <div class="col-12 col-md-3 col-lg-3 col-xl-2">
+        {% include 'vendor/sidebar.html' %}
+      </div>
 
-      <div class="col-12 col-md-12 col-lg-9 col-xl-10">
+      <!-- Main Content -->
+      <div class="col-12 col-md-9 col-lg-9 col-xl-10">
+        <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-          <h4 class="fw-bold mb-0">My Listings</h4>
-          <a href="{% url 'store:create_listing' %}" class="btn btn-sm btn-primary">
-            <i class="fas fa-plus me-1"></i> New Listing
-          </a>
+          <h4 class="fw-bold mb-0">{{ page_title|default:"My Listings" }}</h4>
+          <div>
+            <a href="{% url 'store:listing_inquiries' %}" class="btn btn-outline-info me-2">
+              <i class="fas fa-envelope me-1"></i> Inquiries
+            </a>
+            <a href="{% url 'store:create_listing' %}" class="btn btn-primary">
+              <i class="fas fa-plus me-1"></i> New Listing
+            </a>
+          </div>
         </div>
 
-        <div class="row">
-          {% for listing in listings %}
-          <div class="col-md-6 col-xl-4 mb-4">
-            <div class="card border-0 shadow-sm h-100">
-              <a href="{% url 'store:listing_detail' listing.slug %}">
-                {% if listing.image %}
-                  <img src="{{ listing.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ listing.title }}">
-                {% else %}
-                  <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
-                    <span class="text-muted">No Image</span>
-                  </div>
-                {% endif %}
-              </a>
-              <div class="card-body">
-                <h5 class="fw-bold mb-1">
-                  <a href="{% url 'store:listing_detail' listing.slug %}" class="text-dark text-decoration-none">
-                    {{ listing.title|truncatechars:45 }}
-                  </a>
-                </h5>
-                <p class="text-muted small mb-1">{{ listing.category.title }}</p>
-                {% if listing.price %}
-                  <p class="fw-bold text-primary mb-0">₦{{ listing.price|intcomma }}</p>
-                {% endif %}
-              </div>
-              <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
-                <small class="text-muted">{{ listing.created_at|naturaltime }}</small>
-                <a href="#" class="btn btn-sm btn-outline-secondary">Edit</a>
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+          <div class="col-md-3 mb-3">
+            <div class="card border-0 bg-primary text-white">
+              <div class="card-body text-center">
+                <i class="fas fa-list fa-2x mb-2"></i>
+                <h4 class="fw-bold mb-1">{{ stats.total_listings|default:0 }}</h4>
+                <small>Total Listings</small>
               </div>
             </div>
           </div>
-          {% empty %}
-            <div class="col-12 text-center">
-              <p class="text-muted">You haven’t posted any listings yet.</p>
+          <div class="col-md-3 mb-3">
+            <div class="card border-0 bg-success text-white">
+              <div class="card-body text-center">
+                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                <h4 class="fw-bold mb-1">{{ stats.published_count|default:0 }}</h4>
+                <small>Published</small>
+              </div>
             </div>
-          {% endfor %}
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card border-0 bg-warning text-white">
+              <div class="card-body text-center">
+                <i class="fas fa-eye fa-2x mb-2"></i>
+                <h4 class="fw-bold mb-1">{{ stats.total_views|default:0|intcomma }}</h4>
+                <small>Total Views</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card border-0 bg-info text-white">
+              <div class="card-body text-center">
+                <i class="fas fa-phone fa-2x mb-2"></i>
+                <h4 class="fw-bold mb-1">{{ stats.total_contacts|default:0 }}</h4>
+                <small>Total Contacts</small>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <!-- Filters -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-body">
+            <div class="row align-items-center">
+              <div class="col-md-8">
+                <div class="btn-group" role="group">
+                  <a href="{% url 'store:vendor_listings' %}" 
+                     class="btn {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                    All ({{ stats.total_listings|default:0 }})
+                  </a>
+                  <a href="{% url 'store:vendor_listings' %}?status=published" 
+                     class="btn {% if status_filter == 'published' %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                    Published ({{ stats.published_count|default:0 }})
+                  </a>
+                  <a href="{% url 'store:vendor_listings' %}?status=draft" 
+                     class="btn {% if status_filter == 'draft' %}btn-warning{% else %}btn-outline-secondary{% endif %}">
+                    Draft ({{ stats.draft_count|default:0 }})
+                  </a>
+                </div>
+              </div>
+              <div class="col-md-4 text-end">
+                <small class="text-muted">{{ listings|length }} of {{ stats.total_listings|default:0 }} listings</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Listings Grid -->
+        {% if listings %}
+          <div class="row">
+            {% for listing in listings %}
+            <div class="col-lg-6 col-xl-4 mb-4">
+              <div class="card border-0 shadow-sm h-100 listing-card">
+                <!-- Image -->
+                <div class="position-relative">
+                  <a href="{% url 'store:listing_detail' listing.slug %}" target="_blank">
+                    {% if listing.image %}
+                      <img src="{{ listing.image.url }}" class="card-img-top" 
+                           style="height: 220px; object-fit: cover;" alt="{{ listing.title }}">
+                    {% else %}
+                      <div class="card-img-top d-flex align-items-center justify-content-center bg-light" 
+                           style="height: 220px;">
+                        <i class="fas fa-image text-muted fa-3x"></i>
+                      </div>
+                    {% endif %}
+                  </a>
+                  
+                  <!-- Status Badge -->
+                  <span class="badge position-absolute top-0 end-0 m-2 
+                             bg-{{ listing.status == 'published' and 'success' or listing.status == 'draft' and 'warning' or 'secondary' }}">
+                    {{ listing.get_status_display }}
+                  </span>
+
+                  <!-- Feature Badges -->
+                  {% if listing.featured %}
+                    <span class="badge bg-primary position-absolute top-0 start-0 m-2">Featured</span>
+                  {% endif %}
+                  {% if listing.urgent %}
+                    <span class="badge bg-danger position-absolute" style="top: {% if listing.featured %}40px{% else %}10px{% endif %}; left: 10px;">Urgent</span>
+                  {% endif %}
+                </div>
+
+                <!-- Card Body -->
+                <div class="card-body">
+                  <h6 class="fw-bold mb-2">
+                    <a href="{% url 'store:listing_detail' listing.slug %}" 
+                       class="text-dark text-decoration-none" target="_blank">
+                      {{ listing.title|truncatechars:50 }}
+                    </a>
+                  </h6>
+                  
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-muted">
+                      <i class="fas fa-tag me-1"></i>{{ listing.category.title }}
+                    </small>
+                    <small class="text-muted">
+                      <i class="fas fa-map-marker-alt me-1"></i>{{ listing.location|truncatechars:15 }}
+                    </small>
+                  </div>
+
+                  {% if listing.price %}
+                    <h5 class="fw-bold text-primary mb-3">₦{{ listing.price|intcomma }}</h5>
+                  {% endif %}
+
+                  <!-- Statistics -->
+                  <div class="row text-center small mb-3">
+                    <div class="col-3">
+                      <i class="fas fa-eye text-info"></i>
+                      <div class="fw-semibold">{{ listing.views_count|default:0 }}</div>
+                      <small class="text-muted">Views</small>
+                    </div>
+                    <div class="col-3">
+                      <i class="fas fa-phone text-success"></i>
+                      <div class="fw-semibold">{{ listing.contact_count|default:0 }}</div>
+                      <small class="text-muted">Contacts</small>
+                    </div>
+                    <div class="col-3">
+                      <i class="fas fa-heart text-danger"></i>
+                      <div class="fw-semibold">{{ listing.favorites_count|default:0 }}</div>
+                      <small class="text-muted">Likes</small>
+                    </div>
+                    <div class="col-3">
+                      <i class="fas fa-envelope text-warning"></i>
+                      <div class="fw-semibold">{{ listing.inquiry_count|default:0 }}</div>
+                      <small class="text-muted">Inquiries</small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Card Footer -->
+                <div class="card-footer bg-white border-0">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="fas fa-clock me-1"></i>{{ listing.created_at|naturaltime }}
+                    </small>
+                    
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                              data-bs-toggle="dropdown">
+                        Actions
+                      </button>
+                      <ul class="dropdown-menu">
+                        <li>
+                          <a class="dropdown-item" href="{% url 'store:listing_detail' listing.slug %}" target="_blank">
+                            <i class="fas fa-eye me-2"></i>Preview
+                          </a>
+                        </li>
+                        <li>
+                          <a class="dropdown-item" href="{% url 'store:edit_listing' listing.id %}">
+                            <i class="fas fa-edit me-2"></i>Edit
+                          </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% if listing.status == 'published' %}
+                        <li>
+                          <form method="POST" action="{% url 'store:toggle_listing_status' listing.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="draft">
+                            <button type="submit" class="dropdown-item text-warning">
+                              <i class="fas fa-pause me-2"></i>Unpublish
+                            </button>
+                          </form>
+                        </li>
+                        {% elif listing.status == 'draft' %}
+                        <li>
+                          <form method="POST" action="{% url 'store:toggle_listing_status' listing.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="published">
+                            <button type="submit" class="dropdown-item text-success">
+                              <i class="fas fa-play me-2"></i>Publish
+                            </button>
+                          </form>
+                        </li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <a class="dropdown-item text-danger" href="{% url 'store:delete_listing' listing.id %}">
+                            <i class="fas fa-trash me-2"></i>Delete
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Pagination -->
+          {% if listings.has_other_pages %}
+            <nav aria-label="Listings pagination">
+              <ul class="pagination justify-content-center">
+                {% if listings.has_previous %}
+                  <li class="page-item">
+                    <a class="page-link" href="?page=1{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}">First</a>
+                  </li>
+                  <li class="page-item">
+                    <a class="page-link" href="?page={{ listings.previous_page_number }}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}">Previous</a>
+                  </li>
+                {% endif %}
+
+                <li class="page-item active">
+                  <span class="page-link">Page {{ listings.number }} of {{ listings.paginator.num_pages }}</span>
+                </li>
+
+                {% if listings.has_next %}
+                  <li class="page-item">
+                    <a class="page-link" href="?page={{ listings.next_page_number }}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}">Next</a>
+                  </li>
+                  <li class="page-item">
+                    <a class="page-link" href="?page={{ listings.paginator.num_pages }}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}">Last</a>
+                  </li>
+                {% endif %}
+              </ul>
+            </nav>
+          {% endif %}
+
+        {% else %}
+          <!-- Empty State -->
+          <div class="text-center py-5">
+            <div class="mb-4">
+              <i class="fas fa-list fa-4x text-muted"></i>
+            </div>
+            <h5 class="mb-3">No listings found</h5>
+            {% if status_filter == 'all' %}
+              <p class="text-muted mb-4">You haven't created any listings yet. Start by creating your first listing!</p>
+              <a href="{% url 'store:create_listing' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create Your First Listing
+              </a>
+            {% else %}
+              <p class="text-muted mb-4">No {{ status_filter }} listings found.</p>
+              <a href="{% url 'store:vendor_listings' %}" class="btn btn-outline-primary">
+                View All Listings
+              </a>
+            {% endif %}
+          </div>
+        {% endif %}
 
       </div>
     </div>
   </div>
 </section>
+
+<style>
+.listing-card:hover {
+  transform: translateY(-2px);
+  transition: transform 0.3s ease;
+}
+
+.stat-item {
+  padding: 0.5rem;
+}
+
+.badge {
+  font-size: 0.7rem;
+}
+</style>
 
 {% endblock content %}

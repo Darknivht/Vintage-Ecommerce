@@ -1,0 +1,40 @@
+{% extends "emails/base_email.html" %}
+
+{% block content %}
+<h2>Welcome to {{ site_name }}!</h2>
+
+<p>Hi {{ user.get_full_name|default:user.username }},</p>
+
+<p>Welcome to {{ site_name }}! We're thrilled to have you as part of our community.</p>
+
+<p>Your account has been successfully created and you can now enjoy all the benefits of being a {{ site_name }} member:</p>
+
+<ul style="margin: 20px 0; padding-left: 20px;">
+    <li>🛍️ Shop thousands of quality products</li>
+    <li>❤️ Save items to your wishlist</li>
+    <li>📦 Track your orders in real-time</li>
+    <li>🎁 Get exclusive offers and discounts</li>
+    <li>⭐ Review and rate products</li>
+    <li>🚚 Fast and secure delivery</li>
+</ul>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ shop_url }}" class="button">Start Shopping</a>
+</div>
+
+<div class="order-summary" style="text-align: center;">
+    <h3>Getting Started</h3>
+    <p>Here are some helpful links to get you started:</p>
+    <div style="margin: 20px 0;">
+        <a href="{{ login_url }}" style="margin: 0 10px; color: #667eea;">Sign In</a> |
+        <a href="{{ shop_url }}" style="margin: 0 10px; color: #667eea;">Browse Products</a> |
+        <a href="{{ site_url }}/customer/profile/" style="margin: 0 10px; color: #667eea;">My Profile</a>
+    </div>
+</div>
+
+<p>If you have any questions or need help getting started, our customer support team is here to help!</p>
+
+<p>Happy shopping!</p>
+
+<p>Best regards,<br>The {{ site_name }} Team</p>
+{% endblock %}

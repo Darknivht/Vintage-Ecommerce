@@ -1,0 +1,285 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+
+{% block title %}Reviews - {{ product.name }} - Vintage Marketplace{% endblock %}
+
+{% block extra_css %}
+<style>
+.reviews-container {
+    background: #F8FAFC;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.reviews-header {
+    background: white;
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.product-info {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.product-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.rating-summary {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+.overall-rating {
+    text-align: center;
+}
+
+.rating-number {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.rating-distribution {
+    flex: 1;
+}
+
+.rating-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.bar-container {
+    flex: 1;
+    height: 8px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    background: #FFD700;
+    transition: width 0.3s ease;
+}
+
+.review-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+}
+
+.reviewer-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.reviewer-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.review-stars {
+    color: #FFD700;
+    margin-bottom: 0.5rem;
+}
+
+.review-text {
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.review-reply {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+    margin-top: 1rem;
+}
+
+.empty-reviews {
+    text-align: center;
+    padding: 3rem;
+    color: #888;
+}
+
+.back-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 25px;
+    text-decoration: none;
+    transition: transform 0.2s ease;
+}
+
+.back-btn:hover {
+    transform: translateY(-1px);
+    color: white;
+    text-decoration: none;
+}
+
+.pagination .page-link {
+    border-radius: 10px;
+    border: none;
+    margin: 0 0.25rem;
+    color: #667eea;
+}
+
+.pagination .page-link:hover,
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reviews-container">
+    <div class="container">
+        
+        <!-- Header -->
+        <div class="reviews-header">
+            <!-- Product Info -->
+            <div class="product-info">
+                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
+                <div>
+                    <h3 class="mb-1">{{ product.name }}</h3>
+                    <a href="{% url 'store:product_detail' product.slug %}" class="back-btn">← Back to Product</a>
+                </div>
+            </div>
+            
+            <!-- Rating Summary -->
+            <div class="rating-summary">
+                <div class="overall-rating">
+                    <div class="rating-number">{{ average_rating|floatformat:1 }}</div>
+                    <div class="review-stars">
+                        {% for i in "12345" %}
+                            {% if i|add:0 <= average_rating %}
+                                <i class="fas fa-star"></i>
+                            {% else %}
+                                <i class="far fa-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="text-muted">{{ total_reviews }} reviews</div>
+                </div>
+                
+                <div class="rating-distribution">
+                    {% for rating, data in rating_distribution.items reversed %}
+                    <div class="rating-bar">
+                        <span>{{ rating }} ★</span>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: {{ data.percentage }}%"></div>
+                        </div>
+                        <span>{{ data.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reviews List -->
+        {% if reviews %}
+            {% for review in reviews %}
+            <div class="review-card">
+                <div class="reviewer-info">
+                    <div class="reviewer-avatar">
+                        {{ review.user.username.0|upper }}
+                    </div>
+                    <div>
+                        <div class="fw-bold">{{ review.user.username }}</div>
+                        <div class="text-muted small">{{ review.date|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+                
+                <div class="review-stars">
+                    {% for i in "12345" %}
+                        {% if i|add:0 <= review.rating %}
+                            <i class="fas fa-star"></i>
+                        {% else %}
+                            <i class="far fa-star"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <div class="review-text">
+                    {{ review.review }}
+                </div>
+                
+                {% if review.reply %}
+                <div class="review-reply">
+                    <div class="fw-bold text-primary mb-2">Vendor Reply:</div>
+                    <div>{{ review.reply }}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <!-- Pagination -->
+            {% if reviews.has_other_pages %}
+            <div class="d-flex justify-content-center">
+                <nav aria-label="Reviews pagination">
+                    <ul class="pagination">
+                        {% if reviews.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ reviews.previous_page_number }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in reviews.paginator.page_range %}
+                            {% if reviews.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if reviews.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ reviews.next_page_number }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            
+        {% else %}
+            <div class="review-card empty-reviews">
+                <i class="fas fa-star text-muted" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                <h4>No Reviews Yet</h4>
+                <p>Be the first to review this product!</p>
+            </div>
+        {% endif %}
+        
+    </div>
+</div>
+{% endblock %}

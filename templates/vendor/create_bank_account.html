@@ -2,12 +2,18 @@
 {% load static %}
 {% block content %}
 
-<div class="container py-5">
-  <div class="row justify-content-center">
-    
-    {% include 'vendor/sidebar.html' %}
-    
-    <div class="col-lg-6 col-md-8 col-sm-12">
+<section class="middle">
+  <div class="container-fluid">
+    <div class="row align-items-start justify-content-between">
+      <!-- Sidebar -->
+      <div class="col-12 col-md-3 col-lg-3 col-xl-2">
+        {% include 'vendor/sidebar.html' %}
+      </div>
+      
+      <!-- Main Content -->
+      <div class="col-12 col-md-9 col-lg-9 col-xl-10">
+        <div class="row justify-content-center">
+          <div class="col-lg-6 col-md-8 col-sm-12">
       <div class="card shadow border-0">
         <div class="card-header bg-primary text-white text-center rounded-top">
           <h4 class="mb-0">Add Bank Account</h4>
@@ -63,9 +69,12 @@
 
         </div>
       </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-</div>
+</section>
 
 <!-- Auto-fill hidden bank_code -->
 <script>

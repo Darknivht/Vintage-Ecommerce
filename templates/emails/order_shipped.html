@@ -1,0 +1,47 @@
+{% extends "emails/base_email.html" %}
+
+{% block content %}
+<h2>Your Order Has Been Shipped! 📦</h2>
+
+<p>Hi {{ user.get_full_name|default:user.username }},</p>
+
+<p>Great news! Your order has been shipped and is on its way to you.</p>
+
+<div class="order-summary">
+    <h3>Shipping Details</h3>
+    <p><strong>Order Number:</strong> #{{ order.oid }}</p>
+    <p><strong>Shipped Date:</strong> {{ order.date|date:"F d, Y" }}</p>
+    {% if tracking_number %}
+    <p><strong>Tracking Number:</strong> {{ tracking_number }}</p>
+    {% endif %}
+    <p><strong>Estimated Delivery:</strong> 3-5 business days</p>
+</div>
+
+<div class="order-summary">
+    <h3>Shipping Address</h3>
+    <p>{{ order.full_name }}</p>
+    <p>{{ order.address }}</p>
+    <p>{{ order.city }}, {{ order.state }} {{ order.zip_code }}</p>
+    <p>{{ order.country }}</p>
+</div>
+
+<p>You can track your package's progress using the tracking information provided above or by visiting our order tracking page.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ order_url }}" class="button">Track Your Package</a>
+</div>
+
+<p><strong>What happens next?</strong></p>
+<ul style="margin: 20px 0; padding-left: 20px;">
+    <li>📦 Your package is on its way</li>
+    <li>📱 You'll receive updates via email</li>
+    <li>🏠 Package will be delivered to your address</li>
+    <li>⭐ Don't forget to leave a review!</li>
+</ul>
+
+<p>If you have any questions about your shipment, please don't hesitate to contact us.</p>
+
+<p>Thank you for shopping with {{ site_name }}!</p>
+
+<p>Best regards,<br>The {{ site_name }} Team</p>
+{% endblock %}

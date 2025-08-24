@@ -853,7 +853,7 @@
                             
                             <div class="product-footer">
                                 {% if product.stock > 0 %}
-                                <button class="add-to-cart-btn" onclick="addToCart('{{ product.id }}')">
+                                <button class="add-to-cart-btn" data-product-id="{{ product.id }}" onclick="addToCart('{{ product.id }}')">
                                     <i class="fas fa-shopping-cart"></i>
                                     Add to Cart
                                 </button>

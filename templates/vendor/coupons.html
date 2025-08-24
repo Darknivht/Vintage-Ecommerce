@@ -1,10 +1,14 @@
-{% extends 'vendor/base.html' %} {% load static %} {% load humanize %} {% block content %}
+{% extends 'partials/base.html' %} {% load static %} {% load humanize %} {% block content %}
 <section class="middle">
     <div class="container-fluid">
         <div class="row align-items-start justify-content-between">
-            {% include 'vendor/sidebar.html' %}
+            <!-- Sidebar -->
+            <div class="col-12 col-md-3 col-lg-3 col-xl-2">
+                {% include 'vendor/sidebar.html' %}
+            </div>
 
-            <div class="col-12 col-md-12 col-lg-9 col-xl-10">
+            <!-- Main Content -->
+            <div class="col-12 col-md-9 col-lg-9 col-xl-10">
                 <div class="d-flex justify-content-between align-items-center">
                     <h4 class="mb-0 mb-4 fw-bold">Coupons ({{ coupons_list.count }})</h4>
                     <button class="btn bg-primary rounded text-white btn-sm mb-5" data-bs-toggle="modal" data-bs-target="#createCouponModal"><i class="fas fa-add me-1"></i> Add Coupon</button>

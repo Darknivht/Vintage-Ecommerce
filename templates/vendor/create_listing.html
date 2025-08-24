@@ -1,159 +1,359 @@
-{% extends 'vendor/base.html' %}
+{% extends 'partials/base.html' %}
 {% load static %}
-{% load humanize %}
+
+{% block title %}{{ page_title|default:"Create New Listing" }} - Vendor Dashboard{% endblock %}
+
 {% block content %}
-
-<section class="middle">
-  <div class="container-fluid">
-    <div class="row align-items-start justify-content-between">
-      {% include 'vendor/sidebar.html' %}
-
-      <div class="col-12 col-md-12 col-lg-9 col-xl-10">
-        <h4 class="mb-0 mb-4 fw-bold">Create Listing</h4>
-        <div class="card border-0 shadow mb-4">
-          <div class="card-body">
-            <div class="row mt-0">
-              <form method="POST" enctype="multipart/form-data" class="pb-8 mt-2">
-                {% csrf_token %}
-                <div class="card border-0 mb-3">
-                  <!-- Basic Info Section -->
-                  <div class="card-header border-0 px-4 py-3 rounded">
-                    <h4 class="mb-0">Basic Information</h4>
-                  </div>
-
-                  <div class="card-body border-0">
-                    <div class="text-center d-flex justify-content-center align-items-center">
-                      <img id="imagePreview" src="" alt="Image preview" style="width: 100%; height: 500px; object-fit: cover; border-radius: 10px; display: none;">
-                    </div>
-
-                    <div class="mb-3">
-                      <label for="imageInput" class="form-label">Listing Thumbnail</label>
-                      {{ form.image }}
-                      {% if form.image.errors %}
-                        <div class="text-danger small">{{ form.title.errors.0 }}</div>
-                      {% endif %}
-                    </div>
-
-                    <div class="mb-3">
-                      <label class="form-label">Listing Title</label>
-                      {{ form.title }}
-                      {% if form.title.errors %}
-                        <div class="text-danger small">{{ form.title.errors.0 }}</div>
-                      {% endif %}
-                      <small>Write a 60 character title for this listing.</small>
-                    </div>
-
-                    <div class="mb-3">
-                      <label class="form-label">Listing Category</label>
-                      <select name="category" class="form-select" id="parentCategorySelect">
-                        <option value="">-- Select Main Category --</option>
-                        {% for c in categories %}
-                          <option value="{{ c.id }}" {% if form.category.value == c.id %}selected{% endif %}>
-                            {{ c.title }}
-                          </option>
-                        {% endfor %}
-                      </select>
-                      <small>Help people find this listing by selecting the right category.</small>
-                    </div>
-
-                    <div class="mb-3" id="subcategoryWrapper" style="display:none;">
-                      <label class="form-label">Subcategory (Optional)</label>
-                      <select name="subcategory_id" class="form-select" id="subcategorySelect">
-                        <option value="">-- Select Subcategory --</option>
-                      </select>
-                    </div>
-
-                    <div class="mb-3">
-                      <label class="form-label">Listing Description</label>
-                      {{ form.description }}
-                      <small>Give a clear, honest description of the listing.</small>
-                    </div>
-
-                    <div class="mb-3">
-                      <label class="form-label">Price/Salary (₦)</label>
-                      {{ form.price }}
-                    </div>
-
-                    <div class="mb-3">
-                      <label class="form-label">Location</label>
-                      {{ form.location }}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Dynamic Fields from Schema -->
-                {% for field in form %}
-                  {% if field.name not in 'title image category description price location csrfmiddlewaretoken' %}
-                    <div class="mb-3">
-                      <label class="form-label">{{ field.label }}</label>
-                      {{ field }}
-                    </div>
-                  {% endif %}
-                {% endfor %}
-
-                <button class="btn btn-lg bg-primary rounded btn-sm text-white w-100 mt-2" type="submit">
-                  Publish Listing <i class="fas fa-arrow-right"></i>
-                </button>
-              </form>
+<div class="vendor-dashboard">
+    <div class="container py-5">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h2 class="fw-bold mb-2">{{ page_title|default:"Create New Listing" }}</h2>
+                <p class="text-muted">Fill out the form below to create a new listing</p>
             </div>
-          </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'store:vendor_listings' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Listings
+                </a>
+            </div>
         </div>
 
-      </div>
+        <form method="POST" enctype="multipart/form-data" id="listingForm">
+            {% csrf_token %}
+            <div class="row">
+                <!-- Main Form -->
+                <div class="col-lg-8">
+                    <!-- Basic Information -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Basic Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}
+                                        <div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Choose a descriptive title that buyers will search for</small>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+                                    {{ form.category }}
+                                    {% if form.category.errors %}
+                                        <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold">Subcategory</label>
+                                    {{ form.subcategory }}
+                                    {% if form.subcategory.errors %}
+                                        <div class="text-danger small mt-1">{{ form.subcategory.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold">Listing Type <span class="text-danger">*</span></label>
+                                    {{ form.listing_type }}
+                                    {% if form.listing_type.errors %}
+                                        <div class="text-danger small mt-1">{{ form.listing_type.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold">Condition</label>
+                                    {{ form.condition }}
+                                    {% if form.condition.errors %}
+                                        <div class="text-danger small mt-1">{{ form.condition.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-semibold">Short Description</label>
+                                    {{ form.short_description }}
+                                    {% if form.short_description.errors %}
+                                        <div class="text-danger small mt-1">{{ form.short_description.errors.0 }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Brief summary for search results (optional)</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-align-left me-2"></i>Description</h5>
+                        </div>
+                        <div class="card-body">
+                            <label class="form-label fw-semibold">Detailed Description <span class="text-danger">*</span></label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Provide detailed information about your listing</small>
+                        </div>
+                    </div>
+
+                    <!-- Pricing -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-warning text-white">
+                            <h5 class="mb-0"><i class="fas fa-money-bill-wave me-2"></i>Pricing</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label fw-semibold">Price (₦)</label>
+                                    {{ form.price }}
+                                    {% if form.price.errors %}
+                                        <div class="text-danger small mt-1">{{ form.price.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold">Price Type</label>
+                                    {{ form.price_type }}
+                                    {% if form.price_type.errors %}
+                                        <div class="text-danger small mt-1">{{ form.price_type.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-12">
+                                    <div class="form-check">
+                                        {{ form.negotiable }}
+                                        <label class="form-check-label">
+                                            Price is negotiable
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location & Contact -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Location & Contact</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold">Location <span class="text-danger">*</span></label>
+                                    {{ form.location }}
+                                    {% if form.location.errors %}
+                                        <div class="text-danger small mt-1">{{ form.location.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold">Phone Number</label>
+                                    {{ form.contact_phone }}
+                                    {% if form.contact_phone.errors %}
+                                        <div class="text-danger small mt-1">{{ form.contact_phone.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-semibold">Detailed Address</label>
+                                    {{ form.address }}
+                                    {% if form.address.errors %}
+                                        <div class="text-danger small mt-1">{{ form.address.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-semibold">Contact Email</label>
+                                    {{ form.contact_email }}
+                                    {% if form.contact_email.errors %}
+                                        <div class="text-danger small mt-1">{{ form.contact_email.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Media -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0"><i class="fas fa-images me-2"></i>Media</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Main Image</label>
+                                {{ form.image }}
+                                {% if form.image.errors %}
+                                    <div class="text-danger small mt-1">{{ form.image.errors.0 }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Upload the main image for your listing</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Video URL</label>
+                                {{ form.video_url }}
+                                {% if form.video_url.errors %}
+                                    <div class="text-danger small mt-1">{{ form.video_url.errors.0 }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">YouTube or video URL (optional)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Status</label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                    <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.featured }}
+                                    <label class="form-check-label">
+                                        Featured Listing
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.urgent }}
+                                    <label class="form-check-label">
+                                        Mark as Urgent
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Tags</label>
+                                {{ form.tags }}
+                                {% if form.tags.errors %}
+                                    <div class="text-danger small mt-1">{{ form.tags.errors.0 }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Comma-separated tags</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Actions -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <button type="submit" class="btn btn-primary w-100 mb-3">
+                                <i class="fas fa-save me-2"></i>Create Listing
+                            </button>
+                            <a href="{% url 'store:vendor_listings' %}" class="btn btn-outline-secondary w-100">
+                                Cancel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
     </div>
-  </div>
-</section>
+</div>
 
 <script>
-  function previewImage(event) {
-    const imageInput = event.target.files[0];
-    const reader = new FileReader();
-    reader.onload = function() {
-      const preview = document.getElementById('imagePreview');
-      preview.src = reader.result;
-      preview.style.display = 'block';
-    };
-    if (imageInput) {
-      reader.readAsDataURL(imageInput);
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", function () {
-    const fileInput = document.querySelector('input[type="file"][name="image"]');
-    if (fileInput) {
-      fileInput.addEventListener('change', previewImage);
-    }
-
-    const parentSelect = document.getElementById("parentCategorySelect");
-    const subcategoryWrapper = document.getElementById("subcategoryWrapper");
-    const subcategorySelect = document.getElementById("subcategorySelect");
-
-    parentSelect.addEventListener("change", function () {
-      const parentId = this.value;
-      if (parentId) {
-        fetch(`/get-subcategories/?parent_id=${parentId}&type=listing`)
-          .then(response => response.json())
-          .then(data => {
-            subcategorySelect.innerHTML = `<option value="">-- Select Subcategory --</option>`;
-            if (data.length > 0) {
-              data.forEach(sub => {
-                subcategorySelect.innerHTML += `<option value="${sub.id}">${sub.title}</option>`;
-              });
-              subcategoryWrapper.style.display = "block";
-            } else {
-              subcategoryWrapper.style.display = "none";
+document.addEventListener('DOMContentLoaded', function() {
+    // Category/subcategory filtering
+    const categorySelect = document.getElementById('categorySelect');
+    const subcategorySelect = document.getElementById('subcategorySelect');
+    
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            const categoryId = this.value;
+            
+            // Clear subcategory options
+            subcategorySelect.innerHTML = '<option value="">---------</option>';
+            
+            if (categoryId) {
+                fetch(`/store/ajax/subcategories/?parent_id=${categoryId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(subcategory => {
+                            const option = document.createElement('option');
+                            option.value = subcategory.id;
+                            option.textContent = subcategory.title;
+                            subcategorySelect.appendChild(option);
+                        });
+                    });
             }
-          })
-          .catch(error => {
-            console.error("Error fetching subcategories:", error);
-            subcategoryWrapper.style.display = "none";
-          });
-      } else {
-        subcategoryWrapper.style.display = "none";
-        subcategorySelect.innerHTML = `<option value="">-- Select Subcategory --</option>`;
-      }
+        });
+    }
+    
+    // Form validation
+    const form = document.getElementById('listingForm');
+    form.addEventListener('submit', function(e) {
+        const title = document.getElementById('id_title').value;
+        const description = document.getElementById('id_description').value;
+        const location = document.getElementById('id_location').value;
+        
+        if (!title.trim()) {
+            e.preventDefault();
+            alert('Please enter a title for your listing.');
+            return;
+        }
+        
+        if (!description.trim()) {
+            e.preventDefault();
+            alert('Please enter a description for your listing.');
+            return;
+        }
+        
+        if (!location.trim()) {
+            e.preventDefault();
+            alert('Please enter a location for your listing.');
+            return;
+        }
     });
-  });
+});
 </script>
+
+<style>
+.vendor-dashboard .card-header {
+    font-weight: 600;
+}
+
+.form-label.fw-semibold {
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.text-danger {
+    font-size: 0.875rem;
+}
+
+.card {
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+@media (max-width: 768px) {
+    .vendor-dashboard .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+}
+</style>
 
 {% endblock content %}

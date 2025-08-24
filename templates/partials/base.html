@@ -1332,30 +1332,8 @@
         });
 
         // Basic AJAX functionality for cart and wishlist
-        function addToCart(productId, quantity = 1) {
-            // Show loading state
-            const button = event.target;
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Adding...';
-            button.disabled = true;
-
-            // Simulate AJAX call (replace with actual implementation)
-            setTimeout(() => {
-                // Update cart count (if element exists)
-                const cartCount = document.getElementById('cartCount');
-                if (cartCount) {
-                    const currentCount = parseInt(cartCount.textContent) || 0;
-                    cartCount.textContent = currentCount + quantity;
-                }
-
-                // Show success message
-                showMessage('Product added to cart successfully!', 'success');
-
-                // Reset button
-                button.innerHTML = originalText;
-                button.disabled = false;
-            }, 1000);
-        }
+        // addToCart function is now handled by vintage-modern.js
+        // This ensures the actual AJAX implementation is used
 
         function toggleWishlist(productId) {
             // Show loading state

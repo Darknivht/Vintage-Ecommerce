@@ -1,0 +1,315 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Product Comparison{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-balance-scale me-2"></i>Product Comparison</h2>
+                {% if comparison_count > 0 %}
+                <button class="btn btn-outline-danger" onclick="clearComparison()">
+                    <i class="fas fa-trash me-2"></i>Clear All
+                </button>
+                {% endif %}
+            </div>
+
+            {% if comparison_count == 0 %}
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-balance-scale text-muted" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="text-muted">No Products to Compare</h4>
+                <p class="text-muted">Add products to comparison from the shop page or product details.</p>
+                <a href="{% url 'store:shop' %}" class="btn btn-primary mt-3">
+                    <i class="fas fa-shopping-bag me-2"></i>Browse Products
+                </a>
+            </div>
+            {% else %}
+            <div class="comparison-table-container">
+                <div class="table-responsive">
+                    <table class="table table-bordered comparison-table">
+                        <tbody>
+                            <!-- Product Images and Names -->
+                            <tr class="product-header">
+                                <td class="feature-label bg-light">
+                                    <strong>Product</strong>
+                                </td>
+                                {% for product in products %}
+                                <td class="text-center">
+                                    <div class="comparison-product-card">
+                                        <div class="position-relative mb-3">
+                                            <img src="{{ product.image.url }}" 
+                                                 alt="{{ product.name }}" 
+                                                 class="img-fluid rounded" 
+                                                 style="height: 200px; width: 100%; object-fit: cover;">
+                                            <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
+                                                    onclick="removeFromComparison({{ product.id }})"
+                                                    title="Remove from comparison">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        <h5 class="fw-bold">{{ product.name }}</h5>
+                                        <p class="text-muted small">by {{ product.vendor.username|default:"Vintage Store" }}</p>
+                                    </div>
+                                </td>
+                                {% endfor %}
+                            </tr>
+
+                            <!-- Price -->
+                            <tr>
+                                <td class="feature-label bg-light">
+                                    <strong>Price</strong>
+                                </td>
+                                {% for product in products %}
+                                <td class="text-center">
+                                    <div class="price-container">
+                                        <span class="h5 text-success">₦{{ product.price|floatformat:0|intcomma }}</span>
+                                        {% if product.regular_price and product.regular_price > product.price %}
+                                        <br>
+                                        <small class="text-muted text-decoration-line-through">
+                                            ₦{{ product.regular_price|floatformat:0|intcomma }}
+                                        </small>
+                                        <span class="badge bg-danger ms-1">
+                                            {% widthratio product.price product.regular_price 100 as discount %}
+                                            {{ discount|floatformat:0 }}% OFF
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                {% endfor %}
+                            </tr>
+
+                            <!-- Rating -->
+                            <tr>
+                                <td class="feature-label bg-light">
+                                    <strong>Rating</strong>
+                                </td>
+                                {% for product in products %}
+                                <td class="text-center">
+                                    <div class="rating-container">
+                                        {% if product.average_rating %}
+                                            <div class="text-warning mb-1">
+                                                {% for i in "12345" %}
+                                                    {% if forloop.counter <= product.average_rating %}
+                                                        <i class="fas fa-star"></i>
+                                                    {% else %}
+                                                        <i class="far fa-star"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            <small class="text-muted">({{ product.reviews.count }} reviews)</small>
+                                        {% else %}
+                                            <span class="text-muted">No reviews</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                {% endfor %}
+                            </tr>
+
+                            <!-- Stock Status -->
+                            <tr>
+                                <td class="feature-label bg-light">
+                                    <strong>Availability</strong>
+                                </td>
+                                {% for product in products %}
+                                <td class="text-center">
+                                    {% if product.stock > 0 %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>
+                                            {{ product.stock }} in stock
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times me-1"></i>
+                                            Out of stock
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+
+                            <!-- Category -->
+                            <tr>
+                                <td class="feature-label bg-light">
+                                    <strong>Category</strong>
+                                </td>
+                                {% for product in products %}
+                                <td class="text-center">
+                                    <span class="badge bg-info">{{ product.category.title }}</span>
+                                </td>
+                                {% endfor %}
+                            </tr>
+
+                            <!-- Brand -->
+                            <tr>
+                                <td class="feature-label bg-light">
+                                    <strong>Brand</strong>
+                                </td>
+                                {% for product in products %}
+                                <td class="text-center">
+                                    {% if product.brand %}
+                                        <span class="badge bg-secondary">{{ product.brand.name }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+
+                            <!-- Description -->
+                            <tr>
+                                <td class="feature-label bg-light">
+                                    <strong>Description</strong>
+                                </td>
+                                {% for product in products %}
+                                <td>
+                                    <div class="description-text">
+                                        {{ product.description|truncatewords:15|safe }}
+                                    </div>
+                                </td>
+                                {% endfor %}
+                            </tr>
+
+                            <!-- Actions -->
+                            <tr>
+                                <td class="feature-label bg-light">
+                                    <strong>Actions</strong>
+                                </td>
+                                {% for product in products %}
+                                <td class="text-center">
+                                    <div class="action-buttons">
+                                        {% if product.stock > 0 %}
+                                        <button class="btn btn-primary btn-sm mb-2 w-100" 
+                                                onclick="addToCart({{ product.id }})">
+                                            <i class="fas fa-shopping-cart me-1"></i>Add to Cart
+                                        </button>
+                                        {% else %}
+                                        <button class="btn btn-secondary btn-sm mb-2 w-100" disabled>
+                                            Out of Stock
+                                        </button>
+                                        {% endif %}
+                                        
+                                        <button class="btn btn-outline-danger btn-sm mb-2 w-100" 
+                                                onclick="toggleWishlist({{ product.id }})">
+                                            <i class="far fa-heart me-1"></i>Wishlist
+                                        </button>
+                                        
+                                        <a href="{% url 'store:product_detail' product.slug %}" 
+                                           class="btn btn-outline-primary btn-sm w-100">
+                                            <i class="fas fa-eye me-1"></i>View Details
+                                        </a>
+                                    </div>
+                                </td>
+                                {% endfor %}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.comparison-table {
+    min-width: 800px;
+}
+
+.feature-label {
+    min-width: 150px;
+    font-weight: bold;
+    vertical-align: middle;
+}
+
+.comparison-product-card {
+    max-width: 250px;
+}
+
+.comparison-table td {
+    vertical-align: middle;
+    padding: 1rem;
+}
+
+.description-text {
+    max-height: 100px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+}
+
+.action-buttons .btn {
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .comparison-table-container {
+        overflow-x: auto;
+    }
+    
+    .comparison-product-card {
+        max-width: 200px;
+    }
+}
+</style>
+
+<script>
+function removeFromComparison(productId) {
+    $.post('{% url "store:toggle_comparison" %}', {
+        'product_id': productId,
+        'csrfmiddlewaretoken': '{{ csrf_token }}'
+    }, function(response) {
+        if (response.success) {
+            location.reload();
+        } else {
+            alert(response.message);
+        }
+    });
+}
+
+function clearComparison() {
+    if (confirm('Are you sure you want to clear all products from comparison?')) {
+        $.post('{% url "store:clear_comparison" %}', {
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        }, function(response) {
+            if (response.success) {
+                location.reload();
+            } else {
+                alert(response.message);
+            }
+        });
+    }
+}
+
+function addToCart(productId) {
+    $.post('{% url "store:add_to_cart_ajax" %}', {
+        'product_id': productId,
+        'quantity': 1,
+        'csrfmiddlewaretoken': '{{ csrf_token }}'
+    }, function(response) {
+        if (response.success) {
+            alert('Product added to cart successfully!');
+            updateCartCount();
+        } else {
+            alert(response.message);
+        }
+    });
+}
+
+function toggleWishlist(productId) {
+    $.post('{% url "store:toggle_wishlist_ajax" %}', {
+        'product_id': productId,
+        'csrfmiddlewaretoken': '{{ csrf_token }}'
+    }, function(response) {
+        if (response.success) {
+            alert(response.message);
+        } else {
+            alert(response.message);
+        }
+    });
+}
+</script>
+{% endblock %}

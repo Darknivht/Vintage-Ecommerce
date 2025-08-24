@@ -12,7 +12,9 @@ import json
 from django.shortcuts import get_object_or_404
 from store.utils.flutterwave import initiate_flutterwave_payment
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 from store.forms import ListingForm
+from store import forms as store_forms
 from store.models import Listing
 from store.models import Category
 from django.core.paginator import Paginator
@@ -35,6 +37,7 @@ from userauths import models as userauths_models
 from plugin.tax_calculation import tax_calculation
 from plugin.exchange_rate import convert_ngn_to_inr, convert_ngn_to_kobo, convert_ngn_to_usd, get_ngn_to_usd_rate
 from store.models import Category
+from store.email_service import email_service
 
 def get_subcategories(request):
     parent_id = request.GET.get("parent_id")
@@ -59,12 +62,30 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
 def clear_cart_items(request):
+    """
+    Clear cart items for both authenticated and anonymous users
+    """
     try:
-        cart_id = request.session['cart_id']
-        store_models.Cart.objects.filter(cart_id=cart_id).delete()
-    except:
-        pass
-    return
+        if request.user.is_authenticated:
+            # Clear authenticated user's cart
+            store_models.Cart.objects.filter(user=request.user).delete()
+            print(f"✅ Cleared cart for authenticated user: {request.user.username}")
+        else:
+            # Clear anonymous user's cart using session cart_id
+            cart_id = request.session.get('cart_id')
+            if cart_id:
+                deleted_count = store_models.Cart.objects.filter(cart_id=cart_id).delete()[0]
+                print(f"✅ Cleared {deleted_count} items from anonymous cart: {cart_id}")
+                # Clear the cart_id from session
+                if 'cart_id' in request.session:
+                    del request.session['cart_id']
+            else:
+                print("ℹ️ No cart_id found in session")
+        
+        return True
+    except Exception as e:
+        print(f"❌ Error clearing cart: {str(e)}")
+        return False
 
 def index(request):
     # Featured products
@@ -107,13 +128,8 @@ def index(request):
         if cart_id:
             cart_count = store_models.Cart.objects.filter(cart_id=cart_id).count()
     
-    # User type for navigation
-    user_type = None
-    if request.user.is_authenticated:
-        if hasattr(request.user, 'vendor_profile'):
-            user_type = "Vendor"
-        else:
-            user_type = "Customer"
+    # User type for navigation - now handled by context processor
+    # (Removed duplicate logic that was overriding the context processor)
     
     context = {
         "products": products,
@@ -124,7 +140,7 @@ def index(request):
         "flash_sales": flash_sales,
         "total_cart_items": cart_count,
         "wishlist_count": {"count": wishlist_count},
-        "user_type": user_type,
+        # "user_type": user_type,  # Now provided by context processor
     }
     return render(request, "store/index.html", context)
 
@@ -279,13 +295,8 @@ def shop(request):
         if cart_id:
             cart_count = store_models.Cart.objects.filter(cart_id=cart_id).count()
     
-    # User type for navigation
-    user_type = None
-    if request.user.is_authenticated:
-        if hasattr(request.user, 'vendor_profile'):
-            user_type = "Vendor"
-        else:
-            user_type = "Customer"
+    # User type for navigation - now handled by context processor
+    # (Removed duplicate logic that was overriding the context processor)
 
     context = {
         "products": products,
@@ -300,7 +311,7 @@ def shop(request):
         "prices": prices,
         "total_cart_items": cart_count,
         "wishlist_count": {"count": wishlist_count},
-        "user_type": user_type,
+        # "user_type": user_type,  # Now provided by context processor
     }
     return render(request, "store/shop.html", context)
 
@@ -352,19 +363,56 @@ def product_detail(request, slug):
     }
     return render(request, "store/product_detail.html", context)
 
+@csrf_exempt
 def add_to_cart(request):
-    # Get parameters from the request (ID, color, size, quantity, cart_id)
-    id = request.GET.get("id")
-    qty = request.GET.get("qty")
-    color = request.GET.get("color")
-    size = request.GET.get("size")
-    cart_id = request.GET.get("cart_id")
+    # Handle both GET and POST requests
+    if request.method == 'POST':
+        try:
+            # Try to parse JSON body (from modern AJAX calls)
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+                id = data.get('product_id')
+                qty = data.get('quantity', 1)
+                color = data.get('color', '')
+                size = data.get('size', '')
+                cart_id = request.session.get('cart_id')
+                if not cart_id:
+                    import uuid
+                    cart_id = str(uuid.uuid4())
+                    request.session['cart_id'] = cart_id
+            else:
+                # Handle form-encoded POST data
+                id = request.POST.get("id")
+                qty = request.POST.get("qty")
+                color = request.POST.get("color")
+                size = request.POST.get("size")
+                cart_id = request.POST.get("cart_id")
+        except:
+            # Fallback to GET parameters
+            id = request.GET.get("id")
+            qty = request.GET.get("qty")
+            color = request.GET.get("color")
+            size = request.GET.get("size")
+            cart_id = request.GET.get("cart_id")
+    else:
+        # GET request - original behavior
+        id = request.GET.get("id")
+        qty = request.GET.get("qty")
+        color = request.GET.get("color")
+        size = request.GET.get("size")
+        cart_id = request.GET.get("cart_id")
     
-    request.session['cart_id'] = cart_id
+    # Ensure cart_id is set (generate if needed for anonymous users)
+    if not cart_id and not request.user.is_authenticated:
+        import uuid
+        cart_id = str(uuid.uuid4())
+        request.session['cart_id'] = cart_id
+    elif cart_id:
+        request.session['cart_id'] = cart_id
 
     # Validate required fields
-    if not id or not qty or not cart_id:
-        return JsonResponse({"error": "No color or size selected"}, status=400)
+    if not id or not qty:
+        return JsonResponse({"error": "Product ID and quantity are required", "success": False}, status=400)
 
     # Try to fetch the product, return an error if it doesn't exist
     try:
@@ -373,7 +421,10 @@ def add_to_cart(request):
         return JsonResponse({"error": "Product not found"}, status=404)
 
     # Check if the item is already in the cart
-    existing_cart_item = store_models.Cart.objects.filter(cart_id=cart_id, product=product).first()
+    if request.user.is_authenticated:
+        existing_cart_item = store_models.Cart.objects.filter(user=request.user, product=product).first()
+    else:
+        existing_cart_item = store_models.Cart.objects.filter(cart_id=cart_id, product=product).first()
 
     # Check if quantity that user is adding exceed item stock qty
     if int(qty) > product.stock:
@@ -411,28 +462,42 @@ def add_to_cart(request):
         message = "Cart updated"
 
     # Count the total number of items in the cart
-    total_cart_items = store_models.Cart.objects.filter(cart_id=cart_id)
-    cart_sub_total = store_models.Cart.objects.filter(cart_id=cart_id).aggregate(sub_total = models.Sum("sub_total"))['sub_total']
+    if request.user.is_authenticated:
+        total_cart_items = store_models.Cart.objects.filter(user=request.user)
+        cart_sub_total = store_models.Cart.objects.filter(user=request.user).aggregate(sub_total = models.Sum("sub_total"))['sub_total']
+    else:
+        total_cart_items = store_models.Cart.objects.filter(cart_id=cart_id)
+        cart_sub_total = store_models.Cart.objects.filter(cart_id=cart_id).aggregate(sub_total = models.Sum("sub_total"))['sub_total']
 
     # Return the response with the cart update message and total cart items
-    return JsonResponse({
-        "message": message ,
+    # Support both legacy and modern response formats
+    response_data = {
+        "message": message,
         "total_cart_items": total_cart_items.count(),
         "cart_sub_total": "{:,.2f}".format(cart_sub_total),
-        "item_sub_total": "{:,.2f}".format(existing_cart_item.sub_total) if existing_cart_item else "{:,.2f}".format(cart.sub_total) 
-    })
+        "item_sub_total": "{:,.2f}".format(existing_cart_item.sub_total) if existing_cart_item else "{:,.2f}".format(cart.sub_total),
+        # Modern format compatibility
+        "success": True,
+        "cart_count": total_cart_items.count()
+    }
+    return JsonResponse(response_data)
 
 def cart(request):
-    if "cart_id" in request.session:
-        cart_id = request.session['cart_id']
+    # Handle both authenticated and anonymous users
+    if request.user.is_authenticated:
+        items = store_models.Cart.objects.filter(user=request.user)
+        cart_sub_total = store_models.Cart.objects.filter(user=request.user).aggregate(sub_total = models.Sum("sub_total"))['sub_total']
     else:
-        cart_id = None
-
-    items = store_models.Cart.objects.filter(cart_id=cart_id)
-    cart_sub_total = store_models.Cart.objects.filter(cart_id=cart_id).aggregate(sub_total = models.Sum("sub_total"))['sub_total']
+        if "cart_id" in request.session:
+            cart_id = request.session['cart_id']
+        else:
+            cart_id = None
+        
+        items = store_models.Cart.objects.filter(cart_id=cart_id)
+        cart_sub_total = store_models.Cart.objects.filter(cart_id=cart_id).aggregate(sub_total = models.Sum("sub_total"))['sub_total']
     
     try:
-        addresses = customer_models.Address.objects.filter(user=request.user)
+        addresses = customer_models.Address.objects.filter(user=request.user) if request.user.is_authenticated else None
     except:
         addresses = None
 
@@ -671,39 +736,21 @@ def stripe_payment_verify(request, order_id):
         if order.payment_status == "Processing":
             order.payment_status = "Paid"
             order.save()
+            # Clear cart after successful payment
             clear_cart_items(request)
+            
+            # Create notification for customer
             customer_models.Notifications.objects.create(type="New Order", user=request.user)
-            customer_merge_data = {
-                'order': order,
-                'order_items': order.order_items(),
-            }
-            subject = f"New Order!"
-            text_body = render_to_string("email/order/customer/customer_new_order.txt", customer_merge_data)
-            html_body = render_to_string("email/order/customer/customer_new_order.html", customer_merge_data)
-
-            msg = EmailMultiAlternatives(
-                subject=subject, from_email=settings.FROM_EMAIL,
-                to=[order.address.email], body=text_body
-            )
-            msg.attach_alternative(html_body, "text/html")
-            msg.send()
-
-            # Send Order Emails to Vendors
+            
+            # Send order confirmation email to customer
+            email_service.send_order_confirmation(order, order.address.email)
+            
+            # Send new order notifications to vendors
+            vendors_notified = set()
             for item in order.order_items():
-                
-                vendor_merge_data = {
-                    'item': item,
-                }
-                subject = f"New Order!"
-                text_body = render_to_string("email/order/vendor/vendor_new_order.txt", vendor_merge_data)
-                html_body = render_to_string("email/order/vendor/vendor_new_order.html", vendor_merge_data)
-
-                msg = EmailMultiAlternatives(
-                    subject=subject, from_email=settings.FROM_EMAIL,
-                    to=[item.vendor.email], body=text_body
-                )
-                msg.attach_alternative(html_body, "text/html")
-                msg.send()
+                if item.vendor and item.vendor.email and item.vendor not in vendors_notified:
+                    email_service.send_new_order_to_vendor(order, item.vendor)
+                    vendors_notified.add(item.vendor)
 
             return redirect(f"/payment_status/{order.order_id}/?payment_status=paid")
     
@@ -782,10 +829,24 @@ def razorpay_payment_verify(request, order_id):
             order.payment_status = "Paid"
             order.payment_method = payment_method
             order.save()
+            
+            # Clear cart after successful payment
             clear_cart_items(request)
+            
+            # Create notifications
             customer_models.Notifications.objects.create(type="New Order", user=request.user)
             for item in order.order_items():
                 vendor_models.Notifications.objects.create(type="New Order", user=item.vendor)
+            
+            # Send order confirmation email to customer
+            email_service.send_order_confirmation(order, order.address.email)
+            
+            # Send new order notifications to vendors
+            vendors_notified = set()
+            for item in order.order_items():
+                if item.vendor and item.vendor.email and item.vendor not in vendors_notified:
+                    email_service.send_new_order_to_vendor(order, item.vendor)
+                    vendors_notified.add(item.vendor)
 
             return redirect(f"/payment_status/{order.order_id}/?payment_status=paid")
 
@@ -845,8 +906,15 @@ def paystack_payment_verify(request, order_id):
                 for item in order.order_items():
                     vendor_models.Notifications.objects.create(type="New Order", user=item.vendor)
 
-                # Send emails
-                send_order_confirmation_emails(order)
+                # Send order confirmation email to customer
+                email_service.send_order_confirmation(order, order.address.email)
+                
+                # Send new order notifications to vendors
+                vendors_notified = set()
+                for item in order.order_items():
+                    if item.vendor and item.vendor.email and item.vendor not in vendors_notified:
+                        email_service.send_new_order_to_vendor(order, item.vendor)
+                        vendors_notified.add(item.vendor)
                 
             except Exception as e:
                 print(f"[Email/Notification Error] {e}")
@@ -861,47 +929,6 @@ def paystack_payment_verify(request, order_id):
     messages.error(request, f"Payment failed. Status: {tx_status}")
     return redirect(f"/payment_status/{order.order_id}/?payment_status=failed")
 
-
-def send_order_confirmation_emails(order):
-    """
-    Send order confirmation emails to customer and vendors
-    """
-    try:
-        # Customer email
-        customer_merge_data = {
-            'order': order,
-            'order_items': order.order_items(),
-        }
-        subject = f"Order Confirmation - #{order.order_id}"
-        text_body = render_to_string("email/order/customer/customer_new_order.txt", customer_merge_data)
-        html_body = render_to_string("email/order/customer/customer_new_order.html", customer_merge_data)
-
-        msg = EmailMultiAlternatives(
-            subject=subject, from_email=settings.FROM_EMAIL,
-            to=[order.address.email], body=text_body
-        )
-        msg.attach_alternative(html_body, "text/html")
-        msg.send()
-
-        # Vendor emails
-        for item in order.order_items():
-            vendor_merge_data = {
-                'item': item,
-                'order': order,
-            }
-            subject = f"New Order - #{order.order_id}"
-            text_body = render_to_string("email/order/vendor/vendor_new_order.txt", vendor_merge_data)
-            html_body = render_to_string("email/order/vendor/vendor_new_order.html", vendor_merge_data)
-
-            msg = EmailMultiAlternatives(
-                subject=subject, from_email=settings.FROM_EMAIL,
-                to=[item.vendor.email], body=text_body
-            )
-            msg.attach_alternative(html_body, "text/html")
-            msg.send()
-            
-    except Exception as e:
-        print(f"[Email Send Error] {e}")
 
 
 def flutterwave_payment_callback(request, order_id):
@@ -921,7 +948,23 @@ def flutterwave_payment_callback(request, order_id):
             payment_method = request.GET.get("payment_method")
             order.payment_method = payment_method
             order.save()
+            
+            # Clear cart after successful payment
             clear_cart_items(request)
+            
+            # Create notifications
+            customer_models.Notifications.objects.create(type="New Order", user=request.user)
+            
+            # Send order confirmation email to customer
+            email_service.send_order_confirmation(order, order.address.email)
+            
+            # Send new order notifications to vendors
+            vendors_notified = set()
+            for item in order.order_items():
+                if item.vendor and item.vendor.email and item.vendor not in vendors_notified:
+                    email_service.send_new_order_to_vendor(order, item.vendor)
+                    vendors_notified.add(item.vendor)
+            
             return redirect(f"/payment_status/{order.order_id}/?payment_status=paid")
         else:
             return redirect(f"/payment_status/{order.order_id}/?payment_status=failed")
@@ -1049,15 +1092,35 @@ def terms_conditions(request):
 
 @login_required
 def create_listing(request):
+    from store.forms import ListingForm
+    
     if request.method == "POST":
         form = ListingForm(request.POST, request.FILES)
         if form.is_valid():
             listing = form.save(commit=False)
             listing.vendor = request.user
             listing.save()
-            messages.success(request, "Listing created successfully.")
+            
+            # Handle additional gallery images if provided
+            gallery_data = form.cleaned_data.get('gallery_images')
+            if gallery_data and isinstance(gallery_data, str):
+                try:
+                    import json
+                    gallery_list = json.loads(gallery_data)
+                    from store.models import ListingImage
+                    for i, image_url in enumerate(gallery_list):
+                        ListingImage.objects.create(
+                            listing=listing,
+                            image=image_url,
+                            order=i
+                        )
+                except json.JSONDecodeError:
+                    pass
+            
+            messages.success(request, f"Listing '{listing.title}' created successfully!")
             return redirect("store:vendor_listings")
         else:
+            messages.error(request, "Please correct the errors below.")
             print("🚨 Form errors:", form.errors)
     else:
         form = ListingForm()
@@ -1066,41 +1129,419 @@ def create_listing(request):
     
     return render(request, "vendor/create_listing.html", {
         "form": form,
-        "categories": categories
+        "categories": categories,
+        "page_title": "Create New Listing"
     })
+
+
+@login_required  
+def edit_listing(request, listing_id):
+    from store.forms import ListingForm
+    
+    listing = get_object_or_404(Listing, id=listing_id, vendor=request.user)
+    
+    if request.method == "POST":
+        form = ListingForm(request.POST, request.FILES, instance=listing)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Listing '{listing.title}' updated successfully!")
+            return redirect("store:vendor_listings")
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = ListingForm(instance=listing)
+
+    categories = Category.objects.filter(type="listing", parent=None)
+    
+    return render(request, "vendor/edit_listing.html", {
+        "form": form,
+        "listing": listing,
+        "categories": categories,
+        "page_title": f"Edit {listing.title}"
+    })
+
+
+@login_required
+def delete_listing(request, listing_id):
+    listing = get_object_or_404(Listing, id=listing_id, vendor=request.user)
+    
+    if request.method == "POST":
+        listing_title = listing.title
+        listing.delete()
+        messages.success(request, f"Listing '{listing_title}' deleted successfully!")
+        return redirect("store:vendor_listings")
+    
+    return render(request, "vendor/delete_listing_confirm.html", {
+        "listing": listing,
+        "page_title": f"Delete {listing.title}"
+    })
+
+
+@login_required
+def toggle_listing_status(request, listing_id):
+    listing = get_object_or_404(Listing, id=listing_id, vendor=request.user)
+    
+    if request.method == "POST":
+        new_status = request.POST.get('status')
+        if new_status in ['published', 'draft', 'expired', 'suspended']:
+            listing.status = new_status
+            listing.is_active = new_status == 'published'
+            listing.save()
+            messages.success(request, f"Listing status updated to {new_status.title()}!")
+        else:
+            messages.error(request, "Invalid status!")
+    
+    return redirect("store:vendor_listings")
 
 
 
 
 def browse_listings(request):
-    listings = Listing.objects.filter(is_active=True).order_by("-created_at")
-    category_id = request.GET.get("category")
+    from django.db.models import Q
+    from store.forms import ListingFilterForm
+    
+    # Initialize filters
+    filter_form = ListingFilterForm(request.GET)
+    listings = Listing.objects.filter(status='published', is_active=True)
+    
+    # Apply filters
+    if filter_form.is_valid():
+        cleaned_data = filter_form.cleaned_data
+        
+        # Search filter
+        if cleaned_data.get('search'):
+            search_query = cleaned_data['search']
+            listings = listings.filter(
+                Q(title__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(short_description__icontains=search_query) |
+                Q(tags__icontains=search_query)
+            )
+        
+        # Category filter
+        if cleaned_data.get('category'):
+            listings = listings.filter(
+                Q(category=cleaned_data['category']) |
+                Q(subcategory__parent=cleaned_data['category'])
+            )
+        
+        # Listing type filter
+        if cleaned_data.get('listing_type'):
+            listings = listings.filter(listing_type=cleaned_data['listing_type'])
+        
+        # Price range filter
+        if cleaned_data.get('price_min'):
+            listings = listings.filter(price__gte=cleaned_data['price_min'])
+        if cleaned_data.get('price_max'):
+            listings = listings.filter(price__lte=cleaned_data['price_max'])
+        
+        # Location filter
+        if cleaned_data.get('location'):
+            listings = listings.filter(
+                Q(location__icontains=cleaned_data['location']) |
+                Q(address__icontains=cleaned_data['location'])
+            )
+        
+        # Sort listings
+        sort_by = cleaned_data.get('sort_by', '-created_at')
+        listings = listings.order_by(sort_by)
+    else:
+        listings = listings.order_by('-created_at')
 
-    if category_id:
-        listings = listings.filter(category_id=category_id)
-
+    # Pagination
     paginator = Paginator(listings, 12)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
+    # Get categories and statistics
     categories = Category.objects.filter(type="listing", parent=None)
-
-    return render(request, "store/browse_listings.html", {
+    featured_listings = Listing.objects.filter(
+        status='published', is_active=True, featured=True
+    )[:6]
+    
+    context = {
         "listings": page_obj,
+        "filter_form": filter_form,
         "categories": categories,
-        "selected_category": int(category_id) if category_id else None
-    })
+        "featured_listings": featured_listings,
+        "total_listings": listings.count(),
+        "page_title": "Browse Listings"
+    }
+
+    return render(request, "store/browse_listings.html", context)
 
 
 def listing_detail(request, slug):
-    listing = get_object_or_404(Listing, slug=slug, is_active=True)
-    return render(request, 'store/listing_detail.html', {'listing': listing})
+    listing = get_object_or_404(Listing, slug=slug, status='published', is_active=True)
+    from store.forms import ListingInquiryForm
+    
+    # Increment view count
+    listing.increment_views()
+    
+    # Handle inquiry form submission
+    inquiry_form = ListingInquiryForm()
+    if request.method == 'POST' and 'submit_inquiry' in request.POST:
+        inquiry_form = ListingInquiryForm(request.POST)
+        if inquiry_form.is_valid():
+            from store.models import ListingInquiry
+            inquiry = ListingInquiry.objects.create(
+                listing=listing,
+                inquirer_name=inquiry_form.cleaned_data['name'],
+                inquirer_email=inquiry_form.cleaned_data['email'],
+                inquirer_phone=inquiry_form.cleaned_data.get('phone', ''),
+                message=inquiry_form.cleaned_data['message']
+            )
+            
+            # Update contact count
+            listing.contact_count += 1
+            listing.save(update_fields=['contact_count'])
+            
+            messages.success(request, "Your inquiry has been sent successfully! The vendor will contact you soon.")
+            return redirect('store:listing_detail', slug=listing.slug)
+        else:
+            messages.error(request, "Please correct the errors in your inquiry.")
+    
+    # Get related listings
+    related_listings = Listing.objects.filter(
+        category=listing.category,
+        status='published',
+        is_active=True
+    ).exclude(id=listing.id)[:4]
+    
+    # Check if user has favorited this listing
+    is_favorited = False
+    if request.user.is_authenticated:
+        from store.models import ListingFavorite
+        is_favorited = ListingFavorite.objects.filter(
+            user=request.user, 
+            listing=listing
+        ).exists()
+    
+    context = {
+        'listing': listing,
+        'inquiry_form': inquiry_form,
+        'related_listings': related_listings,
+        'is_favorited': is_favorited,
+        'page_title': listing.title,
+        'meta_description': listing.short_description or listing.meta_description
+    }
+    
+    return render(request, 'store/listing_detail.html', context)
 
 
 @login_required
 def vendor_listings(request):
-    listings = Listing.objects.filter(vendor=request.user).order_by('-created_at')
-    return render(request, 'vendor/listings.html', {'listings': listings})
+    from django.db.models import Count, Sum, Q
+    from store.forms import VendorListingFilterForm
+    
+    # Initialize filter form
+    filter_form = VendorListingFilterForm(request.GET)
+    
+    # Get base listings queryset
+    listings = Listing.objects.filter(vendor=request.user).annotate(
+        inquiry_count=Count('inquiries'),
+        favorite_count=Count('favorites')
+    )
+    
+    # Apply filters
+    if filter_form.is_valid():
+        cleaned_data = filter_form.cleaned_data
+        
+        # Status filter
+        status = cleaned_data.get('status', 'all')
+        if status != 'all':
+            listings = listings.filter(status=status)
+        
+        # Category filter
+        if cleaned_data.get('category'):
+            listings = listings.filter(category=cleaned_data['category'])
+        
+        # Search filter
+        if cleaned_data.get('search'):
+            search_query = cleaned_data['search']
+            listings = listings.filter(
+                Q(title__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(tags__icontains=search_query)
+            )
+        
+        # Sort listings
+        sort_by = cleaned_data.get('sort_by', '-created_at')
+        listings = listings.order_by(sort_by)
+    else:
+        listings = listings.order_by('-created_at')
+    
+    # Get summary statistics
+    all_listings = Listing.objects.filter(vendor=request.user)
+    stats = all_listings.aggregate(
+        total_listings=Count('id'),
+        published_count=Count('id', filter=Q(status='published')),
+        draft_count=Count('id', filter=Q(status='draft')),
+        sold_count=Count('id', filter=Q(status='sold')),
+        total_views=Sum('views_count') or 0,
+        total_contacts=Sum('contact_count') or 0,
+        total_favorites=Sum('favorites_count') or 0
+    )
+    
+    # Pagination
+    paginator = Paginator(listings, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'listings': page_obj,
+        'filter_form': filter_form,
+        'total_listings': stats['total_listings'],
+        'published_count': stats['published_count'],
+        'draft_count': stats['draft_count'],
+        'sold_count': stats['sold_count'],
+        'total_views': stats['total_views'],
+        'total_contacts': stats['total_contacts'],
+        'total_favorites': stats['total_favorites'],
+        'page_title': 'My Listings'
+    }
+    
+    return render(request, 'vendor/vendor_listings.html', context)
+
+
+# ===== LISTING AJAX VIEWS =====
+
+@csrf_exempt
+@login_required
+def toggle_listing_favorite(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            listing_id = data.get('listing_id')
+            
+            listing = get_object_or_404(Listing, id=listing_id, status='published', is_active=True)
+            from store.models import ListingFavorite
+            
+            favorite, created = ListingFavorite.objects.get_or_create(
+                user=request.user,
+                listing=listing
+            )
+            
+            if not created:
+                favorite.delete()
+                is_favorited = False
+                message = "Removed from favorites"
+            else:
+                is_favorited = True
+                message = "Added to favorites"
+                
+                # Update favorites count
+                listing.favorites_count = listing.favorites.count()
+                listing.save(update_fields=['favorites_count'])
+            
+            return JsonResponse({
+                'success': True,
+                'is_favorited': is_favorited,
+                'message': message,
+                'favorites_count': listing.favorites.count()
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Error: {str(e)}'
+            })
+    
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
+
+
+@csrf_exempt
+def get_subcategories(request):
+    """AJAX endpoint to get subcategories for a given category"""
+    if request.method == 'GET':
+        category_id = request.GET.get('category_id')
+        
+        if category_id:
+            try:
+                subcategories = Category.objects.filter(
+                    parent_id=category_id,
+                    type="listing"
+                ).values('id', 'title')
+                
+                return JsonResponse({
+                    'success': True,
+                    'subcategories': list(subcategories)
+                })
+            except Exception as e:
+                return JsonResponse({
+                    'success': False,
+                    'message': str(e)
+                })
+        
+        return JsonResponse({
+            'success': True,
+            'subcategories': []
+        })
+    
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
+
+
+@login_required
+def listing_inquiries(request):
+    """View vendor's listing inquiries"""
+    from store.models import ListingInquiry
+    
+    inquiries = ListingInquiry.objects.filter(
+        listing__vendor=request.user
+    ).select_related('listing').order_by('-created_at')
+    
+    # Filter by listing if requested
+    listing_id = request.GET.get('listing')
+    if listing_id:
+        inquiries = inquiries.filter(listing_id=listing_id)
+    
+    # Filter by read status
+    read_filter = request.GET.get('read')
+    if read_filter == 'unread':
+        inquiries = inquiries.filter(is_read=False)
+    elif read_filter == 'read':
+        inquiries = inquiries.filter(is_read=True)
+    
+    # Pagination
+    paginator = Paginator(inquiries, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get vendor's listings for filter dropdown
+    vendor_listings = Listing.objects.filter(
+        vendor=request.user
+    ).values('id', 'title')
+    
+    context = {
+        'inquiries': page_obj,
+        'vendor_listings': vendor_listings,
+        'selected_listing': int(listing_id) if listing_id else None,
+        'read_filter': read_filter or 'all',
+        'page_title': 'Listing Inquiries'
+    }
+    
+    return render(request, 'vendor/listing_inquiries.html', context)
+
+
+@login_required
+def mark_inquiry_read(request, inquiry_id):
+    """Mark an inquiry as read"""
+    from store.models import ListingInquiry
+    
+    inquiry = get_object_or_404(
+        ListingInquiry,
+        id=inquiry_id,
+        listing__vendor=request.user
+    )
+    
+    inquiry.is_read = True
+    inquiry.save(update_fields=['is_read'])
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
+    
+    messages.success(request, 'Inquiry marked as read.')
+    return redirect('store:listing_inquiries')
 
 
 # ===== MODERN AJAX VIEWS =====
@@ -1128,10 +1569,19 @@ def add_to_cart_ajax(request):
                 cart_item, created = store_models.Cart.objects.get_or_create(
                     user=request.user,
                     product=product,
-                    defaults={'quantity': quantity}
+                    defaults={
+                        'qty': quantity,
+                        'price': product.price,
+                        'sub_total': product.price * quantity,
+                        'shipping': product.shipping * quantity,
+                        'total': (product.price * quantity) + (product.shipping * quantity)
+                    }
                 )
                 if not created:
-                    cart_item.quantity += quantity
+                    cart_item.qty += quantity
+                    cart_item.sub_total = cart_item.price * cart_item.qty
+                    cart_item.shipping = product.shipping * cart_item.qty
+                    cart_item.total = cart_item.sub_total + cart_item.shipping
                     cart_item.save()
                 
                 cart_count = store_models.Cart.objects.filter(user=request.user).count()
@@ -1146,10 +1596,19 @@ def add_to_cart_ajax(request):
                 cart_item, created = store_models.Cart.objects.get_or_create(
                     cart_id=cart_id,
                     product=product,
-                    defaults={'quantity': quantity}
+                    defaults={
+                        'qty': quantity,
+                        'price': product.price,
+                        'sub_total': product.price * quantity,
+                        'shipping': product.shipping * quantity,
+                        'total': (product.price * quantity) + (product.shipping * quantity)
+                    }
                 )
                 if not created:
-                    cart_item.quantity += quantity
+                    cart_item.qty += quantity
+                    cart_item.sub_total = cart_item.price * cart_item.qty
+                    cart_item.shipping = product.shipping * cart_item.qty
+                    cart_item.total = cart_item.sub_total + cart_item.shipping
                     cart_item.save()
                 
                 cart_count = store_models.Cart.objects.filter(cart_id=cart_id).count()
@@ -1187,7 +1646,10 @@ def update_cart_ajax(request):
             if quantity <= 0:
                 cart_item.delete()
             else:
-                cart_item.quantity = quantity
+                cart_item.qty = quantity
+                cart_item.sub_total = cart_item.price * quantity
+                cart_item.shipping = cart_item.product.shipping * quantity
+                cart_item.total = cart_item.sub_total + cart_item.shipping
                 cart_item.save()
             
             # Calculate totals
@@ -1258,18 +1720,66 @@ def toggle_wishlist_ajax(request):
 
 
 def product_quick_view(request, product_id):
-    """Quick view product details via AJAX"""
+    """Enhanced quick view product details via AJAX"""
     try:
         product = get_object_or_404(store_models.Product, id=product_id, status="Published")
         
+        # Get related products
+        related_products = store_models.Product.objects.filter(
+            category=product.category,
+            status="Published"
+        ).exclude(id=product.id)[:4]
+        
+        # Get product variants if available
+        variants = {}
+        for variant in product.variants():
+            if variant.is_active:
+                variant_items = variant.items()
+                if variant_items.exists():
+                    variants[variant.name] = []
+                    for item in variant_items:
+                        variants[variant.name].append({
+                            'title': item.title,
+                            'content': item.content
+                        })
+        
+        # Check if product is in user's wishlist
+        in_wishlist = False
+        if request.user.is_authenticated:
+            in_wishlist = store_models.WishlistItem.objects.filter(
+                user=request.user, 
+                product=product
+            ).exists()
+        
+        # Check if product is in comparison
+        in_comparison = False
+        if request.user.is_authenticated:
+            try:
+                comparison = store_models.ProductComparison.objects.get(user=request.user)
+                in_comparison = product in comparison.products.all()
+            except:
+                pass
+        
         # Render product quick view template
         html = render_to_string('store/partials/product_quick_view.html', {
-            'product': product
+            'product': product,
+            'related_products': related_products,
+            'variants': variants,
+            'in_wishlist': in_wishlist,
+            'in_comparison': in_comparison,
         }, request=request)
         
         return JsonResponse({
             'success': True,
-            'html': html
+            'html': html,
+            'product_data': {
+                'id': product.id,
+                'name': product.name,
+                'price': float(product.price),
+                'stock': product.stock,
+                'in_wishlist': in_wishlist,
+                'in_comparison': in_comparison,
+            }
         })
         
     except Exception as e:
@@ -1278,6 +1788,95 @@ def product_quick_view(request, product_id):
             'message': str(e)
         })
 
+
+# Product Comparison Views
+@csrf_exempt
+def toggle_comparison(request):
+    """Add/Remove product from comparison list"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'message': 'Please login to use comparison feature'
+        })
+    
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
+    
+    try:
+        product_id = request.POST.get('product_id')
+        product = get_object_or_404(store_models.Product, id=product_id, status="Published")
+        
+        comparison, created = store_models.ProductComparison.objects.get_or_create(
+            user=request.user
+        )
+        
+        if product in comparison.products.all():
+            comparison.products.remove(product)
+            action = 'removed'
+            message = f'{product.name} removed from comparison'
+        else:
+            if comparison.products.count() >= 4:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'You can only compare up to 4 products at once'
+                })
+            
+            comparison.products.add(product)
+            action = 'added'
+            message = f'{product.name} added to comparison'
+        
+        return JsonResponse({
+            'success': True,
+            'message': message,
+            'action': action,
+            'comparison_count': comparison.products.count()
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        })
+
+def comparison_view(request):
+    """View products in comparison"""
+    if not request.user.is_authenticated:
+        messages.warning(request, 'Please login to use comparison feature')
+        return redirect('userauths:sign-in')
+    
+    try:
+        comparison = store_models.ProductComparison.objects.get(user=request.user)
+        products = comparison.products.all()
+    except:
+        products = []
+    
+    context = {
+        'products': products,
+        'comparison_count': len(products)
+    }
+    return render(request, 'store/comparison.html', context)
+
+@csrf_exempt
+def clear_comparison(request):
+    """Clear all products from comparison"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'message': 'Please login first'
+        })
+    
+    try:
+        comparison = store_models.ProductComparison.objects.get(user=request.user)
+        comparison.products.clear()
+        return JsonResponse({
+            'success': True,
+            'message': 'Comparison cleared successfully'
+        })
+    except:
+        return JsonResponse({
+            'success': False,
+            'message': 'No comparison found'
+        })
 
 def search_suggestions(request):
     """Get search suggestions via AJAX"""
@@ -1455,3 +2054,170 @@ def privacy_policy(request):
         'category_': store_models.Category.objects.filter(type="product", parent=None),
     }
     return render(request, 'store/privacy_policy.html', context)
+
+
+# ===== DASHBOARD ROUTING =====
+
+@login_required
+def dashboard_redirect(request):
+    """Route users to appropriate dashboard based on their user_type"""
+    try:
+        profile = request.user.profile
+        if profile.user_type == 'Vendor':
+            return redirect('vendor:dashboard')
+        else:
+            return redirect('customer:dashboard')
+    except:
+        # If no profile exists, default to customer dashboard
+        return redirect('customer:dashboard')
+
+
+# ===== REVIEW SYSTEM =====
+
+@login_required
+def submit_review(request, product_slug):
+    """Submit a review for a product"""
+    product = get_object_or_404(store_models.Product, slug=product_slug)
+    
+    # Check if user has already reviewed this product
+    existing_review = store_models.Review.objects.filter(
+        user=request.user, 
+        product=product
+    ).first()
+    
+    if existing_review:
+        messages.warning(request, "You have already reviewed this product.")
+        return redirect('store:product_detail', product_slug=product.slug)
+    
+    # Check if user has purchased this product
+    has_purchased = store_models.OrderItem.objects.filter(
+        order__user=request.user,
+        product=product,
+        order__payment_status="Paid"
+    ).exists()
+    
+    if not has_purchased:
+        messages.error(request, "You can only review products you have purchased.")
+        return redirect('store:product_detail', product_slug=product.slug)
+    
+    if request.method == 'POST':
+        form = store_forms.ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.user = request.user
+            review.product = product
+            review.active = True  # Auto-approve for now
+            review.save()
+            
+            messages.success(request, "Thank you! Your review has been submitted.")
+            return redirect('store:product_detail', product_slug=product.slug)
+    else:
+        form = store_forms.ReviewForm()
+    
+    context = {
+        'form': form,
+        'product': product
+    }
+    return render(request, 'store/submit_review.html', context)
+
+
+@require_http_methods(["POST"])
+def ajax_submit_review(request):
+    """AJAX endpoint for submitting reviews"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False, 
+            'message': 'You must be logged in to submit a review.'
+        })
+    
+    try:
+        product_id = request.POST.get('product_id')
+        product = get_object_or_404(store_models.Product, id=product_id)
+        
+        # Check if user has already reviewed
+        existing_review = store_models.Review.objects.filter(
+            user=request.user, 
+            product=product
+        ).first()
+        
+        if existing_review:
+            return JsonResponse({
+                'success': False, 
+                'message': 'You have already reviewed this product.'
+            })
+        
+        # Check if user has purchased this product
+        has_purchased = store_models.OrderItem.objects.filter(
+            order__user=request.user,
+            product=product,
+            order__payment_status="Paid"
+        ).exists()
+        
+        if not has_purchased:
+            return JsonResponse({
+                'success': False, 
+                'message': 'You can only review products you have purchased.'
+            })
+        
+        form = store_forms.ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.user = request.user
+            review.product = product
+            review.active = True
+            review.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Thank you! Your review has been submitted.',
+                'review_count': product.reviews.filter(active=True).count(),
+                'average_rating': product.average_rating() or 0
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': 'Please correct the errors in your review.',
+                'errors': form.errors
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': 'An error occurred. Please try again.'
+        })
+
+
+def product_reviews(request, product_slug):
+    """Display all reviews for a product"""
+    product = get_object_or_404(store_models.Product, slug=product_slug)
+    reviews = store_models.Review.objects.filter(
+        product=product, 
+        active=True
+    ).select_related('user__profile').order_by('-date')
+    
+    # Pagination
+    paginator = Paginator(reviews, 10)  # Show 10 reviews per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Calculate rating distribution
+    rating_distribution = {}
+    total_reviews = reviews.count()
+    for i in range(1, 6):
+        count = reviews.filter(rating=i).count()
+        percentage = (count / total_reviews * 100) if total_reviews > 0 else 0
+        rating_distribution[i] = {
+            'count': count,
+            'percentage': percentage
+        }
+    
+    context = {
+        'product': product,
+        'reviews': page_obj,
+        'rating_distribution': rating_distribution,
+        'total_reviews': total_reviews,
+        'average_rating': product.average_rating() or 0
+    }
+    return render(request, 'store/product_reviews.html', context)
+
+

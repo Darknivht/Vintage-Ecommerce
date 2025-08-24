@@ -1,63 +1,469 @@
 {% extends 'partials/base.html' %}
 {% load static %}
 {% load humanize %}
+
+{% block title %}{{ page_title|default:listing.title }} - Vintage Marketplace{% endblock %}
+
+{% block meta_description %}{{ meta_description|default:listing.short_description|default:listing.description|truncatewords:30 }}{% endblock %}
+
 {% block content %}
+<section class="listing-detail py-4">
+    <div class="container">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'store:index' %}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'store:browse_listings' %}">Listings</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'store:browse_listings' %}?category={{ listing.category.id }}">{{ listing.category.title }}</a></li>
+                <li class="breadcrumb-item active">{{ listing.title|truncatechars:50 }}</li>
+            </ol>
+        </nav>
 
-<section class="middle">
-  <div class="container">
-    <div class="row align-items-start justify-content-center">
-      <div class="col-xl-10 col-lg-10 col-md-12">
-        <div class="card mb-4 border-0 shadow">
-          <div class="row g-0 align-items-center">
-            <div class="col-md-6">
-              {% if listing.image %}
-                <img src="{{ listing.image.url }}" class="img-fluid rounded-start" style="width: 100%; height: 500px; object-fit: cover;" alt="{{ listing.title }}">
-              {% else %}
-                <div class="d-flex align-items-center justify-content-center bg-light" style="width: 100%; height: 500px;">
-                  <span class="text-muted">No Image</span>
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8 mb-4">
+                <!-- Image Gallery -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-0">
+                        {% if listing.image %}
+                            <img id="mainImage" src="{{ listing.image.url }}" class="img-fluid w-100 rounded-top" 
+                                 style="height: 500px; object-fit: cover;" alt="{{ listing.title }}">
+                        {% else %}
+                            <div class="d-flex align-items-center justify-content-center bg-light rounded-top" 
+                                 style="height: 500px;">
+                                <div class="text-center">
+                                    <i class="fas fa-image fa-4x text-muted mb-3"></i>
+                                    <p class="text-muted">No image available</p>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Gallery Thumbnails (if available) -->
+                        {% if listing.gallery_images %}
+                            <div class="p-3">
+                                <div class="row g-2">
+                                    <div class="col-2">
+                                        <img src="{{ listing.image.url }}" class="img-fluid rounded gallery-thumb active" 
+                                             onclick="changeMainImage(this.src)" alt="Main image">
+                                    </div>
+                                    {% for image_url in listing.gallery_images %}
+                                        <div class="col-2">
+                                            <img src="{{ image_url }}" class="img-fluid rounded gallery-thumb" 
+                                                 onclick="changeMainImage(this.src)" alt="Gallery image">
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
-              {% endif %}
+
+                <!-- Listing Details -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0 py-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h1 class="h3 fw-bold mb-2">{{ listing.title }}</h1>
+                                <div class="d-flex align-items-center mb-2">
+                                    {% if listing.featured %}
+                                        <span class="badge bg-warning me-2">Featured</span>
+                                    {% endif %}
+                                    {% if listing.urgent %}
+                                        <span class="badge bg-danger me-2">Urgent</span>
+                                    {% endif %}
+                                    {% if listing.promoted %}
+                                        <span class="badge bg-success me-2">Promoted</span>
+                                    {% endif %}
+                                    <span class="badge bg-primary">{{ listing.get_listing_type_display }}</span>
+                                </div>
+                            </div>
+                            {% if user.is_authenticated %}
+                                <button class="btn btn-outline-danger favorite-btn" data-listing-id="{{ listing.id }}">
+                                    <i class="fas fa-heart{% if not is_favorited %} text-muted{% endif %}"></i>
+                                    <span class="favorites-count">{{ listing.favorites_count|default:0 }}</span>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <!-- Quick Info -->
+                        <div class="row mb-4">
+                            <div class="col-md-3 col-6 text-center">
+                                <div class="info-item">
+                                    <i class="fas fa-tag text-primary fa-2x mb-2"></i>
+                                    <div class="fw-semibold">{{ listing.category.title }}</div>
+                                    {% if listing.subcategory %}
+                                        <small class="text-muted">{{ listing.subcategory.title }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 text-center">
+                                <div class="info-item">
+                                    <i class="fas fa-map-marker-alt text-success fa-2x mb-2"></i>
+                                    <div class="fw-semibold">{{ listing.location }}</div>
+                                    {% if listing.address %}
+                                        <small class="text-muted">{{ listing.address|truncatechars:20 }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 text-center">
+                                <div class="info-item">
+                                    <i class="fas fa-clock text-info fa-2x mb-2"></i>
+                                    <div class="fw-semibold">{{ listing.created_at|naturaltime }}</div>
+                                    <small class="text-muted">Listed</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 text-center">
+                                <div class="info-item">
+                                    <i class="fas fa-eye text-warning fa-2x mb-2"></i>
+                                    <div class="fw-semibold">{{ listing.views_count|default:0 }}</div>
+                                    <small class="text-muted">Views</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Price -->
+                        {% if listing.price %}
+                            <div class="price-section mb-4">
+                                <h2 class="text-primary fw-bold mb-2">₦{{ listing.price|intcomma }}</h2>
+                                {% if listing.price_type %}
+                                    <span class="badge bg-light text-dark">{{ listing.get_price_type_display }}</span>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Short Description -->
+                        {% if listing.short_description %}
+                            <div class="mb-4">
+                                <p class="lead">{{ listing.short_description }}</p>
+                            </div>
+                        {% endif %}
+
+                        <!-- Description -->
+                        <div class="description-section mb-4">
+                            <h5 class="fw-bold mb-3">Description</h5>
+                            <div class="content">
+                                {{ listing.description|linebreaks }}
+                            </div>
+                        </div>
+
+                        <!-- Tags -->
+                        {% if listing.tags %}
+                            <div class="tags-section mb-4">
+                                <h6 class="fw-semibold mb-3">Tags</h6>
+                                {% for tag in listing.get_tags_list %}
+                                    <a href="{% url 'store:browse_listings' %}?search={{ tag }}" 
+                                       class="badge bg-light text-dark text-decoration-none me-1 mb-1">
+                                        #{{ tag }}
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Additional Details -->
+                        {% if listing.extra_data %}
+                            <div class="details-section mb-4">
+                                <h5 class="fw-bold mb-3">Additional Details</h5>
+                                <div class="row">
+                                    {% for key, value in listing.extra_data.items %}
+                                        <div class="col-md-6 mb-2">
+                                            <div class="d-flex justify-content-between">
+                                                <span class="fw-semibold text-capitalize">{{ key|slugify|title }}:</span>
+                                                <span>{{ value }}</span>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Video -->
+                        {% if listing.video_url %}
+                            <div class="video-section mb-4">
+                                <h5 class="fw-bold mb-3">Video</h5>
+                                <div class="embed-responsive embed-responsive-16by9">
+                                    <iframe class="embed-responsive-item" src="{{ listing.video_url }}" 
+                                            allowfullscreen></iframe>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
 
-            <div class="col-md-6">
-              <div class="card-body px-4 py-4">
-                <h3 class="card-title fw-bold mb-2">{{ listing.title }}</h3>
-                <p class="text-muted mb-2"><i class="fas fa-tag me-1"></i> {{ listing.category.title }}</p>
-                <p class="text-muted mb-2"><i class="fas fa-user me-1"></i> Listed by: {{ listing.vendor.get_full_name|default:listing.vendor.username }}</p>
-                {% if listing.location %}
-                  <p class="text-muted mb-2"><i class="fas fa-map-marker-alt me-1"></i> {{ listing.location }}</p>
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Seller Info -->
+                <div class="card border-0 shadow-sm mb-4 sticky-top" style="top: 100px;">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user me-2"></i>Seller Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 60px; height: 60px;">
+                                <span class="fw-bold">{{ listing.vendor.get_full_name.0|default:listing.vendor.username.0|upper }}</span>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ listing.vendor.get_full_name|default:listing.vendor.username }}</h6>
+                                <small class="text-muted">Seller since {{ listing.vendor.date_joined|date:"M Y" }}</small>
+                            </div>
+                        </div>
+
+                        <!-- Contact Methods -->
+                        <div class="contact-methods">
+                            {% if listing.contact_phone %}
+                                <div class="mb-3">
+                                    <a href="tel:{{ listing.contact_phone }}" class="btn btn-success w-100">
+                                        <i class="fas fa-phone me-2"></i>{{ listing.contact_phone }}
+                                    </a>
+                                </div>
+                            {% endif %}
+                            
+                            {% if listing.contact_email %}
+                                <div class="mb-3">
+                                    <a href="mailto:{{ listing.contact_email }}?subject=Inquiry about {{ listing.title }}" 
+                                       class="btn btn-info w-100">
+                                        <i class="fas fa-envelope me-2"></i>Send Email
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Safety Tips -->
+                        <div class="alert alert-warning">
+                            <small>
+                                <i class="fas fa-shield-alt me-1"></i>
+                                <strong>Safety Tips:</strong>
+                                <ul class="mb-0 mt-2 small">
+                                    <li>Meet in a safe, public location</li>
+                                    <li>Inspect the item before payment</li>
+                                    <li>Never send money in advance</li>
+                                </ul>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inquiry Form -->
+                {% if user.is_authenticated %}
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="fas fa-envelope me-2"></i>Send Inquiry
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" id="inquiryForm">
+                                {% csrf_token %}
+                                <input type="hidden" name="submit_inquiry" value="1">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Your Name</label>
+                                    {{ inquiry_form.name }}
+                                    {% if inquiry_form.name.errors %}
+                                        <div class="text-danger small">{{ inquiry_form.name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    {{ inquiry_form.email }}
+                                    {% if inquiry_form.email.errors %}
+                                        <div class="text-danger small">{{ inquiry_form.email.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Phone (Optional)</label>
+                                    {{ inquiry_form.phone }}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Message</label>
+                                    {{ inquiry_form.message }}
+                                    {% if inquiry_form.message.errors %}
+                                        <div class="text-danger small">{{ inquiry_form.message.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-paper-plane me-2"></i>Send Inquiry
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body text-center">
+                            <h5 class="mb-3">Interested in this listing?</h5>
+                            <p class="text-muted mb-3">Login to send an inquiry to the seller</p>
+                            <a href="{% url 'userauths:login' %}?next={{ request.path }}" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login to Contact
+                            </a>
+                        </div>
+                    </div>
                 {% endif %}
-                {% if listing.price %}
-                  <h4 class="text-primary mt-3">₦{{ listing.price|intcomma }}</h4>
-                {% endif %}
-                <p class="text-muted"><small>{{ listing.created_at|naturaltime }}</small></p>
-              </div>
+
+                <!-- Share -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-3">Share this listing</h6>
+                        <div class="d-flex justify-content-between">
+                            <a href="https://facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" 
+                               class="btn btn-outline-primary btn-sm" target="_blank">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text={{ listing.title }}" 
+                               class="btn btn-outline-info btn-sm" target="_blank">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="https://wa.me/?text={{ listing.title }} - {{ request.build_absolute_uri }}" 
+                               class="btn btn-outline-success btn-sm" target="_blank">
+                                <i class="fab fa-whatsapp"></i>
+                            </a>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="copyToClipboard()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
-
-          <hr class="my-0">
-
-          <div class="card-body px-4 py-4">
-            <h5 class="fw-bold mb-3">Description</h5>
-            <p>{{ listing.description|linebreaks }}</p>
-
-            {% if listing.extra_data %}
-              <hr>
-              <h5 class="fw-bold mb-3">Listing Details</h5>
-              <ul class="list-group list-group-flush">
-                {% for key, value in listing.extra_data.items %}
-                  <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <strong class="text-capitalize">{{ key|slugify|title }}:</strong>
-                    <span>{{ value }}</span>
-                  </li>
-                {% endfor %}
-              </ul>
-            {% endif %}
-          </div>
         </div>
-      </div>
+
+        <!-- Related Listings -->
+        {% if related_listings %}
+            <div class="related-listings mt-5">
+                <h4 class="fw-bold mb-4">Related Listings</h4>
+                <div class="row">
+                    {% for related in related_listings %}
+                        <div class="col-md-6 col-lg-3 mb-4">
+                            <div class="card border-0 shadow-sm h-100">
+                                <a href="{% url 'store:listing_detail' related.slug %}">
+                                    {% if related.image %}
+                                        <img src="{{ related.image.url }}" class="card-img-top" 
+                                             style="height: 200px; object-fit: cover;" alt="{{ related.title }}">
+                                    {% else %}
+                                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                                             style="height: 200px;">
+                                            <i class="fas fa-image text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                </a>
+                                <div class="card-body">
+                                    <h6 class="fw-bold mb-2">
+                                        <a href="{% url 'store:listing_detail' related.slug %}" 
+                                           class="text-dark text-decoration-none">
+                                            {{ related.title|truncatechars:40 }}
+                                        </a>
+                                    </h6>
+                                    <p class="text-primary fw-bold mb-0">₦{{ related.price|intcomma }}</p>
+                                    <small class="text-muted">{{ related.location }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
     </div>
-  </div>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gallery functionality
+    window.changeMainImage = function(src) {
+        document.getElementById('mainImage').src = src;
+        
+        // Update active thumbnail
+        document.querySelectorAll('.gallery-thumb').forEach(thumb => {
+            thumb.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    };
+
+    // Favorite functionality
+    const favoriteBtn = document.querySelector('.favorite-btn');
+    if (favoriteBtn) {
+        favoriteBtn.addEventListener('click', function() {
+            const listingId = this.getAttribute('data-listing-id');
+            
+            fetch('/ajax/toggle-listing-favorite/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ listing_id: listingId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const icon = this.querySelector('i');
+                    const countSpan = this.querySelector('.favorites-count');
+                    
+                    if (data.is_favorited) {
+                        icon.className = 'fas fa-heart text-danger';
+                        this.classList.add('btn-danger');
+                        this.classList.remove('btn-outline-danger');
+                    } else {
+                        icon.className = 'fas fa-heart text-muted';
+                        this.classList.add('btn-outline-danger');
+                        this.classList.remove('btn-danger');
+                    }
+                    
+                    countSpan.textContent = data.favorites_count;
+                }
+            });
+        });
+    }
+
+    // Copy to clipboard
+    window.copyToClipboard = function() {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            alert('Link copied to clipboard!');
+        });
+    };
+});
+</script>
+
+<style>
+.gallery-thumb {
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.gallery-thumb:hover,
+.gallery-thumb.active {
+    border-color: #007bff;
+}
+
+.info-item {
+    padding: 1rem;
+    text-align: center;
+}
+
+.avatar {
+    font-size: 1.5rem;
+}
+
+.favorite-btn {
+    transition: all 0.3s ease;
+}
+
+.favorite-btn:hover {
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .sticky-top {
+        position: static !important;
+    }
+}
+</style>
 
 {% endblock content %}

@@ -1,0 +1,197 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+
+{% block title %}Write Review - {{ product.name }} - Vintage Marketplace{% endblock %}
+
+{% block extra_css %}
+<style>
+.review-container {
+    background: #F8FAFC;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.review-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.product-info {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: #F8FAFC;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
+
+.product-image {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.rating-input {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.star-rating {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.star {
+    font-size: 1.5rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.star.active,
+.star:hover {
+    color: #FFD700;
+}
+
+.btn-submit {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: transform 0.2s ease;
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+    color: white;
+}
+
+.btn-cancel {
+    background: transparent;
+    color: #6c757d;
+    border: 1px solid #ddd;
+    padding: 0.75rem 2rem;
+    border-radius: 50px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+    background: #f8f9fa;
+    color: #495057;
+    text-decoration: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="review-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="review-form">
+                    <h2 class="text-center mb-4">Write a Review</h2>
+                    
+                    <!-- Product Info -->
+                    <div class="product-info">
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
+                        <div>
+                            <h5 class="mb-1">{{ product.name }}</h5>
+                            <p class="text-muted mb-0">₦{{ product.price|floatformat:0 }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Review Form -->
+                    <form method="post" id="reviewForm">
+                        {% csrf_token %}
+                        
+                        <!-- Rating Selection -->
+                        <div class="mb-3">
+                            <label class="form-label">Your Rating</label>
+                            <div class="star-rating" id="starRating">
+                                <span class="star" data-rating="1">★</span>
+                                <span class="star" data-rating="2">★</span>
+                                <span class="star" data-rating="3">★</span>
+                                <span class="star" data-rating="4">★</span>
+                                <span class="star" data-rating="5">★</span>
+                            </div>
+                            {{ form.rating.as_hidden }}
+                        </div>
+                        
+                        <!-- Review Text -->
+                        <div class="mb-4">
+                            {{ form.review.label_tag }}
+                            {{ form.review }}
+                        </div>
+                        
+                        <!-- Submit Buttons -->
+                        <div class="d-flex gap-3 justify-content-center">
+                            <button type="submit" class="btn btn-submit">Submit Review</button>
+                            <a href="{% url 'store:product_detail' product.slug %}" class="btn btn-cancel">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Star Rating Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const stars = document.querySelectorAll('.star');
+    const ratingInput = document.getElementById('id_rating');
+    
+    stars.forEach((star, index) => {
+        star.addEventListener('click', function() {
+            const rating = this.dataset.rating;
+            ratingInput.value = rating;
+            
+            // Update star display
+            stars.forEach((s, i) => {
+                if (i < rating) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+        });
+        
+        star.addEventListener('mouseover', function() {
+            const rating = this.dataset.rating;
+            
+            stars.forEach((s, i) => {
+                if (i < rating) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+        });
+    });
+    
+    // Reset to selected rating on mouse leave
+    document.getElementById('starRating').addEventListener('mouseleave', function() {
+        const selectedRating = ratingInput.value;
+        
+        stars.forEach((s, i) => {
+            if (i < selectedRating) {
+                s.classList.add('active');
+            } else {
+                s.classList.remove('active');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

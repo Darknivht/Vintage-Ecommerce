@@ -2,25 +2,20 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}Browse Listings - Vintage Marketplace{% endblock %}
+{% block title %}{{ page_title|default:"Browse Listings" }} - {{ site_name|default:"Vintage Ecommerce" }}{% endblock %}
 
 {% block content %}
-<div class="listings-page">
-    <!-- Hero Section -->
-    <div class="listings-hero">
+<div class="browse-listings-page">
+    <!-- Header Section -->
+    <div class="bg-light py-4 mb-5">
         <div class="container">
-            <div class="hero-content">
-                <h1 class="hero-title">Browse Listings</h1>
-                <p class="hero-subtitle">Discover unique items from verified sellers across Nigeria</p>
-                <div class="hero-stats">
-                    <div class="stat-item">
-                        <span class="stat-number">{{ listings.paginator.count|default:0 }}</span>
-                        <span class="stat-label">Active Listings</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number">{{ categories.count|default:0 }}</span>
-                        <span class="stat-label">Categories</span>
-                    </div>
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="fw-bold mb-2">Browse Listings</h1>
+                    <p class="text-muted mb-0">Discover amazing services and products from our vendors</p>
+                </div>
+                <div class="col-lg-6 text-lg-end">
+                    <span class="text-muted">{{ total_listings|intcomma }} listings found</span>
                 </div>
             </div>
         </div>
@@ -28,519 +23,502 @@
 
     <div class="container">
         <div class="row">
-            <!-- Filters Sidebar -->
-            <div class="col-lg-3 col-md-4">
+            <!-- Sidebar Filters -->
+            <div class="col-lg-3 col-md-4 mb-4">
                 <div class="filters-sidebar">
-                    <div class="filters-header">
-                        <h4><i class="fas fa-filter me-2"></i>Filters</h4>
-                        <button class="clear-filters-btn" onclick="clearAllFilters()">
-                            <i class="fas fa-times"></i> Clear All
-                        </button>
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filters</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="GET" id="filterForm">
+                                <!-- Search -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Search</label>
+                                    {{ filter_form.search }}
+                                </div>
+
+                                <!-- Category -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Category</label>
+                                    {{ filter_form.category }}
+                                </div>
+
+                                <!-- Listing Type -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Type</label>
+                                    {{ filter_form.listing_type }}
+                                </div>
+
+                                <!-- Price Range -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Price Range</label>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            {{ filter_form.price_min }}
+                                        </div>
+                                        <div class="col-6">
+                                            {{ filter_form.price_max }}
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-6">
+                                            <small class="text-muted">Min Price</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Max Price</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Location -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Location</label>
+                                    {{ filter_form.location }}
+                                </div>
+
+                                <!-- Sort By -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Sort By</label>
+                                    {{ filter_form.sort_by }}
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search me-2"></i>Apply Filters
+                                    </button>
+                                    <a href="{% url 'store:browse_listings' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-2"></i>Clear All
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
                     </div>
 
-                    <!-- Category Filter -->
-                    <div class="filter-section">
-                        <h6 class="filter-title">
-                            <i class="fas fa-tags"></i>
-                            Categories
-                        </h6>
-                        <div class="filter-options">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="category" value="" 
-                                       id="allCategories" {% if not selected_category %}checked{% endif %}>
-                                <label class="form-check-label" for="allCategories">
-                                    <span>All Categories</span>
-                                    <span class="text-muted">({{ listings.paginator.count }})</span>
-                                </label>
+                    <!-- Featured Listings -->
+                    {% if featured_listings %}
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-warning text-white">
+                                <h6 class="mb-0"><i class="fas fa-star me-2"></i>Featured Listings</h6>
                             </div>
-                            {% for category in categories %}
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="category" value="{{ category.id }}" 
-                                       id="category{{ category.id }}" {% if selected_category == category.id %}checked{% endif %}>
-                                <label class="form-check-label" for="category{{ category.id }}">
-                                    <span>{{ category.title }}</span>
-                                    <span class="text-muted">({{ category.listing_set.count }})</span>
-                                </label>
+                            <div class="card-body p-0">
+                                {% for featured in featured_listings %}
+                                    <div class="border-bottom p-3">
+                                        <div class="d-flex">
+                                            <div class="flex-shrink-0 me-3">
+                                                {% if featured.image %}
+                                                    <img src="{{ featured.image.url }}" alt="{{ featured.title }}" 
+                                                         class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                                         style="width: 60px; height: 60px;">
+                                                        <i class="fas fa-image text-muted"></i>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1">
+                                                    <a href="{% url 'store:listing_detail' featured.slug %}" 
+                                                       class="text-decoration-none text-dark">
+                                                        {{ featured.title|truncatechars:40 }}
+                                                    </a>
+                                                </h6>
+                                                <p class="text-muted small mb-1">{{ featured.location }}</p>
+                                                <div class="text-primary fw-semibold">
+                                                    {% if featured.price %}
+                                                        ₦{{ featured.price|intcomma }}
+                                                    {% else %}
+                                                        Contact for Price
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
                             </div>
-                            {% endfor %}
                         </div>
-                    </div>
-
-                    <!-- Location Filter -->
-                    <div class="filter-section">
-                        <h6 class="filter-title">
-                            <i class="fas fa-map-marker-alt"></i>
-                            Location
-                        </h6>
-                        <div class="filter-options">
-                            <select class="form-select" name="location" id="locationFilter">
-                                <option value="">All Locations</option>
-                                <option value="Lagos">Lagos</option>
-                                <option value="Abuja">Abuja</option>
-                                <option value="Port Harcourt">Port Harcourt</option>
-                                <option value="Kano">Kano</option>
-                                <option value="Ibadan">Ibadan</option>
-                                <option value="Kaduna">Kaduna</option>
-                                <option value="Jos">Jos</option>
-                                <option value="Benin City">Benin City</option>
-                                <option value="Enugu">Enugu</option>
-                                <option value="Calabar">Calabar</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Sort Options -->
-                    <div class="filter-section">
-                        <h6 class="filter-title">
-                            <i class="fas fa-sort"></i>
-                            Sort By
-                        </h6>
-                        <div class="filter-options">
-                            <select class="form-select" name="sort" id="sortFilter">
-                                <option value="-created_at">Newest First</option>
-                                <option value="created_at">Oldest First</option>
-                                <option value="title">Title A-Z</option>
-                                <option value="-title">Title Z-A</option>
-                                <option value="price">Price Low-High</option>
-                                <option value="-price">Price High-Low</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <button type="button" class="btn btn-primary w-100 mt-3" onclick="applyFilters()">
-                        <i class="fas fa-filter me-2"></i>Apply Filters
-                    </button>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- Listings Grid -->
+            <!-- Main Content -->
             <div class="col-lg-9 col-md-8">
-                <div class="listings-section">
-                    <!-- Listings Header -->
-                    <div class="listings-header">
-                        <div class="listings-count">
-                            {% if listings %}
-                                Showing <strong>{{ listings.start_index }}-{{ listings.end_index }}</strong> of <strong>{{ listings.paginator.count }}</strong> listings
-                            {% else %}
-                                <strong>0</strong> listings found
-                            {% endif %}
+                <!-- Results Header -->
+                <div class="results-header mb-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <p class="text-muted mb-0">
+                                Showing {{ listings.start_index }}-{{ listings.end_index }} of {{ listings.paginator.count }} listings
+                            </p>
                         </div>
-                        
-                        <div class="view-controls">
-                            <div class="view-toggle">
-                                <button class="active" id="gridView" title="Grid View">
-                                    <i class="fas fa-th"></i>
+                        <div class="col-md-6 text-md-end">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary view-toggle active" data-view="grid">
+                                    <i class="fas fa-th-large"></i>
                                 </button>
-                                <button id="listView" title="List View">
+                                <button type="button" class="btn btn-outline-secondary view-toggle" data-view="list">
                                     <i class="fas fa-list"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Listings Grid -->
-                    {% if listings %}
-                    <div class="listings-grid" id="listingsGrid">
-                        {% for listing in listings %}
-                        <div class="listing-card" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:100 }}">
-                            <!-- Listing Badge -->
-                            {% if listing.is_featured %}
-                            <div class="listing-badge">Featured</div>
-                            {% elif listing.is_urgent %}
-                            <div class="listing-badge urgent-badge">Urgent</div>
-                            {% endif %}
-                            
-                            <!-- Listing Actions -->
-                            <div class="listing-actions">
-                                <button class="listing-action-btn" onclick="toggleWishlist('{{ listing.id }}')" title="Add to Wishlist">
-                                    <i class="far fa-heart"></i>
-                                </button>
-                                <button class="listing-action-btn" onclick="shareListing('{{ listing.id }}')" title="Share">
-                                    <i class="fas fa-share-alt"></i>
-                                </button>
-                            </div>
-                            
-                            <!-- Listing Image -->
-                            <div class="listing-image">
-                                <a href="{% url 'store:listing_detail' listing.slug %}">
-                                    {% if listing.image %}
-                                    <img src="{{ listing.image.url }}" alt="{{ listing.title }}" loading="lazy">
-                                    {% else %}
-                                    <img src="{% static 'assets/img/placeholder-listing.jpg' %}" alt="{{ listing.title }}" loading="lazy">
-                                    {% endif %}
-                                </a>
-                            </div>
-                            
-                            <!-- Listing Info -->
-                            <div class="listing-info">
-                                <div class="listing-category">
-                                    {{ listing.category.title|default:"General" }}
-                                </div>
-                                
-                                <h3 class="listing-title">
-                                    <a href="{% url 'store:listing_detail' listing.slug %}">{{ listing.title }}</a>
-                                </h3>
-                                
-                                <p class="listing-description">
-                                    {{ listing.description|truncatewords:15 }}
-                                </p>
-                                
-                                <div class="listing-price">
-                                    <span class="current-price">₦{{ listing.price|floatformat:0|intcomma }}</span>
-                                    {% if listing.negotiable %}
-                                    <span class="negotiable-tag">Negotiable</span>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="listing-meta">
-                                    <div class="listing-location">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        {{ listing.location|default:"Nigeria" }}
-                                    </div>
-                                    <div class="listing-date">
-                                        <i class="fas fa-clock"></i>
-                                        {{ listing.created_at|timesince }} ago
-                                    </div>
-                                </div>
-                                
-                                <div class="listing-footer">
-                                    <div class="vendor-info">
-                                        <div class="vendor-avatar">
-                                            {% if listing.vendor.profile.image %}
-                                            <img src="{{ listing.vendor.profile.image.url }}" alt="{{ listing.vendor.username }}">
-                                            {% else %}
-                                            <div class="avatar-placeholder">
-                                                <i class="fas fa-user"></i>
+                <!-- Listings Grid -->
+                {% if listings %}
+                    <div class="listings-container" id="listingsContainer">
+                        <div class="row" id="gridView">
+                            {% for listing in listings %}
+                                <div class="col-lg-4 col-md-6 mb-4">
+                                    <div class="listing-card card border-0 shadow-sm h-100">
+                                        <!-- Image -->
+                                        <div class="listing-image position-relative">
+                                            <a href="{% url 'store:listing_detail' listing.slug %}">
+                                                {% if listing.image %}
+                                                    <img src="{{ listing.image.url }}" alt="{{ listing.title }}" 
+                                                         class="card-img-top" style="height: 200px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-light d-flex align-items-center justify-content-center" 
+                                                         style="height: 200px;">
+                                                        <i class="fas fa-image fa-3x text-muted"></i>
+                                                    </div>
+                                                {% endif %}
+                                            </a>
+                                            
+                                            <!-- Badges -->
+                                            <div class="position-absolute top-0 start-0 p-2">
+                                                {% if listing.featured %}
+                                                    <span class="badge bg-warning text-dark">Featured</span>
+                                                {% endif %}
+                                                {% if listing.urgent %}
+                                                    <span class="badge bg-danger">Urgent</span>
+                                                {% endif %}
                                             </div>
-                                            {% endif %}
-                                        </div>
-                                        <div class="vendor-details">
-                                            <span class="vendor-name">{{ listing.vendor.username }}</span>
-                                            <div class="vendor-rating">
-                                                {% for i in "12345" %}
-                                                    {% if forloop.counter <= listing.vendor.average_rating|default:0 %}
-                                                        <i class="fas fa-star"></i>
-                                                    {% else %}
-                                                        <i class="far fa-star"></i>
-                                                    {% endif %}
-                                                {% endfor %}
+
+                                            <!-- Favorite Button -->
+                                            <div class="position-absolute top-0 end-0 p-2">
+                                                {% if user.is_authenticated %}
+                                                    <button class="btn btn-sm btn-light rounded-circle favorite-btn" 
+                                                            data-listing-id="{{ listing.id }}"
+                                                            data-favorited="{% if listing in user.favorites.all %}true{% else %}false{% endif %}">
+                                                        <i class="fas fa-heart {% if listing in user.favorites.all %}text-danger{% else %}text-muted{% endif %}"></i>
+                                                    </button>
+                                                {% endif %}
                                             </div>
                                         </div>
-                                    </div>
-                                    
-                                    <div class="listing-actions-footer">
-                                        <a href="{% url 'store:listing_detail' listing.slug %}" class="btn btn-primary btn-sm">
-                                            View Details
-                                        </a>
+
+                                        <!-- Card Body -->
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="mb-2">
+                                                <span class="badge bg-light text-dark">{{ listing.category.title }}</span>
+                                                <span class="badge bg-primary">{{ listing.get_listing_type_display }}</span>
+                                            </div>
+                                            
+                                            <h6 class="card-title mb-2">
+                                                <a href="{% url 'store:listing_detail' listing.slug %}" 
+                                                   class="text-decoration-none text-dark">
+                                                    {{ listing.title|truncatechars:50 }}
+                                                </a>
+                                            </h6>
+                                            
+                                            <p class="card-text text-muted small mb-2">
+                                                {{ listing.short_description|truncatechars:80 }}
+                                            </p>
+                                            
+                                            <div class="listing-meta mb-3">
+                                                <div class="d-flex align-items-center text-muted small mb-1">
+                                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                                    {{ listing.location|truncatechars:25 }}
+                                                </div>
+                                                <div class="d-flex align-items-center text-muted small">
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    {{ listing.created_at|naturaltime }}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mt-auto">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div class="price">
+                                                        {% if listing.price %}
+                                                            <span class="fw-bold text-primary">₦{{ listing.price|intcomma }}</span>
+                                                            {% if listing.negotiable %}
+                                                                <small class="text-muted">(Negotiable)</small>
+                                                            {% endif %}
+                                                        {% else %}
+                                                            <span class="text-muted">Contact for Price</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="listing-stats">
+                                                        <span class="text-muted small">
+                                                            <i class="fas fa-eye"></i> {{ listing.views_count|default:0 }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
+                        
+                        <!-- List View (Hidden by default) -->
+                        <div class="d-none" id="listView">
+                            {% for listing in listings %}
+                                <div class="listing-card-horizontal card border-0 shadow-sm mb-4">
+                                    <div class="row g-0">
+                                        <div class="col-md-3">
+                                            <div class="listing-image position-relative">
+                                                <a href="{% url 'store:listing_detail' listing.slug %}">
+                                                    {% if listing.image %}
+                                                        <img src="{{ listing.image.url }}" alt="{{ listing.title }}" 
+                                                             class="img-fluid rounded-start h-100" style="object-fit: cover; min-height: 200px;">
+                                                    {% else %}
+                                                        <div class="bg-light d-flex align-items-center justify-content-center rounded-start" 
+                                                             style="height: 200px;">
+                                                            <i class="fas fa-image fa-2x text-muted"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                </a>
+                                                
+                                                <!-- Badges -->
+                                                <div class="position-absolute top-0 start-0 p-2">
+                                                    {% if listing.featured %}
+                                                        <span class="badge bg-warning text-dark">Featured</span>
+                                                    {% endif %}
+                                                    {% if listing.urgent %}
+                                                        <span class="badge bg-danger">Urgent</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <div>
+                                                        <div class="mb-2">
+                                                            <span class="badge bg-light text-dark">{{ listing.category.title }}</span>
+                                                            <span class="badge bg-primary">{{ listing.get_listing_type_display }}</span>
+                                                        </div>
+                                                        <h5 class="card-title mb-2">
+                                                            <a href="{% url 'store:listing_detail' listing.slug %}" 
+                                                               class="text-decoration-none text-dark">
+                                                                {{ listing.title }}
+                                                            </a>
+                                                        </h5>
+                                                    </div>
+                                                    {% if user.is_authenticated %}
+                                                        <button class="btn btn-sm btn-light rounded-circle favorite-btn" 
+                                                                data-listing-id="{{ listing.id }}"
+                                                                data-favorited="{% if listing in user.favorites.all %}true{% else %}false{% endif %}">
+                                                            <i class="fas fa-heart {% if listing in user.favorites.all %}text-danger{% else %}text-muted{% endif %}"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                </div>
+                                                
+                                                <p class="card-text text-muted mb-3">
+                                                    {{ listing.short_description|truncatechars:200 }}
+                                                </p>
+                                                
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <div class="d-flex align-items-center text-muted small mb-1">
+                                                            <i class="fas fa-map-marker-alt me-2"></i>
+                                                            {{ listing.location }}
+                                                        </div>
+                                                        <div class="d-flex align-items-center text-muted small">
+                                                            <i class="fas fa-clock me-2"></i>
+                                                            {{ listing.created_at|naturaltime }}
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="d-flex align-items-center text-muted small mb-1">
+                                                            <i class="fas fa-eye me-2"></i>
+                                                            {{ listing.views_count|default:0 }} views
+                                                        </div>
+                                                        <div class="d-flex align-items-center text-muted small">
+                                                            <i class="fas fa-user me-2"></i>
+                                                            {{ listing.vendor.full_name|default:listing.vendor.username }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div class="price">
+                                                        {% if listing.price %}
+                                                            <span class="fw-bold text-primary h5 mb-0">₦{{ listing.price|intcomma }}</span>
+                                                            {% if listing.negotiable %}
+                                                                <small class="text-muted">(Negotiable)</small>
+                                                            {% endif %}
+                                                        {% else %}
+                                                            <span class="text-muted">Contact for Price</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <a href="{% url 'store:listing_detail' listing.slug %}" class="btn btn-primary">
+                                                        View Details
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
                     </div>
-                    
+
                     <!-- Pagination -->
                     {% if listings.has_other_pages %}
-                    <div class="pagination-wrapper">
-                        <nav class="pagination">
-                            {% if listings.has_previous %}
-                                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ listings.previous_page_number }}" class="page-link">
-                                    <i class="fas fa-chevron-left"></i>
-                                </a>
-                            {% endif %}
-                            
-                            {% for num in listings.paginator.page_range %}
-                                {% if listings.number == num %}
-                                    <span class="page-link active">{{ num }}</span>
-                                {% elif num > listings.number|add:'-3' and num < listings.number|add:'3' %}
-                                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" class="page-link">{{ num }}</a>
+                        <nav aria-label="Listings pagination" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if listings.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">First</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ listings.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                                    </li>
                                 {% endif %}
-                            {% endfor %}
-                            
-                            {% if listings.has_next %}
-                                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ listings.next_page_number }}" class="page-link">
-                                    <i class="fas fa-chevron-right"></i>
+
+                                <li class="page-item active">
+                                    <span class="page-link">{{ listings.number }} of {{ listings.paginator.num_pages }}</span>
+                                </li>
+
+                                {% if listings.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ listings.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ listings.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Last</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+
+                {% else %}
+                    <!-- Empty State -->
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-search fa-4x text-muted"></i>
+                        </div>
+                        <h3 class="mb-3">No listings found</h3>
+                        <p class="text-muted mb-4">
+                            {% if request.GET.search or request.GET.category or request.GET.location %}
+                                Try adjusting your search criteria or browse all listings.
+                            {% else %}
+                                Be the first to create a listing on our platform!
+                            {% endif %}
+                        </p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            {% if request.GET.search or request.GET.category or request.GET.location %}
+                                <a href="{% url 'store:browse_listings' %}" class="btn btn-outline-primary">
+                                    Clear Filters
                                 </a>
                             {% endif %}
-                        </nav>
-                    </div>
-                    {% endif %}
-                    
-                    {% else %}
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-search"></i>
+                            {% if user.is_authenticated %}
+                                <a href="{% url 'store:create_listing' %}" class="btn btn-primary">
+                                    Create Listing
+                                </a>
+                            {% endif %}
                         </div>
-                        <h3>No listings found</h3>
-                        <p>Try adjusting your filters or search criteria</p>
-                        <a href="{% url 'store:browse_listings' %}" class="btn btn-primary">
-                            <i class="fas fa-refresh me-2"></i>View All Listings
-                        </a>
                     </div>
-                    {% endif %}
-                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // View toggle functionality
+    const viewToggles = document.querySelectorAll('.view-toggle');
+    const gridView = document.getElementById('gridView');
+    const listView = document.getElementById('listView');
+    
+    viewToggles.forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            const view = this.dataset.view;
+            
+            // Update button states
+            viewToggles.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Toggle views
+            if (view === 'grid') {
+                gridView.classList.remove('d-none');
+                listView.classList.add('d-none');
+            } else {
+                gridView.classList.add('d-none');
+                listView.classList.remove('d-none');
+            }
+            
+            // Save preference in localStorage
+            localStorage.setItem('listingsView', view);
+        });
+    });
+    
+    // Load saved view preference
+    const savedView = localStorage.getItem('listingsView');
+    if (savedView && savedView === 'list') {
+        document.querySelector('.view-toggle[data-view="list"]').click();
+    }
+    
+    // Favorite functionality
+    const favoriteButtons = document.querySelectorAll('.favorite-btn');
+    favoriteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const listingId = this.dataset.listingId;
+            const icon = this.querySelector('i');
+            
+            fetch('/store/ajax/toggle-listing-favorite/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    listing_id: listingId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.favorited) {
+                        icon.classList.add('text-danger');
+                        icon.classList.remove('text-muted');
+                    } else {
+                        icon.classList.remove('text-danger');
+                        icon.classList.add('text-muted');
+                    }
+                    this.dataset.favorited = data.favorited ? 'true' : 'false';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    });
+    
+    // Auto-submit filter form on select changes
+    const selectFilters = document.querySelectorAll('#filterForm select');
+    selectFilters.forEach(select => {
+        select.addEventListener('change', function() {
+            document.getElementById('filterForm').submit();
+        });
+    });
+});
+</script>
+
 <style>
-.listings-page {
-    background: var(--gray-100);
-    min-height: 100vh;
-}
-
-.listings-hero {
-    background: var(--gradient-primary);
-    color: white;
-    padding: 4rem 0 2rem;
-    margin-bottom: 2rem;
-}
-
-.hero-content {
-    text-align: center;
-}
-
-.hero-title {
-    font-size: 3rem;
-    font-weight: 800;
-    margin-bottom: 1rem;
-}
-
-.hero-subtitle {
-    font-size: 1.25rem;
-    opacity: 0.9;
-    margin-bottom: 2rem;
-}
-
-.hero-stats {
-    display: flex;
-    justify-content: center;
-    gap: 3rem;
-}
-
-.stat-item {
-    text-align: center;
-}
-
-.stat-number {
-    display: block;
-    font-size: 2rem;
-    font-weight: 800;
-    margin-bottom: 0.25rem;
-}
-
-.stat-label {
-    font-size: 0.9rem;
-    opacity: 0.8;
-}
-
-.filters-sidebar {
-    background: white;
-    border-radius: var(--radius-2xl);
-    padding: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    margin-bottom: 2rem;
-    position: sticky;
-    top: 100px;
-    max-height: calc(100vh - 120px);
-    overflow-y: auto;
-    border: 1px solid var(--gray-200);
-}
-
-.filters-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid var(--gray-100);
-}
-
-.filters-header h4 {
-    color: var(--gray-800);
-    font-weight: 700;
-    margin: 0;
-}
-
-.clear-filters-btn {
-    background: none;
-    border: none;
-    color: var(--primary-orange);
-    font-size: 0.9rem;
-    cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--radius-md);
-    transition: all 0.3s ease;
-}
-
-.clear-filters-btn:hover {
-    background: rgba(255, 107, 53, 0.1);
-}
-
-.filter-section {
-    margin-bottom: 2rem;
-}
-
-.filter-title {
-    font-weight: 600;
-    color: var(--gray-700);
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.filter-options {
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.form-check {
-    margin-bottom: 0.75rem;
-}
-
-.form-check-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    cursor: pointer;
-    font-size: 0.95rem;
-}
-
-.listings-section {
-    background: white;
-    border-radius: var(--radius-2xl);
-    padding: 2rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.listings-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid var(--gray-100);
-}
-
-.listings-count {
-    color: var(--gray-600);
-    font-size: 0.95rem;
-}
-
-.view-controls {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.view-toggle {
-    display: flex;
-    background: var(--gray-100);
-    border-radius: var(--radius-lg);
-    padding: 0.25rem;
-}
-
-.view-toggle button {
-    background: none;
-    border: none;
-    padding: 0.5rem 0.75rem;
-    border-radius: var(--radius-md);
-    color: var(--gray-600);
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.view-toggle button.active,
-.view-toggle button:hover {
-    background: white;
-    color: var(--primary-orange);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.listings-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-    margin-top: 2rem;
-}
-
 .listing-card {
-    background: white;
-    border-radius: var(--radius-2xl);
-    overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    border: 1px solid var(--gray-200);
-    transition: all 0.3s ease;
-    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .listing-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-    border-color: var(--primary-orange);
-}
-
-.listing-badge {
-    position: absolute;
-    top: 1rem;
-    left: 1rem;
-    background: var(--primary-orange);
-    color: white;
-    padding: 0.25rem 0.75rem;
-    border-radius: var(--radius-full);
-    font-size: 0.8rem;
-    font-weight: 600;
-    z-index: 2;
-}
-
-.listing-badge.urgent-badge {
-    background: var(--error);
-}
-
-.listing-actions {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    z-index: 2;
-}
-
-.listing-action-btn {
-    width: 36px;
-    height: 36px;
-    background: rgba(255, 255, 255, 0.9);
-    border: none;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--gray-600);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-}
-
-.listing-action-btn:hover {
-    background: var(--primary-orange);
-    color: white;
-    transform: scale(1.1);
-}
-
-.listing-image {
-    position: relative;
-    height: 200px;
-    overflow: hidden;
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 
 .listing-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
     transition: transform 0.3s ease;
 }
 
@@ -548,268 +526,41 @@
     transform: scale(1.05);
 }
 
-.listing-info {
-    padding: 1.5rem;
-}
-
-.listing-category {
-    color: var(--primary-orange);
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
-}
-
-.listing-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 0.75rem;
-    line-height: 1.3;
-}
-
-.listing-title a {
-    color: var(--gray-800);
-    text-decoration: none;
-    transition: color 0.3s ease;
-}
-
-.listing-title a:hover {
-    color: var(--primary-orange);
-}
-
-.listing-description {
-    color: var(--gray-600);
-    font-size: 0.9rem;
-    line-height: 1.5;
-    margin-bottom: 1rem;
-}
-
-.listing-price {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.current-price {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--primary-orange);
-}
-
-.negotiable-tag {
-    background: var(--gray-100);
-    color: var(--gray-600);
-    padding: 0.125rem 0.5rem;
-    border-radius: var(--radius-full);
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.listing-meta {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-    font-size: 0.85rem;
-    color: var(--gray-500);
-}
-
-.listing-location,
-.listing-date {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-
-.listing-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 1rem;
-    border-top: 1px solid var(--gray-200);
-}
-
-.vendor-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.vendor-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    overflow: hidden;
-}
-
-.vendor-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.avatar-placeholder {
-    width: 32px;
-    height: 32px;
-    background: var(--gray-300);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--gray-600);
-    font-size: 0.8rem;
-}
-
-.vendor-name {
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--gray-700);
-}
-
-.vendor-rating {
-    color: #fbbf24;
-    font-size: 0.75rem;
-}
-
-.pagination-wrapper {
-    margin-top: 3rem;
-    display: flex;
-    justify-content: center;
-}
-
-.pagination {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.page-link {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--gray-300);
-    border-radius: var(--radius-md);
-    color: var(--gray-600);
-    text-decoration: none;
+.favorite-btn {
     transition: all 0.3s ease;
 }
 
-.page-link:hover,
-.page-link.active {
-    background: var(--primary-orange);
-    color: white;
-    border-color: var(--primary-orange);
-    text-decoration: none;
+.favorite-btn:hover {
+    transform: scale(1.1);
 }
 
-.empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
+.filters-sidebar .card-header {
+    font-weight: 600;
 }
 
-.empty-icon {
-    font-size: 4rem;
-    color: var(--gray-300);
-    margin-bottom: 1rem;
+.view-toggle {
+    transition: all 0.3s ease;
 }
 
-.empty-state h3 {
-    color: var(--gray-700);
-    margin-bottom: 0.5rem;
+.listing-card-horizontal {
+    transition: box-shadow 0.3s ease;
 }
 
-.empty-state p {
-    color: var(--gray-600);
-    margin-bottom: 2rem;
-}
-
-@media (max-width: 991px) {
-    .filters-sidebar {
-        position: static;
-        max-height: none;
-        overflow-y: visible;
-    }
-    
-    .hero-stats {
-        gap: 2rem;
-    }
-    
-    .listings-header {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start;
-    }
+.listing-card-horizontal:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 
 @media (max-width: 768px) {
-    .hero-title {
-        font-size: 2rem;
+    .browse-listings-page .container {
+        padding-left: 15px;
+        padding-right: 15px;
     }
     
-    .hero-stats {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    .listings-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .listing-footer {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start;
+    .filters-sidebar {
+        position: sticky;
+        top: 100px;
     }
 }
 </style>
 
-<script>
-function applyFilters() {
-    const category = document.querySelector('input[name="category"]:checked')?.value || '';
-    const location = document.getElementById('locationFilter').value;
-    const sort = document.getElementById('sortFilter').value;
-    
-    const params = new URLSearchParams();
-    if (category) params.append('category', category);
-    if (location) params.append('location', location);
-    if (sort) params.append('sort', sort);
-    
-    window.location.href = `{% url 'store:browse_listings' %}?${params.toString()}`;
-}
-
-function clearAllFilters() {
-    window.location.href = '{% url 'store:browse_listings' %}';
-}
-
-function toggleWishlist(listingId) {
-    // Add wishlist functionality
-    console.log('Toggle wishlist for listing:', listingId);
-}
-
-function shareListing(listingId) {
-    // Add share functionality
-    if (navigator.share) {
-        navigator.share({
-            title: 'Check out this listing',
-            url: window.location.href
-        });
-    } else {
-        // Fallback to copy URL
-        navigator.clipboard.writeText(window.location.href);
-        alert('Link copied to clipboard!');
-    }
-}
-
-// View toggle functionality
-document.getElementById('gridView').addEventListener('click', function() {
-    document.getElementById('listingsGrid').className = 'listings-grid';
-    this.classList.add('active');
-    document.getElementById('listView').classList.remove('active');
-});
-
-document.getElementById('listView').addEventListener('click', function() {
-    document.getElementById('listingsGrid').className = 'listings-list';
-    this.classList.add('active');
-    document.getElementById('gridView').classList.remove('active');
-});
-</script>
-{% endblock %}
+{% endblock content %}
