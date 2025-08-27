@@ -1,100 +1,227 @@
-{% extends 'partials/base.html' %} {% load static %} {% load humanize %} {% block content %}
-<section class="middle">
-    <div class="container-fluid">
-        <div class="row align-items-start justify-content-between">
-            <!-- Sidebar -->
-            <div class="col-12 col-md-3 col-lg-3 col-xl-2">
-                {% include 'vendor/sidebar.html' %}
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}My Products - Vendor Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .product-image {
+        height: 250px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    
+    .product-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 2;
+    }
+    
+    .product-actions {
+        gap: 0.5rem;
+    }
+    
+    .product-stats {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+        border-right: 1px solid #dee2e6;
+    }
+    
+    .stat-item:last-child {
+        border-right: none;
+    }
+    
+    .stat-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #495057;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-transform: uppercase;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2">
+            {% include 'vendor/sidebar.html' %}
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <!-- Page Header -->
+            <div class="page-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="fw-bold mb-1">My Products</h2>
+                        <p class="mb-0 opacity-75">Manage your product inventory ({{products.count}} items)</p>
+                    </div>
+                    <a href="{% url 'vendor:create_product' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-plus me-2"></i>Add Product
+                    </a>
+                </div>
             </div>
 
-            <!-- Main Content -->
-            <div class="col-12 col-md-9 col-lg-9 col-xl-10">
-                <h4 class="mb-0 mb-4 fw-bold">Products ({{products_list.count}})</h4>
-
-                <div class="row align-items-center">
-                     {% for p in products %}
-                        <div class="col-lg-6">
-                            <div class="product_grid row">
-                                <div class="col-xl-5 col-lg-5 col-md-6 col-sm-12">
-                                    <div class="shop_thumb position-relative">
-                                        <a class="card-img-top d-block overflow-hidden" href="{% url 'store:product_detail' p.slug %}">
-                                            <img class="card-img-top" src="{{p.image.url}}" style="width: 100%; height: 250px; object-fit: contain; border-radius: 10px" alt="..." />
-                                        </a>
-                                    </div>
+            {% if products %}
+                <div class="row">
+                    {% for p in products %}
+                        <div class="col-lg-6 col-xl-4 mb-4">
+                            <div class="card product-card h-100">
+                                <div class="position-relative">
+                                    {% if p.featured %}
+                                        <span class="product-badge badge bg-warning">Featured</span>
+                                    {% endif %}
+                                    <img src="{{p.image.url}}" class="card-img-top product-image" alt="{{p.name}}">
                                 </div>
-                                <div class="col-xl-7 col-lg-7 col-md-6 col-sm-12">
-                                    <div class="text-left mfliud">
-                                        <h5 class="fs-md mb-2 lh-1 ft-medium"><a href="{% url 'store:product_detail' p.slug %}">{{p.name}}</a></h5>
-                                        <div class="star-rating align-items-center d-flex justify-content-left mb-2 p-0">
-                                        {% if not p.average_rating  %}
-                                        <i class="fas fa-star text-warning"></i>
-                                        {% elif p.average_rating > 0 and p.average_rating < 2 %}
-                                        <i class="fas fa-star text-warning"></i>
-                                        {% elif p.average_rating > 1 and p.average_rating < 3 %}
-                                        <i class="fas fa-star text-warning"></i>
-                                        <i class="fas fa-star text-warning"></i>
-                                        {% elif p.average_rating > 2 and p.average_rating < 4 %}
-                                        <i class="fas fa-star text-warning"></i>
-                                        <i class="fas fa-star text-warning"></i>
-                                        <i class="fas fa-star text-warning"></i>
-                                        {% elif p.average_rating > 3 and p.average_rating < 5 %}
-                                        <i class="fas fa-star text-warning"></i>
-                                        <i class="fas fa-star text-warning"></i>
-                                        <i class="fas fa-star text-warning"></i>
-                                        <i class="fas fa-star text-warning"></i>
-                                        {% elif p.average_rating > 4 %}
-                                        <i class="fas fa-star text-warning"></i>
-                                        <i class="fas fa-star text-warning"></i>
-                                        <i class="fas fa-star text-warning"></i>
-                                        <i class="fas fa-star text-warning"></i>
-                                        <i class="fas fa-star text-warning"></i>
+                                
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="card-title fw-bold text-truncate mb-2">
+                                        <a href="{% url 'store:product_detail' p.slug %}" class="text-decoration-none">{{p.name}}</a>
+                                    </h5>
+                                    
+                                    <!-- Rating -->
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="text-warning me-2">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= p.average_rating %}
+                                                    <i class="fas fa-star"></i>
+                                                {% else %}
+                                                    <i class="far fa-star"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <small class="text-muted">({{p.reviews.all.count}})</small>
+                                    </div>
+                                    
+                                    <!-- Price -->
+                                    <div class="mb-3">
+                                        <span class="h5 text-success fw-bold">₦{{p.price|intcomma}}</span>
+                                        {% if p.regular_price and p.regular_price != p.price %}
+                                            <small class="text-muted text-decoration-line-through">₦{{p.regular_price|intcomma}}</small>
                                         {% endif %}
                                     </div>
-                                        <div class="elis_rty mb-1">Price: <span class="ft-bold text-dark fs-sm">₦{{p.price}}</span></div>
-                                        <div class="elis_rty mb-1">Rating: <span class="ft-bold text-dark fs-sm">{{p.average_rating|floatformat}} Rating</span></div>
-                                        <div class="elis_rty mb-1">Review: <span class="ft-bold text-dark fs-sm">{{p.reviews.all.count}} Reviews</span></div>
-                                        <div class="elis_rty mb-1">Orders: <span class="ft-bold text-dark fs-sm">{{p.vendor_orders.all.count}} Orders</span></div>
-
-                                        <div class="position-relative text-left mt-4">
-                                            <a href="{% url 'store:product_detail' p.slug %}" class="btn bg-info rounded text-white btn-sm borders snackbar-addcart"><i class="fas fa-eye"></i></a>
-                                            <a href="{% url 'vendor:update_product' p.id %}" class="btn bg-primary rounded text-white btn-sm borders snackbar-addcart"><i class="fas fa-edit"></i></a>
-                                            <a href="{% url 'vendor:delete_product' p.id %}" class="btn bg-danger rounded text-white btn-sm borders snackbar-addcart"><i class="fas fa-trash"></i></a>
+                                    
+                                    <!-- Stats -->
+                                    <div class="product-stats mb-3">
+                                        <div class="row g-0">
+                                            <div class="col-4 stat-item">
+                                                <div class="stat-value">{{p.vendor_orders.all.count}}</div>
+                                                <div class="stat-label">Orders</div>
+                                            </div>
+                                            <div class="col-4 stat-item">
+                                                <div class="stat-value">{{p.stock|default:0}}</div>
+                                                <div class="stat-label">Stock</div>
+                                            </div>
+                                            <div class="col-4 stat-item">
+                                                <div class="stat-value">{{p.views|default:0}}</div>
+                                                <div class="stat-label">Views</div>
+                                            </div>
                                         </div>
+                                    </div>
+                                    
+                                    <!-- Actions -->
+                                    <div class="d-flex product-actions mt-auto">
+                                        <a href="{% url 'store:product_detail' p.slug %}" class="btn btn-outline-info btn-sm flex-fill" title="View Product">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a href="{% url 'vendor:update_product' p.id %}" class="btn btn-outline-primary btn-sm flex-fill" title="Edit Product">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <a href="{% url 'vendor:delete_product' p.id %}" class="btn btn-outline-danger btn-sm flex-fill" 
+                                           title="Delete Product" onclick="return confirm('Are you sure you want to delete this product?')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     {% endfor %}
                 </div>
-                <ul class="pagination">
-                    {% if products.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ products.previous_page_number }}">Previous</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">Previous</span>
-                        </li>
-                    {% endif %}
+                
+                <!-- Pagination -->
+                {% if products.has_other_pages %}
+                    <div class="d-flex justify-content-center mt-4">
+                        <nav aria-label="Products pagination">
+                            <ul class="pagination pagination-lg">
+                                {% if products.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ products.previous_page_number }}">
+                                            <i class="fas fa-chevron-left"></i> Previous
+                                        </a>
+                                    </li>
+                                {% endif %}
 
-                    {% for num in products.paginator.page_range %}
-                        <li class="page-item {% if products.number == num %}active{% endif %}">
-                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                        </li>
-                    {% endfor %}
+                                {% for num in products.paginator.page_range %}
+                                    {% if num == products.number %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
 
-                    {% if products.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ products.next_page_number }}">Next</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">Next</span>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
+                                {% if products.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ products.next_page_number }}">
+                                            Next <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                {% endif %}
+            {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-box-open fa-5x text-muted"></i>
+                    </div>
+                    <h3 class="text-muted">No Products Yet</h3>
+                    <p class="text-muted mb-4">Start building your inventory by adding your first product.</p>
+                    <a href="{% url 'vendor:create_product' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus me-2"></i>Create Your First Product
+                    </a>
+                </div>
+            {% endif %}
         </div>
     </div>
-</section>
-{% endblock content %}
+</div>
+{% endblock %}

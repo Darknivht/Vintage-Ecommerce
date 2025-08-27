@@ -1,159 +1,352 @@
-{% extends 'vendor/base.html' %} {% load static %} {% load humanize %} {% block content %}
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load humanize %}
 
+{% block title %}Edit Product - Vintage Marketplace{% endblock %}
 
-<section class="middle">
-    <div class="container-fluid">
-        <div class="row align-items-start justify-content-between">
-            <!-- Sidebar -->
-            <div class="col-12 col-md-3 col-lg-3 col-xl-2">
-                {% include 'vendor/sidebar.html' %}
+{% block extra_css %}
+<style>
+    .form-section {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    .section-header h5 {
+        margin: 0;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .form-floating {
+        margin-bottom: 1.5rem;
+    }
+    
+    .image-preview-container {
+        border: 3px dashed #e9ecef;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    
+    .image-preview-container:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+    
+    .btn-save {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        padding: 12px 2rem;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+    
+    .variant-item {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+    }
+    
+    .sub-item {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+    
+    .gallery-item {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+    
+    .delete-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 2;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2">
+            {% include 'vendor/sidebar.html' %}
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold text-dark mb-1">Edit Product</h2>
+                    <p class="text-muted mb-0">Update your product information</p>
+                </div>
+                <a href="{% url 'vendor:products' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Products
+                </a>
             </div>
 
-            <!-- Main Content -->
-            <div class="col-12 col-md-9 col-lg-9 col-xl-10">
-                <h4 class="mb-0 mb-4 fw-bold">Manage Product</h4>
-                <div class="card border-0 shadow mb-4">
-                    <div class="card-body">
-                        <div class="">
-                            <form class="pb-8" method="POST" enctype="multipart/form-data">
-                                {% csrf_token %}
-                                <!-- Basic Info Section -->
-                                <div class="card mb-3">
-                                    <div class="card-header border-bottom px-4 py-3">
-                                        <h4 class="mb-0">Basic Information</h4>
-                                    </div>
-                                    <div class="card-body border-0">
-                                            <div class="text-center d-flex justify-content-center align-items-center">
-                                                <img id="imagePreview" src="{{product.image.url}}" alt="Image preview will appear here" style="width: 100%; height: 500px; object-fit: contain; border-radius: 10px;">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="imageInput" class="form-label">Product Thumbnail</label>
-                                                <input name="image" id="imageInput" class="form-control rounded" type="file" accept="image/*" onchange="previewImage(event)" />
-                                            </div>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <h5><i class="fas fa-info-circle"></i>Basic Information</h5>
+                    </div>
+                    <div class="p-4">
+                        <!-- Current Image Display -->
+                        <div class="text-center mb-4">
+                            <img id="imagePreview" src="{{product.image.url}}" alt="Product image" 
+                                 class="img-fluid" style="max-height: 300px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        </div>
 
-                                            <div class="mb-3">
-                                                <label for="productTitle" class="form-label">Title</label>
-                                                <input name="name" id="productTitle" class="form-control rounded" value="{{product.name}}" type="text" placeholder="" />
-                                                <small>Write a 60 character product title.</small>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Product category</label>
-                                                <select name="category_id" class="form-select">
-                                                    <option value="">-------------</option>
-                                                    
-                                                    {% for c in categories  %}
-                                                        <option  {% if c.title == product.category.title %} selected {% endif %} value="{{c.id}}">{{c.title}}</option>
-                                                    {% endfor %}
-                                                        
-                                                </select>
-                                                <small> Help people find your products by choosing categories that represent your product. </small>
-                                            </div>
+                        <!-- Image Upload -->
+                        <div class="image-preview-container mb-4">
+                            <div>
+                                <i class="fas fa-camera fa-2x text-muted mb-2"></i>
+                                <h6 class="text-muted">Update Product Image</h6>
+                                <p class="text-muted mb-3">Choose a new image to replace the current one</p>
+                            </div>
+                            <input type="file" name="image" id="imageInput" class="form-control" 
+                                   accept="image/*" onchange="previewImage(event)" style="display: none;">
+                            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('imageInput').click()">
+                                <i class="fas fa-upload me-2"></i>Choose New Image
+                            </button>
+                        </div>
 
-                                            <div class="mb-3">
-                                                <label class="form-label">Product Description</label>
-                                                <textarea name="description"  class="form-control rounded" cols="30" rows="10">{{ product.description }}</textarea>
-                                                <small>A brief summary of your product.</small>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="productPrice" class="form-label">Regular Price</label>
-                                                <input name="regular_price" id="productPrice" value="{{product.regular_price}}" class="form-control rounded" type="number" placeholder="₦1000.00" />
-                                            </div>
-                                            <div>
-                                                <label for="productPrice" class="form-label">Sale Price</label>
-                                                <input name="price" id="productPrice" value="{{product.price}}" class="form-control rounded" type="number" placeholder="₦850" />
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="productPrice" class="form-label">Shipping Fee</label>
-                                                <input name="shipping" value="{{product.shipping}}" id="productPrice" class="form-control rounded" type="number" placeholder="Shipping fee" />
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="productPrice" class="form-label">Stock</label>
-                                                <input name="stock" value="{{product.stock}}" id="productPrice" class="form-control rounded" type="number" placeholder="Stock Count" />
-                                            </div>
-                                        </div>
-
-                                    
-
-                                    <div class="card mb-3 m-3">
-                                        <div class="card-header border-bottom px-4 py-3">
-                                            <h4 class="mb-0">Variants</h4>
-                                        </div>
-                                        
-                                        <div id="variant-container">
-                                            <!-- Loop through existing variants -->
-                                            {% for variant in variants %}
-                                            <div class="spec-item border rounded-3 mb-3 m-3 variant variant{{variant.id}}" data-variant-index="{{ forloop.counter0 }}">
-                                                <div class="card-body bg-light">
-                                                    <div class="d-flex align-items-center gap-2">
-                                                        <input type="hidden" name="variant_id[]" value="{{ variant.id }}">
-                                                        <input type="text" class="form-control rounded" name="variant_title[]" value="{{ variant.name }}" placeholder="Variant Title">
-                                                        <button type="button" class="btn text-white bg-danger rounded remove-variant" data-product_id="{{product.id}}" data-variant_id="{{variant.id}}"><i class="fas fa-trash"></i></button>
-                                                    </div>
-                                                    <div class="sub-item-container mt-3">
-                                                        <!-- Loop through existing variant items -->
-                                                        {% for item in variant.variant_items.all %}
-                                                        <div class="card-body shadow mt-3 rounded sub-item sub-item{{item.id}}">
-                                                            <input type="hidden" name="item_id_{{ forloop.parentloop.counter0 }}[]" value="{{ item.id }}">
-                                                            <input type="text" class="form-control mb-2 rounded" name="item_title_{{ forloop.parentloop.counter0 }}[]" value="{{ item.title }}" placeholder="Item Title">
-                                                            <input type="text" class="form-control mb-2 rounded" name="item_description_{{ forloop.parentloop.counter0 }}[]" value="{{ item.content }}" placeholder="Item Description">
-                                                            <button type="button" class="btn text-white bg-danger rounded btn-sm remove-item" data-variant_id="{{variant.id}}" data-item_id="{{item.id}}"><i class="fas fa-trash"></i></button>
-                                                        </div>
-                                                        {% endfor %}
-                                                    </div>
-                                                    <button type="button" class="btn btn-sm rounded text-white bg-dark mt-3 add-item" data-variant-index="{{ forloop.counter0 }}">+ Add Item</button>
-                                                </div>
-                                            </div>
-                                            {% endfor %}
-                                        </div>
-
-                                        <!-- Button to add a new variant -->
-                                        <div class="m-3">
-                                            <button type="button" class="btn btn-sm rounded text-white bg-primary mt-1" id="add-variant">+ Add Variant</button>
-                                        </div>
-                                    </div>
-
-
-                                    <div class="card mb-3 m-3">
-                                        <div class="card-header border-bottom px-4 py-3">
-                                            <h4 class="mb-0">Images</h4>
-                                        </div>
-
-
-                                        <div class="card-body row" id="images-container">
-                                            <!-- Display existing images from the database -->
-                                            {% for image in gallery_images %}
-                                            <div class="col-lg-3 image-container{{image.id}}" data-image-id="{{ image.gallery_id }}">
-                                                <div class="card-body image-item border rounded-3 mb-2">
-                                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                                        <button type="button" class="btn bg-danger btn-sm text-white rounded delete-image-btn" data-product_id="{{product.id}}" data-image_id="{{ image.id }}"><i class="fas fa-trash"></i></button>
-                                                    </div>
-                                                    <img src="{{ image.image.url }}" alt="Product Image" class="img-fluid mb-2" style="width: 100%; height: 150px; object-fit: cover; border-radius: 10px;">
-                                                </div>
-                                            </div>
-                                            {% endfor %}
-                                        </div>
-                                        <div class="m-3">
-                                            <button type="button" class="btn btn-sm rounded text-white bg-primary" id="add-image-btn">+ Add Image</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Hidden input for deleting images -->
-                                    <input type="hidden" name="delete_image_ids[]" id="delete-image-ids">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" name="name" class="form-control" id="productName" 
+                                           value="{{product.name}}" placeholder="Product Name">
+                                    <label for="productName">Product Name *</label>
                                 </div>
-                                <button class="btn btn-lg rounded text-white bg-primary mt-3 w-100 mt-2" type="submit">Save Changes <i class="fas fa-save ms-2"></i></button>
-                            </form>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <select name="category_id" class="form-select" id="categorySelect">
+                                        <option value="">Select Category</option>
+                                        {% for c in categories %}
+                                            <option {% if c.title == product.category.title %}selected{% endif %} value="{{c.id}}">{{c.title}}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <label for="categorySelect">Category *</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <textarea name="description" class="form-control" id="productDescription" 
+                                      style="height: 120px" placeholder="Product description">{{ product.description }}</textarea>
+                            <label for="productDescription">Product Description *</label>
                         </div>
                     </div>
                 </div>
-            </div>
+
+                <!-- Pricing Information -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <h5><i class="fas fa-tag"></i>Pricing & Inventory</h5>
+                    </div>
+                    <div class="p-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" name="regular_price" class="form-control" id="regularPrice" 
+                                           value="{{product.regular_price}}" placeholder="Regular Price" step="0.01">
+                                    <label for="regularPrice">Regular Price (₦) *</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" name="price" class="form-control" id="salePrice" 
+                                           value="{{product.price}}" placeholder="Sale Price" step="0.01">
+                                    <label for="salePrice">Sale Price (₦) *</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" name="shipping" class="form-control" id="shippingFee" 
+                                           value="{{product.shipping}}" placeholder="Shipping Fee" step="0.01">
+                                    <label for="shippingFee">Shipping Fee (₦)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" name="stock" class="form-control" id="stockQuantity" 
+                                           value="{{product.stock}}" placeholder="Stock Quantity">
+                                    <label for="stockQuantity">Stock Quantity *</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Variants -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <h5><i class="fas fa-layer-group"></i>Product Variants</h5>
+                    </div>
+                    <div class="p-4">
+                        <div id="variant-container">
+                            <!-- Loop through existing variants -->
+                            {% for variant in variants %}
+                            <div class="variant-item variant variant{{variant.id}}" data-variant-index="{{ forloop.counter0 }}">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <input type="hidden" name="variant_id[]" value="{{ variant.id }}">
+                                    <div class="flex-grow-1">
+                                        <input type="text" class="form-control" name="variant_title[]" 
+                                               value="{{ variant.name }}" placeholder="Variant Title (e.g., Size, Color)">
+                                    </div>
+                                    <button type="button" class="btn btn-danger btn-sm remove-variant" 
+                                            data-product_id="{{product.id}}" data-variant_id="{{variant.id}}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="sub-item-container">
+                                    <!-- Loop through existing variant items -->
+                                    {% for item in variant.variant_items.all %}
+                                    <div class="sub-item sub-item{{item.id}} mb-2">
+                                        <input type="hidden" name="item_id_{{ forloop.parentloop.counter0 }}[]" value="{{ item.id }}">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <input type="text" class="form-control mb-2" 
+                                                       name="item_title_{{ forloop.parentloop.counter0 }}[]" 
+                                                       value="{{ item.title }}" placeholder="Option Name">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control mb-2" 
+                                                       name="item_description_{{ forloop.parentloop.counter0 }}[]" 
+                                                       value="{{ item.content }}" placeholder="Description">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-danger btn-sm remove-item" 
+                                                        data-variant_id="{{variant.id}}" data-item_id="{{item.id}}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <button type="button" class="btn btn-outline-secondary btn-sm add-item mt-2" 
+                                        data-variant-index="{{ forloop.counter0 }}">
+                                    <i class="fas fa-plus me-1"></i>Add Option
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Button to add a new variant -->
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-outline-primary" id="add-variant">
+                                <i class="fas fa-plus me-2"></i>Add New Variant
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Gallery -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <h5><i class="fas fa-images"></i>Product Gallery</h5>
+                    </div>
+                    <div class="p-4">
+                        <div class="row" id="images-container">
+                            <!-- Display existing images from the database -->
+                            {% for image in gallery_images %}
+                            <div class="col-lg-3 col-md-4 col-sm-6 mb-3 image-container{{image.id}}" data-image-id="{{ image.gallery_id }}">
+                                <div class="gallery-item">
+                                    <button type="button" class="btn btn-danger btn-sm delete-btn delete-image-btn" 
+                                            data-product_id="{{product.id}}" data-image_id="{{ image.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    <img src="{{ image.image.url }}" alt="Product Gallery Image" 
+                                         class="img-fluid" style="width: 100%; height: 150px; object-fit: cover;">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-outline-primary" id="add-image-btn">
+                                <i class="fas fa-plus me-2"></i>Add Gallery Image
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden input for deleting images -->
+                <input type="hidden" name="delete_image_ids[]" id="delete-image-ids">
+
+                <!-- Submit Button -->
+                <div class="text-center mb-4">
+                    <button type="submit" class="btn btn-save btn-lg px-5">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
-</section>
+</div>
+{% endblock %}
 
+{% block extra_js %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    // Image preview functionality
+    function previewImage(event) {
+        const imageInput = event.target.files[0];
+        const reader = new FileReader();
+        const preview = document.getElementById('imagePreview');
+
+        reader.onload = function() {
+            preview.src = reader.result;
+        }
+
+        if (imageInput) {
+            reader.readAsDataURL(imageInput);
+        }
+    }
 
     const Toast = Swal.mixin({
         toast: true,
@@ -169,30 +362,43 @@
 
     let variant_index = "{{ variants|length }}";  // Start with the number of existing variants
 
-        
     let variant_template = (variant_index) => `
-        <div class="spec-item border rounded-3 mb-3 m-3 variant" data-variant-index="${variant_index}">
-            <div class="card-body bg-light">
-                <div class="d-flex align-items-center gap-2">
-                    <input type="hidden" name="variant_id[]" value="">
-                    <input type="text" class="form-control rounded" name="variant_title[]" placeholder="Variant Title">
-                    <button type="button" class="btn text-white bg-danger rounded remove-variant"><i class="fas fa-trash"></i></button>
+        <div class="variant-item variant" data-variant-index="${variant_index}">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <input type="hidden" name="variant_id[]" value="">
+                <div class="flex-grow-1">
+                    <input type="text" class="form-control" name="variant_title[]" placeholder="Variant Title (e.g., Size, Color)">
                 </div>
-                <div class="sub-item-container mt-3">
-                    ${sub_item_template(variant_index)}
-                </div>
-                <button type="button" class="btn btn-sm rounded text-white bg-dark mt-3 add-item" data-variant-index="${variant_index}">+ Add Item</button>
+                <button type="button" class="btn btn-danger btn-sm remove-variant">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
+            <div class="sub-item-container">
+                ${sub_item_template(variant_index)}
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm add-item mt-2" data-variant-index="${variant_index}">
+                <i class="fas fa-plus me-1"></i>Add Option
+            </button>
         </div>
     `;
 
     // Sub-item template for a variant
     let sub_item_template = (variant_index) => `
-        <div class="card-body shadow mt-3 rounded sub-item">
+        <div class="sub-item mb-2">
             <input type="hidden" name="item_id_${variant_index}[]" value="">
-            <input type="text" class="form-control mb-2 rounded" name="item_title_${variant_index}[]" placeholder="Item Title">
-            <input type="text" class="form-control mb-2 rounded" name="item_description_${variant_index}[]" placeholder="Item Description">
-            <button type="button" class="btn text-white bg-danger rounded btn-sm remove-item"><i class="fas fa-trash"></i></button>
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="text" class="form-control mb-2" name="item_title_${variant_index}[]" placeholder="Option Name">
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" name="item_description_${variant_index}[]" placeholder="Description">
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger btn-sm remove-item">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
         </div>
     `;
 
@@ -270,13 +476,17 @@
     $("#add-image-btn").click(function () {
         var imageIndex = new Date().getTime(); // Unique ID based on timestamp
         var imageHtml = `
-            <div class="image-item border rounded-3 mb-3" data-image-id="${imageIndex}">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="mb-0">Image</h4>
-                        <button type="button" class="btn bg-danger btn-sm text-white rounded delete-image-btn" data-image-id="${imageIndex}"><i class="fas fa-trash"></i></button>
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-3 image-item" data-image-id="${imageIndex}">
+                <div class="gallery-item">
+                    <button type="button" class="btn btn-danger btn-sm delete-btn delete-image-btn" data-image-id="${imageIndex}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <input type="file" class="form-control" name="image_${imageIndex}" accept="image/*" 
+                           style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;">
+                    <div class="d-flex align-items-center justify-content-center bg-light" 
+                         style="height: 150px; border-radius: 8px;">
+                        <i class="fas fa-plus fa-2x text-muted"></i>
                     </div>
-                    <input type="file" class="form-control mb-2" name="image_${imageIndex}">
                 </div>
             </div>`;
         $("#images-container").append(imageHtml);
@@ -285,59 +495,40 @@
     // Handle deleting images dynamically
     $(document).on("click", ".delete-image-btn", function () {
         var imageId = $(this).data("image-id");
-
-        // Check if the image being deleted is from the database (existing image)
-        var existingImage = $(`.image-item[data-image-id="${imageId}"] img`).length > 0;
-        if (existingImage) {
-            // Add the gallery_id to the hidden delete image input for backend deletion
-            var deleteIdsInput = $("#delete-image-ids");
-            var currentValue = deleteIdsInput.val();
-            deleteIdsInput.val(currentValue + imageId + ',');
-        }
-
-
         let product_id = $(this).attr("data-product_id")
         let image_id = $(this).attr("data-image_id")
         
         if (product_id && image_id) {
-            
-                $.ajax({
-                    url: `/vendor/delete_product_image/${product_id}/${image_id}/`,
-                    dataType: "json",
+            // For existing database images
+            $.ajax({
+                url: `/vendor/delete_product_image/${product_id}/${image_id}/`,
+                dataType: "json",
                 beforeSend: function(){
-                    console.log("Deleting");
+                    console.log("Deleting image...");
                 },
                 success: function(response){
                     console.log(response);
-                    $(`.image-container${image_id}`).addClass("d-none")
+                    $(`.image-container${image_id}`).fadeOut(300, function() {
+                        $(this).remove();
+                    });
                     Toast.fire({
                         icon: "success",
                         title: response.message
                     });
+                },
+                error: function(xhr, status, error) {
+                    Toast.fire({
+                        icon: "error",
+                        title: "Error deleting image"
+                    });
                 }
-            })
+            });
+        } else {
+            // For newly added images (not yet saved)
+            $(this).closest('.image-item').fadeOut(300, function() {
+                $(this).remove();
+            });
         }
-
-        // Remove the image element from the DOM
-        $(`.image-item[data-image-id="${imageId}"]`).remove();
     });
-    
 </script>
-<script>
-    function previewImage(event) {
-        const imageInput = event.target.files[0]; // Get the selected file
-        const reader = new FileReader();
-
-        reader.onload = function() {
-            const preview = document.getElementById('imagePreview');
-            preview.src = reader.result; // Set the image source to the base64 result
-            preview.style.display = 'block'; // Make the image visible
-        }
-
-        if (imageInput) {
-            reader.readAsDataURL(imageInput); // Read the file as a Data URL
-        }
-    }
-</script>
-
-{% endblock content %}
+{% endblock %}

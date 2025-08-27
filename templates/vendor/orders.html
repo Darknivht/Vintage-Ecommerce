@@ -1,116 +1,215 @@
-{% extends 'partials/base.html' %} {% load static %} {% load humanize %} {% block content %}
-<section class="middle">
-    <div class="container-fluid">
-        <div class="row align-items-start justify-content-between">
-            <!-- Sidebar -->
-            <div class="col-12 col-md-3 col-lg-3 col-xl-2">
-                {% include 'vendor/sidebar.html' %}
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Orders Management - Vendor Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .orders-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .order-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .order-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .order-header {
+        background: #f8f9fa;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .order-body {
+        padding: 1.5rem;
+    }
+    
+    .order-item {
+        padding: 1rem;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        background: #fafafa;
+    }
+    
+    .order-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .product-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-processing { background: #d1ecf1; color: #0c5460; }
+    .status-shipped { background: #d4edda; color: #155724; }
+    .status-delivered { background: #cce7ff; color: #004085; }
+    .status-cancelled { background: #f8d7da; color: #721c24; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2">
+            {% include 'vendor/sidebar.html' %}
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <!-- Orders Header -->
+            <div class="orders-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="fw-bold mb-2">Orders Management</h2>
+                        <p class="mb-0 opacity-75">Manage and track your customer orders</p>
+                    </div>
+                    <div class="text-end">
+                        <h3 class="fw-bold mb-0">{{ orders.count }}</h3>
+                        <small class="opacity-75">Total Orders</small>
+                    </div>
+                </div>
             </div>
 
-            <!-- Main Content -->
-            <div class="col-12 col-md-9 col-lg-9 col-xl-10">
-                <h4 class="mb-0 mb-4 fw-bold">Orders ({{orders_list.count}})</h4>
-
-                {% for order in orders %}
-                    <div class="ord_list_wrap border mb-4 mfliud">
-                        <div class="ord_list_head bg-light bg-opacity-10 d-flex align-items-center justify-content-between px-3 py-3">
-                            <div class="olh_flex">
-                                <p class="m-0 p-0"><span class="text-muted">Order Number</span></p>
-                                <h6 class="mb-0 ft-medium">#{{order.order_id}}</h6>
+            {% for order in orders %}
+                <div class="order-card">
+                    <div class="order-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="fw-bold mb-1">Order #{{ order.order_id }}</h5>
+                                <p class="text-muted mb-0">{{ order.date|date:"M d, Y \a\t H:i" }}</p>
                             </div>
-                            <div class="olh_flex">
-                                <a href="{% url 'vendor:order_detail' order.order_id %}" class="btn btn-sm bg-primary rounded text-white">View Order <i class="fas fa-arrow-right ms-2"></i></a>
-                            </div>
-                        </div>
-                        <div class="ord_list_body text-left">
-                            <!-- Single Item -->
-                            
-                            {% for item in order.order_items.all %}
-                                <div class="row align-items-center justify-content-center m-0 py-4 br-bottom">
-                                    <div class="col-xl-6 col-lg-5 col-md-5 col-12">
-                                        <div class="cart_single d-flex align-items-start mfliud-bot gap-3">
-                                            <div class="cart_selected_single_thumb">
-                                                <a href="{% url 'store:product_detail' item.product.slug %}"><img src="{{item.product.image.url}}" width="75" class="img-fluid rounded" alt="" /></a>
-                                            </div>
-                                            <div class="cart_single_caption pl-3">
-                                                <h4 class="product_title fs-sm ft-medium mb-1 lh-1"> <a href="{% url 'store:product_detail' item.product.slug %}">{{item.product.name}}</a></h4>
-                                                <p class="mb-2">
-                                                    <span class="text-dark medium">Vendor: {{item.product.vendor.profile.full_name}}</span> <br />
-                                                    
-                                                    {% if item.color %}
-                                                        <span class="text-dark medium">Color: {{item.color}}</span>
-                                                    {% endif %}
-
-                                                    {% if item.size %}
-                                                        <span class="text-dark medium">Size: {{item.size}}</span>
-                                                    {% endif %}
-                                                        
-                                                </p>
-                                                <h4 class="fs-sm ft-bold mb-0 lh-1">₦{{item.price}}</h4>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-xl-2 col-lg-3 col-md-3 col-6">
-                                        <p class="mb-1 p-0"><span class="text-muted">Status</span></p>
-                                        <div class="delv_status"><span class="ft-medium small text-warning bg-light-warning rounded px-3 py-1">{{order.order_status}}</span></div>
-                                    </div>
-                                    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
-                                        <p class="mb-1 p-0"><span class="text-muted">Payment Status</span></p>
-                                        <h6 class="mb-0 ft-medium fs-sm">{{order.payment_status}}</h6>
-                                    </div>
-                                    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
-                                        <p class="mb-1 p-0"><span class="text-muted">Order Date/Time</span></p>
-                                        <h6 class="mb-0 ft-medium fs-sm">{{order.date}}</h6>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                                
-                        </div>
-                        <div class="ord_list_footer d-flex align-items-center justify-content-between br-top px-3">
-                            <div class="col-xl-12 pr-0 py-2 olf_flex d-flex align-items-center justify-content-between">
-                                <div class="olf_flex_inner hide_mob">
-                                    <p class="m-0 p-0"><span class="text-muted medium">Paid using {{order.payment_method}}</span></p>
-                                </div>
-                                <div class="float-end"><h5 class="mb-0 fs-sm ft-bold">Total: ₦{{order.total|floatformat:2|intcomma}}</h5></div>
+                            <div class="d-flex align-items-center gap-3">
+                                {% if order.order_status == 'Pending' %}
+                                    <span class="status-badge status-pending">{{ order.order_status }}</span>
+                                {% elif order.order_status == 'Processing' %}
+                                    <span class="status-badge status-processing">{{ order.order_status }}</span>
+                                {% elif order.order_status == 'Shipped' %}
+                                    <span class="status-badge status-shipped">{{ order.order_status }}</span>
+                                {% elif order.order_status == 'Delivered' %}
+                                    <span class="status-badge status-delivered">{{ order.order_status }}</span>
+                                {% else %}
+                                    <span class="status-badge status-cancelled">{{ order.order_status }}</span>
+                                {% endif %}
+                                <a href="{% url 'vendor:order_detail' order.order_id %}" 
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fas fa-eye me-1"></i>View Details
+                                </a>
                             </div>
                         </div>
                     </div>
-                {% empty %}
-                <p>No orders yet</p>
-                {% endfor %}
-
-
-                
-            </div>
-            
-        </div>
-        <ul class="pagination">
-            {% if orders.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ orders.previous_page_number }}">Previous</a>
-                </li>
-            {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link">Previous</span>
-                </li>
-            {% endif %}
-
-            {% for num in orders.paginator.page_range %}
-                <li class="page-item {% if orders.number == num %}active{% endif %}">
-                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                </li>
+                    
+                    <div class="order-body">
+                        {% for item in order.order_items.all %}
+                            <div class="order-item">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div>
+                                        <img src="{{ item.product.image.url }}" class="product-image" alt="{{ item.product.name }}">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="fw-bold mb-1">
+                                            <a href="{% url 'store:product_detail' item.product.slug %}" 
+                                               class="text-decoration-none text-dark">
+                                                {{ item.product.name }}
+                                            </a>
+                                        </h6>
+                                        <div class="d-flex align-items-center gap-3 text-muted">
+                                            <small><i class="fas fa-shopping-cart me-1"></i>Qty: {{ item.qty }}</small>
+                                            {% if item.color %}
+                                                <small><i class="fas fa-palette me-1"></i>{{ item.color }}</small>
+                                            {% endif %}
+                                            {% if item.size %}
+                                                <small><i class="fas fa-expand-arrows-alt me-1"></i>{{ item.size }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <h6 class="fw-bold text-primary mb-0">₦{{ item.total|floatformat:2|intcomma }}</h6>
+                                        <small class="text-muted">₦{{ item.price|floatformat:2|intcomma }} each</small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                            <div>
+                                <span class="text-muted">Payment: {{ order.payment_method|default:"Not specified" }}</span>
+                                <span class="badge bg-info ms-2">{{ order.payment_status }}</span>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-primary mb-0">Total: ₦{{ order.total|floatformat:2|intcomma }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="text-center py-5">
+                    <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No orders yet</h4>
+                    <p class="text-muted">Your customer orders will appear here once you start receiving them.</p>
+                </div>
             {% endfor %}
 
-            {% if orders.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ orders.next_page_number }}">Next</a>
-                </li>
-            {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link">Next</span>
-                </li>
+            <!-- Pagination -->
+            {% if orders.has_other_pages %}
+                <div class="d-flex justify-content-center mt-4">
+                    <nav aria-label="Orders pagination">
+                        <ul class="pagination">
+                            {% if orders.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ orders.previous_page_number }}">Previous</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Previous</span>
+                                </li>
+                            {% endif %}
+
+                            {% for num in orders.paginator.page_range %}
+                                <li class="page-item {% if orders.number == num %}active{% endif %}">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endfor %}
+
+                            {% if orders.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ orders.next_page_number }}">Next</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Next</span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
             {% endif %}
-        </ul>
+        </div>
     </div>
-</section>
-{% endblock content %}
+</div>
+{% endblock %}

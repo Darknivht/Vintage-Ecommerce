@@ -4,93 +4,355 @@
 
 {% block title %}{{ page_title|default:"Browse Listings" }} - {{ site_name|default:"Vintage Ecommerce" }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .listings-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 4rem 0;
+        color: white;
+        margin-bottom: 3rem;
+    }
+
+    .filters-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        border: none;
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+
+    .filters-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 1.5rem;
+        border: none;
+    }
+
+    .filter-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-group label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 0.75rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .subcategory-dropdown {
+        margin-top: 0.5rem;
+        display: none;
+    }
+
+    .subcategory-dropdown.show {
+        display: block;
+    }
+
+    .listing-card {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        margin-bottom: 2rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .listing-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    }
+
+    .listing-image {
+        position: relative;
+        height: 250px;
+        overflow: hidden;
+    }
+
+    .listing-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: all 0.3s ease;
+    }
+
+    .listing-card:hover .listing-image img {
+        transform: scale(1.1);
+    }
+
+    .listing-badges {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        z-index: 10;
+    }
+
+    .listing-badges .badge {
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 20px;
+    }
+
+    .listing-content {
+        padding: 1.5rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .listing-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 0.75rem;
+        line-height: 1.4;
+        text-decoration: none;
+    }
+
+    .listing-title:hover {
+        color: #667eea;
+        text-decoration: none;
+    }
+
+    .listing-description {
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        flex-grow: 1;
+    }
+
+    .listing-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 1px solid #eee;
+        margin-top: auto;
+    }
+
+    .listing-price {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #28a745;
+    }
+
+    .listing-location {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .btn-filter {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .btn-filter:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+
+    .btn-clear {
+        background: transparent;
+        border: 2px solid #dc3545;
+        color: #dc3545;
+        padding: 10px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        width: 100%;
+        margin-top: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-clear:hover {
+        background: #dc3545;
+        color: white;
+    }
+
+    .listings-stats {
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .no-listings {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #666;
+    }
+
+    .no-listings i {
+        font-size: 4rem;
+        margin-bottom: 2rem;
+        opacity: 0.3;
+    }
+
+    .pagination-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-top: 3rem;
+    }
+
+    .sort-controls {
+        background: white;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="browse-listings-page">
-    <!-- Header Section -->
-    <div class="bg-light py-4 mb-5">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-6">
-                    <h1 class="fw-bold mb-2">Browse Listings</h1>
-                    <p class="text-muted mb-0">Discover amazing services and products from our vendors</p>
-                </div>
-                <div class="col-lg-6 text-lg-end">
-                    <span class="text-muted">{{ total_listings|intcomma }} listings found</span>
+<!-- Listings Hero -->
+<section class="listings-hero">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="fas fa-search me-3"></i>Browse Listings
+                </h1>
+                <p class="lead mb-0">Discover amazing services and products from our trusted vendors</p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <div class="listings-stats">
+                    <h3 class="fw-bold mb-2">{{ total_listings|intcomma }}</h3>
+                    <p class="text-muted mb-0">Available Listings</p>
                 </div>
             </div>
         </div>
     </div>
+</section>
 
-    <div class="container">
-        <div class="row">
-            <!-- Sidebar Filters -->
-            <div class="col-lg-3 col-md-4 mb-4">
-                <div class="filters-sidebar">
-                    <div class="card border-0 shadow-sm mb-4">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filters</h5>
-                        </div>
-                        <div class="card-body">
-                            <form method="GET" id="filterForm">
-                                <!-- Search -->
-                                <div class="mb-4">
-                                    <label class="form-label fw-semibold">Search</label>
-                                    {{ filter_form.search }}
+<div class="container">
+    <div class="row">
+        <!-- Sidebar Filters -->
+        <div class="col-lg-3 col-md-4 mb-4">
+            <div class="filters-sidebar">
+                <div class="filters-card">
+                    <div class="filters-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-sliders-h me-2"></i>Filter Listings
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="GET" id="filterForm">
+                            <!-- Search -->
+                            <div class="filter-group">
+                                <label>
+                                    <i class="fas fa-search me-2"></i>Search
+                                </label>
+                                {{ filter_form.search }}
+                            </div>
+
+                            <!-- Category with Subcategory -->
+                            <div class="filter-group">
+                                <label>
+                                    <i class="fas fa-tags me-2"></i>Category
+                                </label>
+                                <select name="category" class="form-select" id="categorySelect">
+                                    <option value="">All Categories</option>
+                                    {% for category in categories %}
+                                        <option value="{{ category.id }}" 
+                                                {% if request.GET.category == category.id|stringformat:"s" %}selected{% endif %}
+                                                data-has-subcategories="{% if category.children.exists %}true{% else %}false{% endif %}">
+                                            {{ category.title }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <!-- Subcategory Dropdown -->
+                                <div class="subcategory-dropdown" id="subcategoryDropdown">
+                                    <select name="subcategory" class="form-select" id="subcategorySelect">
+                                        <option value="">All Subcategories</option>
+                                    </select>
                                 </div>
+                            </div>
 
-                                <!-- Category -->
-                                <div class="mb-4">
-                                    <label class="form-label fw-semibold">Category</label>
-                                    {{ filter_form.category }}
-                                </div>
+                            <!-- Listing Type -->
+                            <div class="filter-group">
+                                <label>
+                                    <i class="fas fa-list me-2"></i>Listing Type
+                                </label>
+                                {{ filter_form.listing_type }}
+                            </div>
 
-                                <!-- Listing Type -->
-                                <div class="mb-4">
-                                    <label class="form-label fw-semibold">Type</label>
-                                    {{ filter_form.listing_type }}
-                                </div>
-
-                                <!-- Price Range -->
-                                <div class="mb-4">
-                                    <label class="form-label fw-semibold">Price Range</label>
-                                    <div class="row">
-                                        <div class="col-6">
-                                            {{ filter_form.price_min }}
-                                        </div>
-                                        <div class="col-6">
-                                            {{ filter_form.price_max }}
-                                        </div>
+                            <!-- Price Range -->
+                            <div class="filter-group">
+                                <label>
+                                    <i class="fas fa-money-bill me-2"></i>Price Range
+                                </label>
+                                <div class="row">
+                                    <div class="col-6">
+                                        {{ filter_form.price_min }}
+                                        <small class="text-muted">Min Price</small>
                                     </div>
-                                    <div class="row mt-2">
-                                        <div class="col-6">
-                                            <small class="text-muted">Min Price</small>
-                                        </div>
-                                        <div class="col-6">
-                                            <small class="text-muted">Max Price</small>
-                                        </div>
+                                    <div class="col-6">
+                                        {{ filter_form.price_max }}
+                                        <small class="text-muted">Max Price</small>
                                     </div>
                                 </div>
+                            </div>
 
-                                <!-- Location -->
-                                <div class="mb-4">
-                                    <label class="form-label fw-semibold">Location</label>
-                                    {{ filter_form.location }}
-                                </div>
+                            <!-- Location -->
+                            <div class="filter-group">
+                                <label>
+                                    <i class="fas fa-map-marker-alt me-2"></i>Location
+                                </label>
+                                {{ filter_form.location }}
+                            </div>
 
-                                <!-- Sort By -->
-                                <div class="mb-4">
-                                    <label class="form-label fw-semibold">Sort By</label>
-                                    {{ filter_form.sort_by }}
-                                </div>
+                            <!-- Condition -->
+                            <div class="filter-group">
+                                <label>
+                                    <i class="fas fa-star me-2"></i>Condition
+                                </label>
+                                {{ filter_form.condition }}
+                            </div>
 
-                                <div class="d-grid gap-2">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-search me-2"></i>Apply Filters
-                                    </button>
-                                    <a href="{% url 'store:browse_listings' %}" class="btn btn-outline-secondary">
-                                        <i class="fas fa-times me-2"></i>Clear All
-                                    </a>
-                                </div>
+                            <!-- Sort By -->
+                            <div class="filter-group">
+                                <label>
+                                    <i class="fas fa-sort me-2"></i>Sort By
+                                </label>
+                                {{ filter_form.sort_by }}
+                            </div>
+
+                            <!-- Filter Buttons -->
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn-filter">
+                                    <i class="fas fa-search me-2"></i>Apply Filters
+                                </button>
+                                <a href="{% url 'store:browse_listings' %}" class="btn-clear">
+                                    <i class="fas fa-times me-2"></i>Clear All
+                                </a>
+                            </div>
                             </form>
                         </div>
                     </div>
@@ -169,92 +431,54 @@
                     <div class="listings-container" id="listingsContainer">
                         <div class="row" id="gridView">
                             {% for listing in listings %}
-                                <div class="col-lg-4 col-md-6 mb-4">
-                                    <div class="listing-card card border-0 shadow-sm h-100">
-                                        <!-- Image -->
-                                        <div class="listing-image position-relative">
-                                            <a href="{% url 'store:listing_detail' listing.slug %}">
-                                                {% if listing.image %}
-                                                    <img src="{{ listing.image.url }}" alt="{{ listing.title }}" 
-                                                         class="card-img-top" style="height: 200px; object-fit: cover;">
-                                                {% else %}
-                                                    <div class="bg-light d-flex align-items-center justify-content-center" 
-                                                         style="height: 200px;">
-                                                        <i class="fas fa-image fa-3x text-muted"></i>
-                                                    </div>
-                                                {% endif %}
-                                            </a>
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="listing-card">
+                                        <div class="listing-image">
+                                            {% if listing.image %}
+                                                <img src="{{ listing.image.url }}" alt="{{ listing.title }}">
+                                            {% else %}
+                                                <div style="height: 250px; background: linear-gradient(135deg, #e9ecef, #f8f9fa); display: flex; align-items: center; justify-content: center; color: #adb5bd;">
+                                                    <i class="fas fa-image fa-3x"></i>
+                                                </div>
+                                            {% endif %}
                                             
-                                            <!-- Badges -->
-                                            <div class="position-absolute top-0 start-0 p-2">
+                                            <div class="listing-badges">
                                                 {% if listing.featured %}
-                                                    <span class="badge bg-warning text-dark">Featured</span>
+                                                    <span class="badge bg-warning">Featured</span>
                                                 {% endif %}
                                                 {% if listing.urgent %}
                                                     <span class="badge bg-danger">Urgent</span>
                                                 {% endif %}
-                                            </div>
-
-                                            <!-- Favorite Button -->
-                                            <div class="position-absolute top-0 end-0 p-2">
-                                                {% if user.is_authenticated %}
-                                                    <button class="btn btn-sm btn-light rounded-circle favorite-btn" 
-                                                            data-listing-id="{{ listing.id }}"
-                                                            data-favorited="{% if listing in user.favorites.all %}true{% else %}false{% endif %}">
-                                                        <i class="fas fa-heart {% if listing in user.favorites.all %}text-danger{% else %}text-muted{% endif %}"></i>
-                                                    </button>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-
-                                        <!-- Card Body -->
-                                        <div class="card-body d-flex flex-column">
-                                            <div class="mb-2">
-                                                <span class="badge bg-light text-dark">{{ listing.category.title }}</span>
                                                 <span class="badge bg-primary">{{ listing.get_listing_type_display }}</span>
                                             </div>
+                                        </div>
+                                        
+                                        <div class="listing-content">
+                                            <a href="{% url 'store:listing_detail' listing.slug %}" class="listing-title">
+                                                {{ listing.title|truncatechars:50 }}
+                                            </a>
                                             
-                                            <h6 class="card-title mb-2">
-                                                <a href="{% url 'store:listing_detail' listing.slug %}" 
-                                                   class="text-decoration-none text-dark">
-                                                    {{ listing.title|truncatechars:50 }}
-                                                </a>
-                                            </h6>
-                                            
-                                            <p class="card-text text-muted small mb-2">
-                                                {{ listing.short_description|truncatechars:80 }}
+                                            <p class="listing-description">
+                                                {{ listing.short_description|truncatechars:100|default:"No description available" }}
                                             </p>
                                             
-                                            <div class="listing-meta mb-3">
-                                                <div class="d-flex align-items-center text-muted small mb-1">
-                                                    <i class="fas fa-map-marker-alt me-1"></i>
-                                                    {{ listing.location|truncatechars:25 }}
-                                                </div>
-                                                <div class="d-flex align-items-center text-muted small">
-                                                    <i class="fas fa-clock me-1"></i>
-                                                    {{ listing.created_at|naturaltime }}
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="mt-auto">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <div class="price">
-                                                        {% if listing.price %}
-                                                            <span class="fw-bold text-primary">₦{{ listing.price|intcomma }}</span>
-                                                            {% if listing.negotiable %}
-                                                                <small class="text-muted">(Negotiable)</small>
-                                                            {% endif %}
-                                                        {% else %}
-                                                            <span class="text-muted">Contact for Price</span>
+                                            <div class="listing-meta">
+                                                <div class="listing-price">
+                                                    {% if listing.price %}
+                                                        ₦{{ listing.price|intcomma }}
+                                                        {% if listing.negotiable %}
+                                                            <small>(Negotiable)</small>
                                                         {% endif %}
-                                                    </div>
-                                                    <div class="listing-stats">
-                                                        <span class="text-muted small">
-                                                            <i class="fas fa-eye"></i> {{ listing.views_count|default:0 }}
-                                                        </span>
-                                                    </div>
+                                                    {% else %}
+                                                        Contact for Price
+                                                    {% endif %}
+                                                </div>
+                                                <div class="listing-location">
+                                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                                    {{ listing.location }}
                                                 </div>
                                             </div>
+                                        </div>
                                         </div>
                                     </div>
                                 </div>
@@ -396,11 +620,9 @@
 
                 {% else %}
                     <!-- Empty State -->
-                    <div class="text-center py-5">
-                        <div class="mb-4">
-                            <i class="fas fa-search fa-4x text-muted"></i>
-                        </div>
-                        <h3 class="mb-3">No listings found</h3>
+                    <div class="no-listings">
+                        <i class="fas fa-search"></i>
+                        <h3>No listings found</h3>
                         <p class="text-muted mb-4">
                             {% if request.GET.search or request.GET.category or request.GET.location %}
                                 Try adjusting your search criteria or browse all listings.
@@ -551,16 +773,133 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 @media (max-width: 768px) {
-    .browse-listings-page .container {
-        padding-left: 15px;
-        padding-right: 15px;
+    .listings-hero .listings-stats {
+        margin-top: 2rem;
     }
     
-    .filters-sidebar {
-        position: sticky;
-        top: 100px;
+    .filter-group {
+        margin-bottom: 1rem;
     }
 }
 </style>
+{% endblock %}
 
-{% endblock content %}
+{% block extra_js %}
+<script>
+// Category subcategory dropdown functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('categorySelect');
+    const subcategoryDropdown = document.getElementById('subcategoryDropdown');
+    const subcategorySelect = document.getElementById('subcategorySelect');
+
+    // Categories with their subcategories from backend
+    const categorySubcategories = {};
+    {% for category in categories %}
+        {% with subcategories=category.children.all %}
+        {% if subcategories %}
+        categorySubcategories['{{ category.id }}'] = [
+            {% for subcategory in subcategories %}
+            {id: {{ subcategory.id }}, name: '{{ subcategory.title|escapejs }}'},
+            {% endfor %}
+        ];
+        {% endif %}
+        {% endwith %}
+    {% endfor %}
+
+    categorySelect.addEventListener('change', function() {
+        const selectedCategory = this.value;
+        const hasSubcategories = this.options[this.selectedIndex].dataset.hasSubcategories === 'true';
+
+        if (hasSubcategories && selectedCategory && categorySubcategories[selectedCategory]) {
+            // Clear existing options
+            subcategorySelect.innerHTML = '<option value="">All Subcategories</option>';
+            
+            // Add subcategory options
+            categorySubcategories[selectedCategory].forEach(function(subcategory) {
+                const option = document.createElement('option');
+                option.value = subcategory.id;
+                option.textContent = subcategory.name;
+                option.selected = '{{ request.GET.subcategory }}' === subcategory.id.toString();
+                subcategorySelect.appendChild(option);
+            });
+            
+            subcategoryDropdown.classList.add('show');
+        } else {
+            subcategoryDropdown.classList.remove('show');
+            subcategorySelect.value = '';
+        }
+    });
+
+    // Initialize on page load
+    if (categorySelect.value) {
+        categorySelect.dispatchEvent(new Event('change'));
+    }
+
+    // Auto-submit form on filter changes
+    const formElements = document.querySelectorAll('#filterForm select, #filterForm input');
+    formElements.forEach(function(element) {
+        element.addEventListener('change', function() {
+            if (element.id !== 'categorySelect' && element.id !== 'subcategorySelect') {
+                document.getElementById('filterForm').submit();
+            }
+        });
+    });
+
+    // View toggle functionality
+    const viewToggles = document.querySelectorAll('.view-toggle');
+    const gridView = document.getElementById('gridView');
+    const listView = document.getElementById('listView');
+
+    viewToggles.forEach(function(toggle) {
+        toggle.addEventListener('click', function() {
+            viewToggles.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+
+            if (this.dataset.view === 'grid') {
+                gridView.classList.remove('d-none');
+                listView.classList.add('d-none');
+            } else {
+                gridView.classList.add('d-none');
+                listView.classList.remove('d-none');
+            }
+        });
+    });
+
+    // Favorite functionality (if user is authenticated)
+    const favoriteButtons = document.querySelectorAll('.favorite-btn');
+    favoriteButtons.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const listingId = this.dataset.listingId;
+            const icon = this.querySelector('i');
+            const isFavorited = this.dataset.favorited === 'true';
+            
+            // Toggle favorite status via AJAX
+            fetch(`/toggle-favorite/${listingId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.favorited) {
+                        icon.classList.remove('text-muted');
+                        icon.classList.add('text-danger');
+                        this.dataset.favorited = 'true';
+                    } else {
+                        icon.classList.remove('text-danger');
+                        icon.classList.add('text-muted');
+                        this.dataset.favorited = 'false';
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+});
+</script>
+{% endblock %}

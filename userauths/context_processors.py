@@ -3,6 +3,8 @@ def user_role_context(request):
     Determine user type with multiple fallback methods for robust detection
     """
     user_type = None
+    comparison_count = 0
+    
     if request.user.is_authenticated:
         try:
             # Method 1: Check profile.user_type (primary method)
@@ -20,5 +22,16 @@ def user_role_context(request):
                     user_type = "Customer"
             except:
                 user_type = "Customer"  # Default fallback
+        
+        # Get comparison count
+        try:
+            from store.models import ProductComparison
+            comparison = ProductComparison.objects.get(user=request.user)
+            comparison_count = comparison.products.count()
+        except:
+            comparison_count = 0
     
-    return {'user_type': user_type}
+    return {
+        'user_type': user_type,
+        'comparison_count': comparison_count
+    }

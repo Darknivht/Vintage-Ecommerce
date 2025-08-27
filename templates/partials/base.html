@@ -7,6 +7,8 @@
     <meta name="description" content="Nigeria's Premier Online Marketplace - Shop Electronics, Fashion, Home & More">
     <meta name="keywords" content="Nigeria, online shopping, marketplace, electronics, fashion, home, beauty">
     <meta name="author" content="Vintage Marketplace Nigeria">
+    <meta name="user-authenticated" content="{% if user.is_authenticated %}true{% else %}false{% endif %}">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     
     <title>{% block title %}Vintage - Nigeria's Premier Online Marketplace{% endblock %}</title>
     
@@ -938,6 +940,17 @@
                                 <span class="navbar-badge" id="wishlistCount">{{ wishlist_count.count|default:0 }}</span>
                             </div>
                             <span class="navbar-text">Wishlist</span>
+                        </a>
+                    </div>
+
+                    <!-- Comparison -->
+                    <div class="navbar-item">
+                        <a href="{% url 'store:comparison' %}" class="navbar-link">
+                            <div class="navbar-icon-wrapper">
+                                <i class="fas fa-balance-scale"></i>
+                                <span class="navbar-badge comparison-count" id="comparisonCount">{{ comparison_count|default:0 }}</span>
+                            </div>
+                            <span class="navbar-text">Compare</span>
                         </a>
                     </div>
 

@@ -1022,16 +1022,87 @@ function updateFlashSaleTimer() {
 
 // Quick View Function
 function quickView(productId) {
-    // Implement quick view modal
-    console.log('Quick view for product:', productId);
-    // You can implement a modal here
+    if (window.vintageApp && typeof window.vintageApp.showQuickView === 'function') {
+        window.vintageApp.showQuickView(productId);
+    } else {
+        // Fallback implementation
+        console.log('VintageApp not loaded, opening product page');
+        window.open(`/detail/${productId}/`, '_blank');
+    }
 }
 
 // Add to Compare Function
 function addToCompare(productId) {
-    // Implement add to compare functionality
-    console.log('Add to compare:', productId);
-    // You can implement comparison functionality here
+    // Check if user is authenticated
+    if (!document.body.classList.contains('authenticated')) {
+        alert('Please login to use the comparison feature');
+        return;
+    }
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                     document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    
+    fetch('/ajax/toggle-comparison/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: new URLSearchParams({
+            'product_id': productId,
+            'csrfmiddlewaretoken': csrfToken
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showNotification(data.message, 'success');
+            
+            // Update comparison count if main app is loaded
+            if (window.vintageApp && typeof window.vintageApp.updateComparisonCount === 'function') {
+                window.vintageApp.updateComparisonCount(data.comparison_count);
+            } else {
+                // Fallback: update comparison count directly
+                const comparisonBadge = document.getElementById('comparisonCount');
+                if (comparisonBadge) {
+                    comparisonBadge.textContent = data.comparison_count || 0;
+                }
+            }
+        } else {
+            showNotification(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred while adding to comparison', 'error');
+    });
+}
+
+// Notification function
+function showNotification(message, type) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 150);
+        }
+    }, 3000);
 }
 
 // Initialize timer when page loads

@@ -1,108 +1,274 @@
-{% extends 'partials/base.html' %} {% load static %} {% load humanize %} {% block content %}
-<section class="middle">
-    <div class="container-fluid">
-        <div class="row align-items-start justify-content-between">
-            <!-- Sidebar -->
-            <div class="col-12 col-md-3 col-lg-3 col-xl-2">
-                {% include 'vendor/sidebar.html' %}
-            </div>
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load humanize %}
 
-            <!-- Main Content -->
-            <div class="col-12 col-md-9 col-lg-9 col-xl-10">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0 mb-4 fw-bold">Coupons ({{ coupons_list.count }})</h4>
-                    <button class="btn bg-primary rounded text-white btn-sm mb-5" data-bs-toggle="modal" data-bs-target="#createCouponModal"><i class="fas fa-add me-1"></i> Add Coupon</button>
+{% block title %}Coupons - Vendor Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .coupons-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .coupon-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: none;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .coupon-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .coupon-code {
+        background: linear-gradient(135deg, #FF6B35, #FF8C42);
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1.2rem;
+        text-align: center;
+        margin-right: 1rem;
+        min-width: 120px;
+    }
+    
+    .discount-badge {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .btn-update {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        color: white;
+    }
+    
+    .btn-update:hover {
+        background: linear-gradient(135deg, #764ba2, #667eea);
+        color: white;
+    }
+    
+    .btn-delete:hover {
+        background: #dc3545;
+        border-color: #dc3545;
+    }
+    
+    .btn-create {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        padding: 12px 2rem;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-create:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+    
+    .pagination .page-link {
+        border-radius: 8px;
+        margin: 0 2px;
+        border: none;
+        background: #f8f9fa;
+        color: #667eea;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-color: transparent;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2">
+            {% include 'vendor/sidebar.html' %}
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <!-- Coupons Header -->
+            <div class="coupons-header">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-ticket-alt fa-3x me-3"></i>
+                        <div>
+                            <h2 class="fw-bold mb-2">Coupon Management</h2>
+                            <p class="mb-0 opacity-75">Manage discount coupons for your store ({{ coupons_list.count }} total)</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-create" data-bs-toggle="modal" data-bs-target="#createCouponModal">
+                        <i class="fas fa-plus me-2"></i>Add New Coupon
+                    </button>
                 </div>
-                <ul class="list-group list-group-flush">
-                   
-                   {% for c in coupons %}
-                        <li class="list-group-item p-4 shadow rounded-3 mb-3">
-                            <div class="d-flex">
-                                <div class="ms-3 mt-2">
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <div>
-                                            <h4 class="mb-0 fw-bold">{{c.code}}</h4>
-                                        </div>
-                                    </div>
-                                    <div class="mt-3">
-                                        <p class="mt-2 mb-0">
-                                            <span class="me-2 fw-bold"> Discount: <span class="fw-light">{{c.discount}}% Discount</span> </span>
-                                        </p>
-                                        <form class="mt-3 d-flex align-items-center" action="{% url 'vendor:update_coupon' c.id %}" method="POST">
-                                            {% csrf_token %}
-                                            <input type="text" class="form-control rounded" value="{{c.code}}" name="coupon_code" />
-                                            <button class="btn bg-primary text-white rounded btn-sm ms-2" type="submit"><i class="fas fa-save"></i></button>
-                                            <a href="{% url 'vendor:delete_coupon' c.id %}" class="btn bg-danger text-white btn-sm rounded ms-2"><i class="fas fa-trash"></i></a>
-                                        </form>
+            </div>
+            <!-- Coupons List -->
+            {% for c in coupons %}
+                <div class="coupon-card">
+                    <div class="p-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <div class="coupon-code">
+                                    {{c.code}}
+                                </div>
+                                <div>
+                                    <h5 class="fw-bold mb-2">Discount Coupon</h5>
+                                    <div class="discount-badge">
+                                        <i class="fas fa-percentage me-1"></i>{{c.discount}}% OFF
                                     </div>
                                 </div>
                             </div>
-                        </li>
-                    {% empty %}
-                    <p>No coupons yet</p>
-                   {% endfor %}
-                    
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-outline-secondary btn-sm me-2" data-bs-toggle="collapse" 
+                                        data-bs-target="#editCoupon{{c.id}}" aria-expanded="false">
+                                    <i class="fas fa-edit me-1"></i>Edit
+                                </button>
+                                <a href="{% url 'vendor:delete_coupon' c.id %}" 
+                                   class="btn btn-outline-danger btn-sm btn-delete"
+                                   onclick="return confirm('Are you sure you want to delete this coupon?')">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Edit Form (Collapsed) -->
+                        <div class="collapse mt-3" id="editCoupon{{c.id}}">
+                            <hr>
+                            <form action="{% url 'vendor:update_coupon' c.id %}" method="POST" class="d-flex align-items-center">
+                                {% csrf_token %}
+                                <div class="form-floating me-2">
+                                    <input type="text" class="form-control" value="{{c.code}}" 
+                                           name="coupon_code" id="couponCode{{c.id}}" placeholder="Coupon Code" required>
+                                    <label for="couponCode{{c.id}}">Coupon Code</label>
+                                </div>
+                                <button class="btn btn-update" type="submit">
+                                    <i class="fas fa-save me-1"></i>Update
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-state">
+                    <i class="fas fa-ticket-alt"></i>
+                    <h4>No Coupons Available</h4>
+                    <p class="text-muted">Create your first discount coupon to start offering deals to customers.</p>
+                    <button class="btn btn-create mt-3" data-bs-toggle="modal" data-bs-target="#createCouponModal">
+                        <i class="fas fa-plus me-2"></i>Create First Coupon
+                    </button>
+                </div>
+            {% endfor %}
 
-                </ul>
 
-                
-                {% if coupons %}
-                    <ul class="pagination">
-                        {% if coupons.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ coupons.previous_page_number }}">Previous</a>
-                            </li>
-                        {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">Previous</span>
-                            </li>
-                        {% endif %}
+            
+            <!-- Pagination -->
+            {% if coupons %}
+                <div class="d-flex justify-content-center mt-4">
+                    <nav>
+                        <ul class="pagination">
+                            {% if coupons.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ coupons.previous_page_number }}">Previous</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Previous</span>
+                                </li>
+                            {% endif %}
 
-                        {% for num in coupons.paginator.page_range %}
-                            <li class="page-item {% if coupons.number == num %}active{% endif %}">
-                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                            </li>
-                        {% endfor %}
+                            {% for num in coupons.paginator.page_range %}
+                                <li class="page-item {% if coupons.number == num %}active{% endif %}">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endfor %}
 
-                        {% if coupons.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ coupons.next_page_number }}">Next</a>
-                            </li>
-                        {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">Next</span>
-                            </li>
-                        {% endif %}
-                    </ul>
-                {% endif %}
-                    
-            </div>
+                            {% if coupons.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ coupons.next_page_number }}">Next</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Next</span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            {% endif %}
         </div>
     </div>
-</section>
+</div>
 
+<!-- Create Coupon Modal -->
 <div class="modal fade" id="createCouponModal" tabindex="-1" aria-labelledby="createCouponModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="createCouponModalLabel">Create New Coupon</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border: none; border-radius: 12px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px 12px 0 0;">
+                <h5 class="modal-title fw-bold" id="createCouponModalLabel">
+                    <i class="fas fa-plus-circle me-2"></i>Create New Coupon
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <form action="{% url 'vendor:create_coupon' %}" method="POST">
                     {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="title" class="form-label"> Coupon Code *</label>
-                        <input type="text" id="review" class="form-control rounded" name="coupon_code" placeholder="CODE123" required />
+                    
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="couponCode" name="coupon_code" 
+                               placeholder="Coupon Code" required style="border-radius: 8px;">
+                        <label for="couponCode">Coupon Code</label>
+                        <div class="form-text">Use uppercase letters and numbers (e.g., SAVE20, WELCOME10)</div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="discount" class="form-label"> Discount * </label>
-                        <input type="number" id="review" class="form-control rounded" name="coupon_discount" placeholder="20%" required />
+                    <div class="form-floating mb-4">
+                        <input type="number" class="form-control" id="discount" name="coupon_discount" 
+                               placeholder="Discount Percentage" min="1" max="100" required style="border-radius: 8px;">
+                        <label for="discount">Discount Percentage</label>
+                        <div class="form-text">Enter percentage value (1-100)</div>
                     </div>
 
-                    <button type="button" class="btn btn-sm bg-secondary rounded text-white" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-sm bg-primary rounded text-white">Create Coupon</button>
+                    <div class="d-flex gap-3">
+                        <button type="button" class="btn btn-outline-secondary flex-fill" 
+                                data-bs-dismiss="modal" style="border-radius: 8px;">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-create flex-fill">
+                            <i class="fas fa-ticket-alt me-2"></i>Create Coupon
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

@@ -2,142 +2,221 @@
 {% load static %}
 {% load humanize %}
 
+{% block title %}Vendor Dashboard - Vintage Marketplace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+        z-index: 1;
+    }
+    
+    .dashboard-header .content {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: none;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #718096;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .recent-activity {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .activity-header {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .activity-item {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f1f3f4;
+        transition: background-color 0.2s ease;
+    }
+    
+    .activity-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<section class="middle">
-    <div class="container-fluid">
-        <div class="row align-items-start justify-content-between">
-            <!-- Sidebar -->
-            <div class="col-12 col-md-3 col-lg-3 col-xl-2">
-                {% include 'vendor/sidebar.html' %}
-            </div>
-
-            <!-- Main Content -->
-            <div class="col-12 col-md-9 col-lg-9 col-xl-10">
-                <div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-0">Vendor Dashboard</h1>
-                    <p class="text-muted">Welcome back, {{ profile.business_name }}!</p>
-                </div>
-                <div>
-                    {% if profile.verification_status == 'verified' %}
-                        <span class="badge bg-success fs-6">
-                            <i class="fas fa-check-circle me-1"></i>Verified Vendor
-                        </span>
-                    {% elif profile.verification_status == 'pending' %}
-                        <span class="badge bg-warning fs-6">
-                            <i class="fas fa-clock me-1"></i>Pending Verification
-                        </span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Stats -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="vintage-card h-100">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Total Revenue (30 days)
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                ₦{{ analytics.total_revenue|floatformat:0|intcomma }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <div class="vintage-category-icon" style="background: var(--vintage-green-primary);">
-                                <i class="fas fa-dollar-sign"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="vintage-card h-100">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Total Orders
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ analytics.total_orders|intcomma }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <div class="vintage-category-icon" style="background: var(--vintage-orange-primary);">
-                                <i class="fas fa-shopping-cart"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="vintage-card h-100">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                Net Earnings
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                ₦{{ analytics.net_earnings|floatformat:0|intcomma }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <div class="vintage-category-icon" style="background: var(--vintage-green-primary);">
-                                <i class="fas fa-hand-holding-usd"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="vintage-card h-100">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Average Rating
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ analytics.avg_rating|floatformat:1 }}
-                                <small class="text-muted">/ 5.0</small>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <div class="vintage-category-icon" style="background: var(--vintage-orange-primary);">
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content Row -->
+<div class="container-fluid py-4">
     <div class="row">
-        <!-- Recent Orders -->
-        <div class="col-xl-8 col-lg-7">
-            <div class="vintage-card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Recent Orders</h6>
-                    <a href="{% url 'vendor:orders' %}" class="btn btn-sm btn-outline-primary">View All</a>
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2">
+            {% include 'vendor/sidebar.html' %}
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <div class="content">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="h2 mb-2 fw-bold">Vendor Dashboard</h1>
+                            <p class="mb-0 opacity-75 fs-5">Welcome back, {{ profile.business_name|default:"Vendor" }}!</p>
+                        </div>
+                        <div>
+                            {% if profile.verification_status == 'verified' %}
+                                <span class="badge bg-success bg-opacity-75 fs-6 px-3 py-2">
+                                    <i class="fas fa-check-circle me-2"></i>Verified Vendor
+                                </span>
+                            {% elif profile.verification_status == 'pending' %}
+                                <span class="badge bg-warning bg-opacity-75 fs-6 px-3 py-2">
+                                    <i class="fas fa-clock me-2"></i>Pending Verification
+                                </span>
+                            {% else %}
+                                <span class="badge bg-light text-dark fs-6 px-3 py-2">
+                                    <i class="fas fa-user me-2"></i>Unverified
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="stat-value">₦{{ analytics.total_revenue|floatformat:0|intcomma|default:"0" }}</div>
+                        <div class="stat-label">Total Revenue (30 days)</div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #007bff, #6c5ce7);">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-value">{{ analytics.total_orders|intcomma|default:"0" }}</div>
+                        <div class="stat-label">Total Orders</div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #17a2b8, #0056b3);">
+                            <i class="fas fa-hand-holding-usd"></i>
+                        </div>
+                        <div class="stat-value">₦{{ analytics.net_earnings|floatformat:0|intcomma|default:"0" }}</div>
+                        <div class="stat-label">Net Earnings</div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #ffc107, #e67e22);">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="stat-value">{{ analytics.average_rating|floatformat:1|default:"0.0" }}</div>
+                        <div class="stat-label">Average Rating</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="d-flex gap-3">
+                        <a href="{% url 'vendor:create_product' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add Product
+                        </a>
+                        <a href="{% url 'vendor:create_listing' %}" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>Create Listing
+                        </a>
+                        <a href="{% url 'vendor:orders' %}" class="btn btn-info">
+                            <i class="fas fa-shopping-cart me-2"></i>View Orders
+                        </a>
+                        <a href="{% url 'vendor:profile' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-user me-2"></i>Edit Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Row -->
+            <div class="row">
+                <!-- Recent Orders -->
+                <div class="col-xl-8 col-lg-7">
+                    <div class="recent-activity">
+                        <div class="activity-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 fw-bold">Recent Orders</h5>
+                                <a href="{% url 'vendor:orders' %}" class="btn btn-sm btn-outline-primary">
+                                    View All <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
                 <div class="card-body">
                     {% if recent_orders %}
                         <div class="table-responsive">

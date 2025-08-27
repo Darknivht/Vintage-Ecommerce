@@ -2,313 +2,499 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}Product Comparison{% endblock %}
+{% block title %}Product Comparison - Vintage Marketplace{% endblock %}
 
-{% block content %}
-<div class="container-fluid py-5">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="fas fa-balance-scale me-2"></i>Product Comparison</h2>
-                {% if comparison_count > 0 %}
-                <button class="btn btn-outline-danger" onclick="clearComparison()">
-                    <i class="fas fa-trash me-2"></i>Clear All
-                </button>
-                {% endif %}
-            </div>
-
-            {% if comparison_count == 0 %}
-            <div class="text-center py-5">
-                <div class="mb-4">
-                    <i class="fas fa-balance-scale text-muted" style="font-size: 4rem;"></i>
-                </div>
-                <h4 class="text-muted">No Products to Compare</h4>
-                <p class="text-muted">Add products to comparison from the shop page or product details.</p>
-                <a href="{% url 'store:shop' %}" class="btn btn-primary mt-3">
-                    <i class="fas fa-shopping-bag me-2"></i>Browse Products
-                </a>
-            </div>
-            {% else %}
-            <div class="comparison-table-container">
-                <div class="table-responsive">
-                    <table class="table table-bordered comparison-table">
-                        <tbody>
-                            <!-- Product Images and Names -->
-                            <tr class="product-header">
-                                <td class="feature-label bg-light">
-                                    <strong>Product</strong>
-                                </td>
-                                {% for product in products %}
-                                <td class="text-center">
-                                    <div class="comparison-product-card">
-                                        <div class="position-relative mb-3">
-                                            <img src="{{ product.image.url }}" 
-                                                 alt="{{ product.name }}" 
-                                                 class="img-fluid rounded" 
-                                                 style="height: 200px; width: 100%; object-fit: cover;">
-                                            <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
-                                                    onclick="removeFromComparison({{ product.id }})"
-                                                    title="Remove from comparison">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                        <h5 class="fw-bold">{{ product.name }}</h5>
-                                        <p class="text-muted small">by {{ product.vendor.username|default:"Vintage Store" }}</p>
-                                    </div>
-                                </td>
-                                {% endfor %}
-                            </tr>
-
-                            <!-- Price -->
-                            <tr>
-                                <td class="feature-label bg-light">
-                                    <strong>Price</strong>
-                                </td>
-                                {% for product in products %}
-                                <td class="text-center">
-                                    <div class="price-container">
-                                        <span class="h5 text-success">₦{{ product.price|floatformat:0|intcomma }}</span>
-                                        {% if product.regular_price and product.regular_price > product.price %}
-                                        <br>
-                                        <small class="text-muted text-decoration-line-through">
-                                            ₦{{ product.regular_price|floatformat:0|intcomma }}
-                                        </small>
-                                        <span class="badge bg-danger ms-1">
-                                            {% widthratio product.price product.regular_price 100 as discount %}
-                                            {{ discount|floatformat:0 }}% OFF
-                                        </span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                {% endfor %}
-                            </tr>
-
-                            <!-- Rating -->
-                            <tr>
-                                <td class="feature-label bg-light">
-                                    <strong>Rating</strong>
-                                </td>
-                                {% for product in products %}
-                                <td class="text-center">
-                                    <div class="rating-container">
-                                        {% if product.average_rating %}
-                                            <div class="text-warning mb-1">
-                                                {% for i in "12345" %}
-                                                    {% if forloop.counter <= product.average_rating %}
-                                                        <i class="fas fa-star"></i>
-                                                    {% else %}
-                                                        <i class="far fa-star"></i>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </div>
-                                            <small class="text-muted">({{ product.reviews.count }} reviews)</small>
-                                        {% else %}
-                                            <span class="text-muted">No reviews</span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                {% endfor %}
-                            </tr>
-
-                            <!-- Stock Status -->
-                            <tr>
-                                <td class="feature-label bg-light">
-                                    <strong>Availability</strong>
-                                </td>
-                                {% for product in products %}
-                                <td class="text-center">
-                                    {% if product.stock > 0 %}
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-check me-1"></i>
-                                            {{ product.stock }} in stock
-                                        </span>
-                                    {% else %}
-                                        <span class="badge bg-danger">
-                                            <i class="fas fa-times me-1"></i>
-                                            Out of stock
-                                        </span>
-                                    {% endif %}
-                                </td>
-                                {% endfor %}
-                            </tr>
-
-                            <!-- Category -->
-                            <tr>
-                                <td class="feature-label bg-light">
-                                    <strong>Category</strong>
-                                </td>
-                                {% for product in products %}
-                                <td class="text-center">
-                                    <span class="badge bg-info">{{ product.category.title }}</span>
-                                </td>
-                                {% endfor %}
-                            </tr>
-
-                            <!-- Brand -->
-                            <tr>
-                                <td class="feature-label bg-light">
-                                    <strong>Brand</strong>
-                                </td>
-                                {% for product in products %}
-                                <td class="text-center">
-                                    {% if product.brand %}
-                                        <span class="badge bg-secondary">{{ product.brand.name }}</span>
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                {% endfor %}
-                            </tr>
-
-                            <!-- Description -->
-                            <tr>
-                                <td class="feature-label bg-light">
-                                    <strong>Description</strong>
-                                </td>
-                                {% for product in products %}
-                                <td>
-                                    <div class="description-text">
-                                        {{ product.description|truncatewords:15|safe }}
-                                    </div>
-                                </td>
-                                {% endfor %}
-                            </tr>
-
-                            <!-- Actions -->
-                            <tr>
-                                <td class="feature-label bg-light">
-                                    <strong>Actions</strong>
-                                </td>
-                                {% for product in products %}
-                                <td class="text-center">
-                                    <div class="action-buttons">
-                                        {% if product.stock > 0 %}
-                                        <button class="btn btn-primary btn-sm mb-2 w-100" 
-                                                onclick="addToCart({{ product.id }})">
-                                            <i class="fas fa-shopping-cart me-1"></i>Add to Cart
-                                        </button>
-                                        {% else %}
-                                        <button class="btn btn-secondary btn-sm mb-2 w-100" disabled>
-                                            Out of Stock
-                                        </button>
-                                        {% endif %}
-                                        
-                                        <button class="btn btn-outline-danger btn-sm mb-2 w-100" 
-                                                onclick="toggleWishlist({{ product.id }})">
-                                            <i class="far fa-heart me-1"></i>Wishlist
-                                        </button>
-                                        
-                                        <a href="{% url 'store:product_detail' product.slug %}" 
-                                           class="btn btn-outline-primary btn-sm w-100">
-                                            <i class="fas fa-eye me-1"></i>View Details
-                                        </a>
-                                    </div>
-                                </td>
-                                {% endfor %}
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
+{% block extra_css %}
 <style>
-.comparison-table {
-    min-width: 800px;
-}
-
-.feature-label {
-    min-width: 150px;
-    font-weight: bold;
-    vertical-align: middle;
-}
-
-.comparison-product-card {
-    max-width: 250px;
-}
-
-.comparison-table td {
-    vertical-align: middle;
-    padding: 1rem;
-}
-
-.description-text {
-    max-height: 100px;
-    overflow-y: auto;
-    font-size: 0.9rem;
-}
-
-.action-buttons .btn {
-    font-size: 0.85rem;
-}
-
-@media (max-width: 768px) {
-    .comparison-table-container {
+    .comparison-table {
         overflow-x: auto;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        background: white;
     }
     
-    .comparison-product-card {
-        max-width: 200px;
+    .comparison-table table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 800px;
     }
-}
+    
+    .comparison-table th,
+    .comparison-table td {
+        padding: 1rem;
+        text-align: center;
+        border-bottom: 1px solid #e9ecef;
+        vertical-align: middle;
+    }
+    
+    .comparison-table th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .comparison-table .attribute-label {
+        background: #f8f9fa;
+        font-weight: 600;
+        text-align: left;
+        padding-left: 1.5rem;
+        min-width: 150px;
+    }
+    
+    .product-image {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin: 0 auto;
+    }
+    
+    .product-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+    
+    .product-price {
+        color: #28a745;
+        font-weight: 700;
+        font-size: 1.2rem;
+    }
+    
+    .price-old {
+        color: #6c757d;
+        text-decoration: line-through;
+        font-size: 0.9rem;
+    }
+    
+    .rating-stars {
+        color: #ffc107;
+    }
+    
+    .btn-remove {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-remove:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        color: white;
+    }
+    
+    .btn-cart {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        color: white;
+        transition: all 0.3s ease;
+        margin-right: 0.5rem;
+    }
+    
+    .btn-cart:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+    
+    .comparison-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 12px;
+    }
+    
+    .empty-comparison {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .empty-comparison i {
+        font-size: 4rem;
+        color: #6c757d;
+        margin-bottom: 1rem;
+    }
+    
+    .spec-highlight {
+        font-weight: 600;
+        color: #007bff;
+    }
+    
+    .stock-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .stock-in { background: #d4edda; color: #155724; }
+    .stock-out { background: #f8d7da; color: #721c24; }
+    .stock-low { background: #fff3cd; color: #856404; }
 </style>
+{% endblock %}
 
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="comparison-header text-center">
+        <div class="container">
+            <h1 class="display-6 fw-bold mb-3">
+                <i class="fas fa-balance-scale me-3"></i>Product Comparison
+            </h1>
+            <p class="lead mb-0">Compare up to 4 products side by side to make the best choice</p>
+        </div>
+    </div>
+    
+    {% if products %}
+    <div class="container-fluid">
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <span class="badge bg-primary fs-6">
+                    <i class="fas fa-items me-1"></i>
+                    {{ comparison_count }} Products
+                </span>
+            </div>
+            <div>
+                <button class="btn btn-outline-danger" onclick="clearComparison()">
+                    <i class="fas fa-trash-alt me-2"></i>Clear All
+                </button>
+                <a href="{% url 'store:shop' %}" class="btn btn-primary ms-2">
+                    <i class="fas fa-plus me-2"></i>Add More Products
+                </a>
+            </div>
+        </div>
+        
+        <!-- Comparison Table -->
+        <div class="comparison-table">
+            <table class="table table-bordered mb-0">
+                <!-- Product Images and Names Row -->
+                <thead>
+                    <tr>
+                        <th class="attribute-label">Product</th>
+                        {% for product in products %}
+                        <th>
+                            <div class="text-center">
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image mb-3">
+                                <h6 class="product-name">{{ product.name }}</h6>
+                                <div class="mb-2">
+                                    <span class="product-price">₦{{ product.price|floatformat:0|intcomma }}</span>
+                                    {% if product.regular_price and product.regular_price > product.price %}
+                                    <br><span class="price-old">₦{{ product.regular_price|floatformat:0|intcomma }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="rating-stars mb-2">
+                                    {% if product.average_rating %}
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= product.average_rating %}
+                                                <i class="fas fa-star"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                        <small class="text-muted ms-1">({{ product.reviews.count }})</small>
+                                    {% else %}
+                                        <span class="text-muted">No reviews</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                
+                <tbody>
+                    <!-- Actions Row -->
+                    <tr>
+                        <td class="attribute-label">
+                            <i class="fas fa-cog me-2"></i>Actions
+                        </td>
+                        {% for product in products %}
+                        <td>
+                            {% if product.stock > 0 %}
+                            <button class="btn btn-cart btn-sm me-1" onclick="addToCart('{{ product.id }}')">
+                                <i class="fas fa-shopping-cart"></i> Add to Cart
+                            </button>
+                            {% endif %}
+                            <a href="{% url 'store:product_detail' product.slug %}" class="btn btn-outline-primary btn-sm me-1">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <button class="btn btn-remove btn-sm" onclick="removeFromComparison('{{ product.id }}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <!-- Availability Row -->
+                    <tr>
+                        <td class="attribute-label">
+                            <i class="fas fa-check-circle me-2"></i>Availability
+                        </td>
+                        {% for product in products %}
+                        <td>
+                            {% if product.stock > 10 %}
+                                <span class="stock-badge stock-in">In Stock ({{ product.stock }})</span>
+                            {% elif product.stock > 0 %}
+                                <span class="stock-badge stock-low">Low Stock ({{ product.stock }})</span>
+                            {% else %}
+                                <span class="stock-badge stock-out">Out of Stock</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <!-- Brand Row -->
+                    <tr>
+                        <td class="attribute-label">
+                            <i class="fas fa-tag me-2"></i>Brand
+                        </td>
+                        {% for product in products %}
+                        <td>
+                            {% if product.brand %}
+                                <span class="spec-highlight">{{ product.brand.name }}</span>
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <!-- Category Row -->
+                    <tr>
+                        <td class="attribute-label">
+                            <i class="fas fa-folder me-2"></i>Category
+                        </td>
+                        {% for product in products %}
+                        <td>{{ product.category.title }}</td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <!-- Description Row -->
+                    <tr>
+                        <td class="attribute-label">
+                            <i class="fas fa-align-left me-2"></i>Description
+                        </td>
+                        {% for product in products %}
+                        <td>
+                            <small>{{ product.short_description|truncatewords:15 }}</small>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <!-- Specifications Rows -->
+                    {% if products.0.specifications.all %}
+                    <tr>
+                        <td class="attribute-label">
+                            <i class="fas fa-list me-2"></i><strong>Specifications</strong>
+                        </td>
+                        {% for product in products %}
+                        <td><strong>{{ product.name }}</strong></td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <!-- Get all unique specifications -->
+                    {% with all_specs=products.0.specifications.all %}
+                    {% for spec in all_specs %}
+                    <tr>
+                        <td class="attribute-label">{{ spec.key }}</td>
+                        {% for product in products %}
+                        <td>
+                            {% for product_spec in product.specifications.all %}
+                                {% if product_spec.key == spec.key %}
+                                    {{ product_spec.value }}
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                    {% endwith %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Bottom Actions -->
+        <div class="text-center mt-4">
+            <a href="{% url 'store:shop' %}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-shopping-bag me-2"></i>Continue Shopping
+            </a>
+            <button class="btn btn-danger btn-lg ms-3" onclick="clearComparison()">
+                <i class="fas fa-trash-alt me-2"></i>Clear Comparison
+            </button>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- Empty State -->
+    <div class="container">
+        <div class="empty-comparison">
+            <i class="fas fa-balance-scale"></i>
+            <h3 class="mb-3">No Products to Compare</h3>
+            <p class="text-muted mb-4">You haven't added any products to compare yet. Start by adding products from our shop.</p>
+            <a href="{% url 'store:shop' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-shopping-bag me-2"></i>Browse Products
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Success/Error Alert Template -->
+<div id="alertContainer" class="position-fixed" style="top: 20px; right: 20px; z-index: 9999;"></div>
+{% endblock %}
+
+{% block extra_js %}
 <script>
+// Remove product from comparison
 function removeFromComparison(productId) {
-    $.post('{% url "store:toggle_comparison" %}', {
-        'product_id': productId,
-        'csrfmiddlewaretoken': '{{ csrf_token }}'
-    }, function(response) {
-        if (response.success) {
-            location.reload();
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                     document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    
+    fetch('/ajax/toggle-comparison/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: new URLSearchParams({
+            'product_id': productId,
+            'csrfmiddlewaretoken': csrfToken
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         } else {
-            alert(response.message);
+            showAlert(data.message, 'error');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('An error occurred', 'error');
     });
 }
 
+// Clear all products from comparison
 function clearComparison() {
-    if (confirm('Are you sure you want to clear all products from comparison?')) {
-        $.post('{% url "store:clear_comparison" %}', {
-            'csrfmiddlewaretoken': '{{ csrf_token }}'
-        }, function(response) {
-            if (response.success) {
-                location.reload();
-            } else {
-                alert(response.message);
-            }
-        });
+    if (!confirm('Are you sure you want to clear all products from comparison?')) {
+        return;
     }
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                     document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    
+    fetch('/ajax/clear-comparison/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: new URLSearchParams({
+            'csrfmiddlewaretoken': csrfToken
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showAlert(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('An error occurred', 'error');
+    });
 }
 
+// Add product to cart
 function addToCart(productId) {
-    $.post('{% url "store:add_to_cart_ajax" %}', {
-        'product_id': productId,
-        'quantity': 1,
-        'csrfmiddlewaretoken': '{{ csrf_token }}'
-    }, function(response) {
-        if (response.success) {
-            alert('Product added to cart successfully!');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                     document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    
+    fetch('/ajax/add-to-cart/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: new URLSearchParams({
+            'product_id': productId,
+            'qty': '1',
+            'csrfmiddlewaretoken': csrfToken
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            // Update cart count if it exists
             updateCartCount();
         } else {
-            alert(response.message);
+            showAlert(data.message, 'error');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('An error occurred while adding to cart', 'error');
     });
 }
 
-function toggleWishlist(productId) {
-    $.post('{% url "store:toggle_wishlist_ajax" %}', {
-        'product_id': productId,
-        'csrfmiddlewaretoken': '{{ csrf_token }}'
-    }, function(response) {
-        if (response.success) {
-            alert(response.message);
-        } else {
-            alert(response.message);
+// Show alert message
+function showAlert(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alertElement = document.createElement('div');
+    alertElement.className = `alert ${alertClass} alert-dismissible fade show`;
+    alertElement.style.maxWidth = '300px';
+    alertElement.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    `;
+    
+    document.getElementById('alertContainer').appendChild(alertElement);
+    
+    // Auto dismiss after 3 seconds
+    setTimeout(() => {
+        if (alertElement.parentNode) {
+            alertElement.remove();
         }
+    }, 3000);
+}
+
+// Update cart count
+function updateCartCount() {
+    fetch('/ajax/cart-count/')
+    .then(response => response.json())
+    .then(data => {
+        const cartCountElement = document.querySelector('.cart-count');
+        if (cartCountElement && data.count !== undefined) {
+            cartCountElement.textContent = data.count;
+        }
+    })
+    .catch(error => {
+        console.error('Error updating cart count:', error);
     });
 }
 </script>

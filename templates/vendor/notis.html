@@ -1,73 +1,231 @@
-{% extends 'partials/base.html' %} {% load static %} {% load humanize %} {% block content %}
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load humanize %}
 
-<section class="middle">
-    <div class="container-fluid">
-        <div class="row align-items-start justify-content-between">
-            <!-- Sidebar -->
-            <div class="col-12 col-md-3 col-lg-3 col-xl-2">
-                {% include 'vendor/sidebar.html' %}
+{% block title %}Notifications - Vendor Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notifications-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .notification-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: none;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .notification-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .notification-card.unread {
+        border-left-color: #667eea;
+        background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+    }
+    
+    .notification-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        flex-shrink: 0;
+    }
+    
+    .notification-order { background: linear-gradient(135deg, #28a745, #20c997); }
+    .notification-payment { background: linear-gradient(135deg, #ffc107, #fd7e14); }
+    .notification-review { background: linear-gradient(135deg, #6f42c1, #e83e8c); }
+    .notification-general { background: linear-gradient(135deg, #667eea, #764ba2); }
+    
+    .btn-mark-seen {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-mark-seen:hover {
+        transform: scale(1.05);
+        color: white;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+    
+    .notification-time {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+    
+    .pagination .page-link {
+        border-radius: 8px;
+        margin: 0 2px;
+        border: none;
+        background: #f8f9fa;
+        color: #667eea;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-color: transparent;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2">
+            {% include 'vendor/sidebar.html' %}
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <!-- Notifications Header -->
+            <div class="notifications-header">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-bell fa-3x me-3"></i>
+                        <div>
+                            <h2 class="fw-bold mb-2">Notifications</h2>
+                            <p class="mb-0 opacity-75">Stay updated with your store activities ({{notis_list.count}} unread)</p>
+                        </div>
+                    </div>
+                    {% if notis_list.count > 0 %}
+                        <a href="#" class="btn btn-light text-dark fw-bold" onclick="markAllAsRead()">
+                            <i class="fas fa-check-double me-2"></i>Mark All Read
+                        </a>
+                    {% endif %}
+                </div>
             </div>
 
-            <!-- Main Content -->
-            <div class="col-12 col-md-9 col-lg-9 col-xl-10">
-                <h4 class="mb-0 mb-4 fw-bold">Notifications ({{notis_list.count}} Unread)</h4>
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <ul class="list-group list-group-flush">
-                            
-                            {% for n in notis %}
-                                <li class="list-group-item p-4 shadow rounded-3 mb-3">
-                                    <div class="d-flex">
-                                        <div class="ms-3 mt-2">
-                                            <div class="d-flex align-items-center justify-content-between">
-                                                <div>
-                                                    <h4 class="mb-3 fw-bold">{{n.type}}</h4>
-                                                    <p class="mb-0 mt-0">Date: {{n.date}}</p>
-                                                    <p class="mb-0 mt-0">Product: {{n.order.product.name}}</p>
-                                                </div>
-                                            </div>
-                                            <a href="{% url 'vendor:mark_noti_seen' n.id %}" class="btn bg-primary text-white rounded btn-sm mt-3">Mark as seen <i class="fas fa-inbox ms-2"></i></a>
-                                        </div>
+            <!-- Notifications List -->
+            {% for n in notis %}
+                <div class="notification-card {% if not n.seen %}unread{% endif %}">
+                    <div class="p-4">
+                        <div class="d-flex align-items-start">
+                            <div class="notification-icon notification-{{ n.type|lower }}">
+                                {% if n.type == "Order" %}
+                                    <i class="fas fa-shopping-cart"></i>
+                                {% elif n.type == "Payment" %}
+                                    <i class="fas fa-credit-card"></i>
+                                {% elif n.type == "Review" %}
+                                    <i class="fas fa-star"></i>
+                                {% else %}
+                                    <i class="fas fa-info-circle"></i>
+                                {% endif %}
+                            </div>
+                            <div class="ms-3 flex-grow-1">
+                                <div class="d-flex align-items-start justify-content-between">
+                                    <div>
+                                        <h5 class="fw-bold mb-2">{{ n.type }} Notification</h5>
+                                        {% if n.order.product %}
+                                            <p class="mb-2">
+                                                <strong>Product:</strong> {{ n.order.product.name }}
+                                            </p>
+                                        {% endif %}
+                                        <p class="notification-time mb-0">
+                                            <i class="fas fa-clock me-1"></i>{{ n.date|naturaltime }}
+                                        </p>
                                     </div>
-                                </li>
-                            {% endfor %}
-                                
-                        </ul>
+                                    {% if not n.seen %}
+                                        <a href="{% url 'vendor:mark_noti_seen' n.id %}" class="btn btn-mark-seen">
+                                            <i class="fas fa-check me-1"></i>Mark as Read
+                                        </a>
+                                    {% else %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>Read
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            {% empty %}
+                <div class="empty-state">
+                    <i class="fas fa-bell"></i>
+                    <h4>No Notifications</h4>
+                    <p class="text-muted">You'll see new notifications here when there's activity in your store.</p>
+                </div>
+            {% endfor %}
 
-                <nav>
-                    <ul class="pagination">
-                        {% if notis.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ notis.previous_page_number }}">Previous</a>
-                            </li>
-                        {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">Previous</span>
-                            </li>
-                        {% endif %}
+            <!-- Pagination -->
+            {% if notis %}
+                <div class="d-flex justify-content-center mt-4">
+                    <nav>
+                        <ul class="pagination">
+                            {% if notis.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ notis.previous_page_number }}">Previous</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Previous</span>
+                                </li>
+                            {% endif %}
 
-                        {% for num in notis.paginator.page_range %}
-                            <li class="page-item {% if notis.number == num %}active{% endif %}">
-                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                            </li>
-                        {% endfor %}
+                            {% for num in notis.paginator.page_range %}
+                                <li class="page-item {% if notis.number == num %}active{% endif %}">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endfor %}
 
-                        {% if notis.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ notis.next_page_number }}">Next</a>
-                            </li>
-                        {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">Next</span>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            </div>
+                            {% if notis.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ notis.next_page_number }}">Next</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Next</span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            {% endif %}
         </div>
     </div>
-</section>
+</div>
+{% endblock %}
 
-{% endblock content %}
+{% block extra_js %}
+<script>
+function markAllAsRead() {
+    if (confirm('Mark all notifications as read?')) {
+        // You can implement an AJAX call here to mark all as read
+        // For now, we'll just reload the page
+        window.location.reload();
+    }
+}
+</script>
+{% endblock %}

@@ -179,19 +179,34 @@
 
 <style>
 .vendor-sidebar {
-    position: sticky;
-    top: 2rem;
-    height: fit-content;
+    position: static;
     width: 100%;
     max-width: 100%;
+    height: fit-content;
 }
 
-/* Mobile-first responsive adjustments */
-@media (max-width: 767.98px) {
+/* Sticky behavior for larger screens only */
+@media (min-width: 768px) {
     .vendor-sidebar {
-        position: relative;
-        top: 0;
-        margin-bottom: 2rem;
+        position: sticky;
+        top: 1rem;
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--gray-300) transparent;
+    }
+    
+    .vendor-sidebar::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    .vendor-sidebar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    .vendor-sidebar::-webkit-scrollbar-thumb {
+        background-color: var(--gray-300);
+        border-radius: 2px;
     }
 }
 
@@ -423,12 +438,7 @@
     text-decoration: none;
 }
 
-@media (max-width: 991px) {
-    .vendor-sidebar {
-        position: static;
-        margin-bottom: 2rem;
-    }
-    
+@media (max-width: 767.98px) {
     .profile-section {
         padding: 1.5rem;
     }
@@ -451,6 +461,7 @@
     
     .action-buttons {
         flex-direction: row;
+        gap: 0.5rem;
     }
 }
 

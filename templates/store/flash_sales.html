@@ -44,13 +44,17 @@
                 </div>
                 
                 <div class="flash-sale-header">
-                    <h3 class="flash-sale-title">{{ sale.title }}</h3>
+                    <h3 class="flash-sale-title">{{ sale.name }}</h3>
                     <p class="flash-sale-description">{{ sale.description|truncatewords:20 }}</p>
                 </div>
                 
-                <div class="flash-sale-timer" data-end-time="{{ sale.end_time|date:'c' }}">
+                <div class="flash-sale-timer" data-end-time="{{ sale.end_date|date:'c' }}" data-start-time="{{ sale.start_date|date:'c' }}">
                     <div class="timer-label">Ends in:</div>
                     <div class="timer-display">
+                        <div class="timer-unit">
+                            <span class="timer-number days">00</span>
+                            <span class="timer-text">Days</span>
+                        </div>
                         <div class="timer-unit">
                             <span class="timer-number hours">00</span>
                             <span class="timer-text">Hours</span>
@@ -237,34 +241,126 @@
 </style>
 
 <script>
-// Flash Sale Timer
+// Flash Sale Timer with proper countdown
 document.addEventListener('DOMContentLoaded', function() {
     const timers = document.querySelectorAll('.flash-sale-timer');
     
     timers.forEach(timer => {
-        const endTime = new Date(timer.dataset.endTime).getTime();
+        const endTimeString = timer.dataset.endTime;
+        const startTimeString = timer.dataset.startTime;
+        
+        if (!endTimeString) {
+            console.error('No end time found for timer');
+            return;
+        }
+        
+        const endTime = new Date(endTimeString).getTime();
+        const startTime = new Date(startTimeString).getTime();
+        const now = new Date().getTime();
+        
+        if (isNaN(endTime) || isNaN(startTime)) {
+            console.error('Invalid time format:', {endTimeString, startTimeString});
+            return;
+        }
+        
+        // Check if sale hasn't started yet
+        let targetTime;
+        if (now < startTime) {
+            timer.querySelector('.timer-label').textContent = 'Starts in:';
+            targetTime = startTime;
+        } else {
+            targetTime = endTime;
+        }
         
         function updateTimer() {
-            const now = new Date().getTime();
-            const distance = endTime - now;
+            const currentTime = new Date().getTime();
+            const distance = targetTime - currentTime;
             
-            if (distance < 0) {
-                timer.innerHTML = '<div class="text-center"><h4>Sale Ended</h4></div>';
-                return;
+            if (distance <= 0) {
+                if (targetTime === startTime) {
+                    // Sale is now starting, switch to end time
+                    targetTime = endTime;
+                    timer.querySelector('.timer-label').textContent = 'Ends in:';
+                    updateTimer();
+                    return;
+                } else {
+                    // Sale has ended
+                    const card = timer.closest('.flash-sale-card');
+                    if (card) {
+                        card.style.opacity = '0.6';
+                        card.style.filter = 'grayscale(100%)';
+                        card.classList.add('expired-sale');
+                    }
+                    timer.innerHTML = `
+                        <div class="text-center" style="background: #6c757d; padding: 1rem; border-radius: 10px;">
+                            <h4 class="mb-0 text-white">
+                                <i class="fas fa-clock me-2"></i>Sale Ended
+                            </h4>
+                        </div>
+                    `;
+                    return;
+                }
             }
             
-            const hours = Math.floor(distance / (1000 * 60 * 60));
+            // Calculate time units
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
             
-            timer.querySelector('.hours').textContent = hours.toString().padStart(2, '0');
-            timer.querySelector('.minutes').textContent = minutes.toString().padStart(2, '0');
-            timer.querySelector('.seconds').textContent = seconds.toString().padStart(2, '0');
+            // Update display - ensure elements exist before updating
+            const daysElement = timer.querySelector('.days');
+            const hoursElement = timer.querySelector('.hours');
+            const minutesElement = timer.querySelector('.minutes');
+            const secondsElement = timer.querySelector('.seconds');
+            
+            if (daysElement) daysElement.textContent = Math.max(0, days).toString().padStart(2, '0');
+            if (hoursElement) hoursElement.textContent = Math.max(0, hours).toString().padStart(2, '0');
+            if (minutesElement) minutesElement.textContent = Math.max(0, minutes).toString().padStart(2, '0');
+            if (secondsElement) secondsElement.textContent = Math.max(0, seconds).toString().padStart(2, '0');
+            
+            // Add urgency styling when less than 24 hours remain and sale is live
+            if (targetTime === endTime && distance < 24 * 60 * 60 * 1000) {
+                timer.style.background = 'linear-gradient(135deg, #dc3545, #c82333)';
+                timer.classList.add('urgent');
+                
+                // Add pulse animation
+                if (!timer.classList.contains('pulse')) {
+                    timer.classList.add('pulse');
+                    timer.style.animation = 'pulse 1s ease-in-out infinite alternate';
+                }
+            }
         }
         
+        // Initial update
         updateTimer();
-        setInterval(updateTimer, 1000);
+        
+        // Update every second
+        const interval = setInterval(updateTimer, 1000);
+        
+        // Store interval ID to clear later if needed
+        timer.timerInterval = interval;
     });
 });
+
+// Add CSS animation for urgency
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        100% { transform: scale(1.02); }
+    }
+    
+    .flash-sale-timer.urgent {
+        box-shadow: 0 0 20px rgba(220, 53, 69, 0.5);
+    }
+    
+    .expired-sale {
+        opacity: 0.6;
+        filter: grayscale(100%);
+        pointer-events: none;
+    }
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}

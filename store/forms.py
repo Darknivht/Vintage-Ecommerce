@@ -242,10 +242,23 @@ class ListingFilterForm(forms.Form):
     )
     
     category = forms.ModelChoiceField(
-        queryset=Category.objects.all(),
+        queryset=Category.objects.filter(type="listing", parent=None),
         required=False,
         empty_label="All Categories",
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'id': 'categorySelect'
+        })
+    )
+    
+    subcategory = forms.ModelChoiceField(
+        queryset=Category.objects.none(),
+        required=False,
+        empty_label="All Subcategories",
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'id': 'subcategorySelect'
+        })
     )
     
     listing_type = forms.ChoiceField(
@@ -286,16 +299,29 @@ class ListingFilterForm(forms.Form):
     
     sort_by = forms.ChoiceField(
         choices=[
-            ('created_at', 'Newest First'),
-            ('-created_at', 'Oldest First'),
+            ('-created_at', 'Newest First'),
+            ('created_at', 'Oldest First'),
             ('price', 'Price: Low to High'),
             ('-price', 'Price: High to Low'),
             ('-views_count', 'Most Viewed'),
             ('title', 'Title A-Z'),
         ],
-        initial='created_at',
+        initial='-created_at',
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # If category is selected, populate subcategories
+        if self.data.get('category'):
+            try:
+                category_id = int(self.data.get('category'))
+                self.fields['subcategory'].queryset = Category.objects.filter(
+                    parent_id=category_id, type="listing"
+                )
+            except (ValueError, TypeError):
+                pass
 
 
 class ListingInquiryForm(forms.ModelForm):

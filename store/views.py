@@ -1220,10 +1220,26 @@ def browse_listings(request):
         
         # Category filter
         if cleaned_data.get('category'):
-            listings = listings.filter(
-                Q(category=cleaned_data['category']) |
-                Q(subcategory__parent=cleaned_data['category'])
-            )
+            category = cleaned_data['category']
+            
+            # If subcategory is also selected, filter by subcategory only
+            if request.GET.get('subcategory'):
+                try:
+                    subcategory_id = request.GET.get('subcategory')
+                    subcategory = Category.objects.get(id=subcategory_id, parent=category)
+                    listings = listings.filter(Q(category=subcategory) | Q(subcategory=subcategory))
+                except Category.DoesNotExist:
+                    # If subcategory doesn't exist, filter by main category
+                    listings = listings.filter(
+                        Q(category=category) |
+                        Q(category__parent=category)
+                    )
+            else:
+                # Filter by main category and all its subcategories
+                listings = listings.filter(
+                    Q(category=category) |
+                    Q(category__parent=category)
+                )
         
         # Listing type filter
         if cleaned_data.get('listing_type'):
@@ -1959,10 +1975,38 @@ def brand_products(request, slug):
 
 def flash_sales(request):
     """List all active flash sales"""
-    flash_sales = store_models.FlashSale.objects.filter(is_active=True)
+    from django.utils import timezone
+    
+    # Get all flash sales (both active and expired for display purposes)
+    now = timezone.now()
+    
+    # Active flash sales (currently running)
+    active_flash_sales = store_models.FlashSale.objects.filter(
+        is_active=True,
+        start_date__lte=now,
+        end_date__gt=now
+    ).order_by('-start_date')
+    
+    # Recently expired flash sales (for reference)
+    expired_flash_sales = store_models.FlashSale.objects.filter(
+        is_active=True,
+        end_date__lte=now
+    ).order_by('-end_date')[:3]  # Show last 3 expired
+    
+    # Upcoming flash sales
+    upcoming_flash_sales = store_models.FlashSale.objects.filter(
+        is_active=True,
+        start_date__gt=now
+    ).order_by('start_date')[:3]  # Show next 3 upcoming
+    
+    # All flash sales for the main display (active + expired for countdown demo)
+    all_flash_sales = store_models.FlashSale.objects.filter(is_active=True).order_by('-start_date')
     
     context = {
-        'flash_sales': flash_sales,
+        'flash_sales': all_flash_sales,
+        'active_flash_sales': active_flash_sales,
+        'expired_flash_sales': expired_flash_sales,
+        'upcoming_flash_sales': upcoming_flash_sales,
         'categories': store_models.Category.objects.filter(type="product", parent=None),
         'category_': store_models.Category.objects.filter(type="product", parent=None),
     }

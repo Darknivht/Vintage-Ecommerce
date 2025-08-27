@@ -215,33 +215,66 @@ document.querySelectorAll('.variant-option').forEach(button => {
 });
 
 function toggleWishlist(productId) {
-    $.post('/ajax/toggle-wishlist/', {
-        'product_id': productId,
-        'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
-    }, function(response) {
-        if (response.success) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    
+    fetch('/ajax/toggle-wishlist/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: new URLSearchParams({
+            'product_id': productId,
+            'csrfmiddlewaretoken': csrfToken
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
             // Update button appearance
-            const btn = $(`.wishlist-btn[data-product-id="${productId}"] i`);
-            btn.toggleClass('far fas');
-            showAlert(response.message, 'success');
+            const btn = document.querySelector(`.wishlist-btn[data-product-id="${productId}"] i`);
+            if (btn) {
+                btn.classList.toggle('far');
+                btn.classList.toggle('fas');
+            }
+            showAlert(data.message, 'success');
         } else {
-            showAlert(response.message, 'error');
+            showAlert(data.message, 'error');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('An error occurred', 'error');
     });
 }
 
 function toggleComparison(productId) {
-    $.post('/ajax/toggle-comparison/', {
-        'product_id': productId,
-        'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
-    }, function(response) {
-        if (response.success) {
-            showAlert(response.message, 'success');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    
+    fetch('/ajax/toggle-comparison/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: new URLSearchParams({
+            'product_id': productId,
+            'csrfmiddlewaretoken': csrfToken
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
             // Update comparison count if exists
-            updateComparisonCount(response.comparison_count);
+            updateComparisonCount(data.comparison_count);
         } else {
-            showAlert(response.message, 'error');
+            showAlert(data.message, 'error');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('An error occurred', 'error');
     });
 }
 
@@ -270,18 +303,31 @@ function openQuickView(productId) {
 
 function showAlert(message, type) {
     const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-    const alertHtml = `
-        <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
-             style="top: 20px; right: 20px; z-index: 9999;">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+    const alertElement = document.createElement('div');
+    alertElement.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    alertElement.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+    alertElement.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     `;
-    $('body').append(alertHtml);
+    
+    document.body.appendChild(alertElement);
+    
+    // Initialize Bootstrap alert
+    if (typeof bootstrap !== 'undefined') {
+        const alert = new bootstrap.Alert(alertElement);
+    }
     
     // Auto dismiss after 3 seconds
     setTimeout(() => {
-        $('.alert').alert('close');
+        if (alertElement.parentNode) {
+            alertElement.classList.remove('show');
+            setTimeout(() => {
+                if (alertElement.parentNode) {
+                    alertElement.parentNode.removeChild(alertElement);
+                }
+            }, 150);
+        }
     }, 3000);
 }
 

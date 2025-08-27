@@ -52,11 +52,6 @@ urlpatterns = [
     
     # Product Comparison
     path("comparison/", views.comparison_view, name="comparison"),
-    path("ajax/toggle-comparison/", views.toggle_comparison, name="toggle_comparison"),
-    path("ajax/clear-comparison/", views.clear_comparison, name="clear_comparison"),
-    
-    # Product Comparison
-    path("comparison/", views.comparison_view, name="comparison"),
 
     # Brands
     path("brands/", views.brands_list, name="brands_list"),

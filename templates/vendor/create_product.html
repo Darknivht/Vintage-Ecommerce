@@ -1,116 +1,231 @@
-{% extends 'partials/base.html' %} {% load static %} {% load humanize %} {% block content %}
-<section class="middle">
-    <div class="container-fluid">
-        <div class="row align-items-start justify-content-between">
-            <!-- Sidebar -->
-            <div class="col-12 col-md-3 col-lg-3 col-xl-2">
-                {% include 'vendor/sidebar.html' %}
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Create Product - Vintage Marketplace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    .section-header h5 {
+        margin: 0;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .form-floating {
+        margin-bottom: 1.5rem;
+    }
+    
+    .image-preview-container {
+        border: 3px dashed #e9ecef;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    
+    .image-preview-container:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+    
+    .btn-create {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 12px 2rem;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-create:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2">
+            {% include 'vendor/sidebar.html' %}
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold text-dark mb-1">Create New Product</h2>
+                    <p class="text-muted mb-0">Add a new product to your store inventory</p>
+                </div>
+                <a href="{% url 'vendor:products' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Products
+                </a>
             </div>
 
-            <!-- Main Content -->
-            <div class="col-12 col-md-9 col-lg-9 col-xl-10">
-                <h4 class="mb-0 mb-4 fw-bold">Create Product</h4>
-                <div class="card border-0 shadow mb-4">
-                    <div class="card-body">
-                        <div class="">
-                            <div class="row mt-0">
-                                <form class="pb-8 mt-2" method="POST" enctype="multipart/form-data">
-                                    {% csrf_token %}
-                                    <div class="card border-0 mb-3">
-                                        <!-- Basic Info Section -->
-                                        <div class="card-header border-0 px-4 py-3 rounded">
-                                            <h4 class="mb-0">Basic Information</h4>
-                                        </div>
-                                        <div class="card-body border-0">
-                                            <div class="text-center d-flex justify-content-center align-items-center">
-                                                <img id="imagePreview" src="" alt="Image preview will appear here" style="width: 100%; height: 500px; object-fit: cover; border-radius: 10px; display: none;">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="imageInput" class="form-label">Product Thumbnail</label>
-                                                <input name="image" id="imageInput" class="form-control rounded" type="file" accept="image/*" onchange="previewImage(event)" />
-                                            </div>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <h5><i class="fas fa-info-circle"></i>Basic Information</h5>
+                    </div>
+                    <div class="p-4">
+                        <!-- Image Upload -->
+                        <div class="image-preview-container mb-4">
+                            <div id="imagePreviewWrapper" style="display: none;">
+                                <img id="imagePreview" src="" alt="Product image preview" 
+                                     style="max-width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px;">
+                            </div>
+                            <div id="imageUploadPrompt">
+                                <i class="fas fa-camera fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Upload Product Image</h5>
+                                <p class="text-muted mb-3">Drag and drop an image here or click to browse</p>
+                            </div>
+                            <input type="file" name="image" id="imageInput" class="form-control" 
+                                   accept="image/*" onchange="previewImage(event)" style="display: none;">
+                            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('imageInput').click()">
+                                <i class="fas fa-upload me-2"></i>Choose Image
+                            </button>
+                        </div>
 
-                                            <div class="mb-3">
-                                                <label for="productTitle" class="form-label">Title</label>
-                                                <input name="name" id="productTitle" class="form-control rounded" type="text" placeholder="Product title..." />
-                                                <small>Write a 60 character product title.</small>
-                                            </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" name="name" class="form-control" id="productName" placeholder="Product Name">
+                                    <label for="productName">Product Name *</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <select name="category_id" class="form-select" id="parentCategorySelect">
+                                        <option value="">Select Category</option>
+                                        {% for c in categories %}
+                                            {% if not c.parent %}
+                                                <option value="{{c.id}}">{{c.title}}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                    <label for="parentCategorySelect">Category *</label>
+                                </div>
+                            </div>
+                        </div>
 
-                                            <div class="mb-3">
-                                                <label class="form-label">Product Category</label>
-                                                <select name="category_id" class="form-select" id="parentCategorySelect">
-                                                    <option value="">-- Select Main Category --</option>
-                                                    {% for c in categories %}
-                                                        {% if not c.parent %}
-                                                            <option value="{{c.id}}">{{c.title}}</option>
-                                                        {% endif %}
-                                                    {% endfor %}
-                                                </select>
-                                                <small>Help people find your products by choosing categories that represent your product.</small>
-                                            </div>
+                        <div id="subcategoryWrapper" style="display:none;">
+                            <div class="form-floating mb-3">
+                                <select name="subcategory_id" class="form-select" id="subcategorySelect">
+                                    <option value="">Select Subcategory</option>
+                                </select>
+                                <label for="subcategorySelect">Subcategory</label>
+                            </div>
+                        </div>
 
-                                            <div class="mb-3" id="subcategoryWrapper" style="display:none;">
-                                                <label class="form-label">Subcategory (Optional)</label>
-                                                <select name="subcategory_id" class="form-select" id="subcategorySelect">
-                                                    <option value="">-- Select Subcategory --</option>
-                                                    <!-- Filled dynamically -->
-                                                </select>
-                                            </div>
+                        <div class="form-floating mb-3">
+                            <textarea name="description" class="form-control" id="productDescription" 
+                                      style="height: 120px" placeholder="Product description"></textarea>
+                            <label for="productDescription">Product Description *</label>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- Pricing Information -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <h5><i class="fas fa-tag"></i>Pricing & Inventory</h5>
+                    </div>
+                    <div class="p-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" name="regular_price" class="form-control" id="regularPrice" 
+                                           placeholder="Regular Price" step="0.01">
+                                    <label for="regularPrice">Regular Price (₦) *</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" name="price" class="form-control" id="salePrice" 
+                                           placeholder="Sale Price" step="0.01">
+                                    <label for="salePrice">Sale Price (₦) *</label>
+                                </div>
+                            </div>
+                        </div>
 
-                                            <div class="mb-3">
-                                                <label class="form-label">Product Description</label>
-                                                <textarea name="description" class="form-control rounded" cols="30" rows="10"></textarea>
-                                                <small>A brief summary of your product.</small>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="productPrice" class="form-label">Regular Price</label>
-                                                <input name="regular_price" id="productPrice" class="form-control rounded" type="number" placeholder="₦1000.00" />
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="productPrice" class="form-label">Sale Price</label>
-                                                <input name="price" id="productPrice" class="form-control rounded" type="number" placeholder="₦850" />
-                                            </div>
-                                            
-                                             <div class="mb-3">
-                                                <label for="productPrice" class="form-label">Shipping Fee</label>
-                                                <input name="shipping" id="productPrice" class="form-control rounded" type="number" placeholder="Shipping fee" />
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="productPrice" class="form-label">Stock</label>
-                                                <input name="stock" id="productPrice" class="form-control rounded" type="number" placeholder="Stock Count" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button class="btn btn-lg bg-primary rounded btn-sm text-white w-100 mt-2" type="submit">Continue <i class="fas fa-arrow-right"></i></button>
-                                </form>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" name="shipping" class="form-control" id="shippingFee" 
+                                           placeholder="Shipping Fee" step="0.01">
+                                    <label for="shippingFee">Shipping Fee (₦)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" name="stock" class="form-control" id="stockQuantity" 
+                                           placeholder="Stock Quantity">
+                                    <label for="stockQuantity">Stock Quantity *</label>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+
+                <!-- Submit Button -->
+                <div class="text-center mb-4">
+                    <button type="submit" class="btn btn-create btn-lg px-5">
+                        <i class="fas fa-plus-circle me-2"></i>Create Product
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
-</section>
+</div>
+{% endblock %}
 
-
+{% block extra_js %}
 <script>
     function previewImage(event) {
-        const imageInput = event.target.files[0]; // Get the selected file
+        const imageInput = event.target.files[0];
         const reader = new FileReader();
+        const preview = document.getElementById('imagePreview');
+        const previewWrapper = document.getElementById('imagePreviewWrapper');
+        const uploadPrompt = document.getElementById('imageUploadPrompt');
 
         reader.onload = function() {
-            const preview = document.getElementById('imagePreview');
-            preview.src = reader.result; // Set the image source to the base64 result
-            preview.style.display = 'block'; // Make the image visible
+            preview.src = reader.result;
+            previewWrapper.style.display = 'block';
+            uploadPrompt.style.display = 'none';
         }
 
         if (imageInput) {
-            reader.readAsDataURL(imageInput); // Read the file as a Data URL
+            reader.readAsDataURL(imageInput);
         }
     }
-</script>
-<script>
+
     document.addEventListener("DOMContentLoaded", function () {
         const parentSelect = document.getElementById("parentCategorySelect");
         const subcategoryWrapper = document.getElementById("subcategoryWrapper");
@@ -123,7 +238,7 @@
                 fetch(`/get-subcategories/?parent_id=${parentId}&type=product`)
                     .then(response => response.json())
                     .then(data => {
-                        subcategorySelect.innerHTML = `<option value="">-- Select Subcategory --</option>`;
+                        subcategorySelect.innerHTML = `<option value="">Select Subcategory</option>`;
                         if (data.length > 0) {
                             data.forEach(sub => {
                                 subcategorySelect.innerHTML += `<option value="${sub.id}">${sub.title}</option>`;
@@ -139,11 +254,51 @@
                     });
             } else {
                 subcategoryWrapper.style.display = "none";
-                subcategorySelect.innerHTML = `<option value="">-- Select Subcategory --</option>`;
+                subcategorySelect.innerHTML = `<option value="">Select Subcategory</option>`;
             }
         });
+
+        // Drag and drop functionality
+        const imageContainer = document.querySelector('.image-preview-container');
+        const imageInput = document.getElementById('imageInput');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            imageContainer.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            imageContainer.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            imageContainer.addEventListener(eventName, unhighlight, false);
+        });
+
+        imageContainer.addEventListener('drop', handleDrop, false);
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            imageContainer.classList.add('border-primary');
+        }
+
+        function unhighlight(e) {
+            imageContainer.classList.remove('border-primary');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                imageInput.files = files;
+                previewImage({ target: { files: files } });
+            }
+        }
     });
 </script>
-
-
-{% endblock content %}
+{% endblock %}
